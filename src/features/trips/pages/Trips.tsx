@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMockAction } from '../../shared/useMockAction';
+import ActionBanner from '../../shared/components/ActionBanner';
 
 interface Trip {
   id: string;
@@ -77,20 +78,7 @@ const Trips: React.FC = () => {
     <div className="grid grid-cols-12 gap-8">
       {/* Left Column: Trips Management */}
       <div className="col-span-12 xl:col-span-8 space-y-10">
-        {feedback && (
-          <div className={`rounded-xl px-4 py-3 text-sm font-semibold border ${
-            feedback.tone === 'success'
-              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-              : feedback.tone === 'error'
-              ? 'bg-red-50 text-red-700 border-red-200'
-              : 'bg-indigo-50 text-indigo-700 border-indigo-200'
-          }`}>
-            <div className="flex items-center justify-between gap-3">
-              <span>{feedback.message}</span>
-              <button onClick={clearFeedback} className="text-xs underline underline-offset-2">Dismiss</button>
-            </div>
-          </div>
-        )}
+        <ActionBanner feedback={feedback} onDismiss={clearFeedback} />
 
         {/* Filters Section */}
         <section className="flex flex-wrap items-center justify-between gap-4">

@@ -1,4 +1,7 @@
 {
+  "common": {
+    "dismiss": "Dismiss"
+  },
   "auth": {
     "login_title": "Administrative Dashboard",
     "login_subtitle": "Welcome back to Atareeqak Smart System",

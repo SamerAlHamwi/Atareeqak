@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMockAction } from '../../shared/useMockAction';
+import ActionBanner from '../../shared/components/ActionBanner';
 
 const Home: React.FC = () => {
   const { t } = useTranslation();
@@ -9,20 +10,7 @@ const Home: React.FC = () => {
 
   return (
     <div className="text-center py-24 space-y-10">
-      {feedback && (
-        <div className={`mx-auto max-w-2xl rounded-xl px-4 py-3 text-sm font-semibold border text-start ${
-          feedback.tone === 'success'
-            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-            : feedback.tone === 'error'
-            ? 'bg-red-50 text-red-700 border-red-200'
-            : 'bg-indigo-50 text-indigo-700 border-indigo-200'
-        }`}>
-          <div className="flex items-center justify-between">
-            <span>{feedback.message}</span>
-            <button onClick={clearFeedback} className="text-xs underline underline-offset-2">Dismiss</button>
-          </div>
-        </div>
-      )}
+      <ActionBanner feedback={feedback} onDismiss={clearFeedback} className="mx-auto max-w-2xl text-start" />
 
       <div className="space-y-4">
         <p className="label-md text-secondary font-bold tracking-[0.2em]">{t('common.welcome')}</p>

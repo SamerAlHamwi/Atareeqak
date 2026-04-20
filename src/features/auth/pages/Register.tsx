@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../../app/context/AuthContext';
 import { useMockAction } from '../../shared/useMockAction';
+import ActionBanner from '../../shared/components/ActionBanner';
 
 const Register: React.FC = () => {
   const [name, setName] = useState('');
@@ -47,14 +48,7 @@ const Register: React.FC = () => {
       </div>
 
       <form className="space-y-6" onSubmit={handleSubmit}>
-        {feedback && (
-          <div className={`text-sm p-4 rounded-xl font-medium ${feedback.tone === 'error' ? 'bg-error-container text-error' : 'bg-secondary-container/20 text-secondary'}`}>
-            <div className="flex items-center justify-between gap-3">
-              <span>{feedback.message}</span>
-              <button type="button" onClick={clearFeedback} className="text-xs underline underline-offset-2">Dismiss</button>
-            </div>
-          </div>
-        )}
+        <ActionBanner feedback={feedback} onDismiss={clearFeedback} variant="compact" />
 
         {error && <div className="text-error text-sm bg-error-container p-4 rounded-xl text-center font-medium">{error}</div>}
 

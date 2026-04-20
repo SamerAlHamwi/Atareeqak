@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../app/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useMockAction } from '../../shared/useMockAction';
+import ActionBanner from '../../shared/components/ActionBanner';
 
 const Login: React.FC = () => {
   const { t } = useTranslation();
@@ -55,14 +56,7 @@ const Login: React.FC = () => {
 
       <div className="w-full bg-white rounded-[32px] shadow-ambient p-12">
         <form className="space-y-8" onSubmit={handleSubmit}>
-          {feedback && (
-            <div className={`text-sm p-4 rounded-xl font-medium ${feedback.tone === 'error' ? 'bg-error-container text-error' : 'bg-secondary-container/20 text-secondary'}`}>
-              <div className="flex items-center justify-between gap-3">
-                <span>{feedback.message}</span>
-                <button type="button" onClick={clearFeedback} className="text-xs underline underline-offset-2">Dismiss</button>
-              </div>
-            </div>
-          )}
+          <ActionBanner feedback={feedback} onDismiss={clearFeedback} variant="compact" />
 
           {error && <div className="text-error text-sm bg-error-container p-4 rounded-xl text-center font-medium">{error}</div>}
 

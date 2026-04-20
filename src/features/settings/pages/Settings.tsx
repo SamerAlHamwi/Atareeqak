@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMockAction } from '../../shared/useMockAction';
+import ActionBanner from '../../shared/components/ActionBanner';
 
 const Settings: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -22,20 +23,7 @@ const Settings: React.FC = () => {
 
   return (
     <div className="space-y-10">
-      {feedback && (
-        <div className={`rounded-xl px-4 py-3 text-sm font-semibold border ${
-          feedback.tone === 'success'
-            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-            : feedback.tone === 'error'
-            ? 'bg-red-50 text-red-700 border-red-200'
-            : 'bg-indigo-50 text-indigo-700 border-indigo-200'
-        }`}>
-          <div className="flex items-center justify-between">
-            <span>{feedback.message}</span>
-            <button onClick={clearFeedback} className="text-xs underline underline-offset-2">Dismiss</button>
-          </div>
-        </div>
-      )}
+      <ActionBanner feedback={feedback} onDismiss={clearFeedback} />
 
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
