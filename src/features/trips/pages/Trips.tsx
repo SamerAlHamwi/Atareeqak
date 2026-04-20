@@ -54,8 +54,7 @@ const mockTrips: Trip[] = [
 ];
 
 const Trips: React.FC = () => {
-  const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar';
+  const { t } = useTranslation();
 
   return (
     <div className="grid grid-cols-12 gap-8">
