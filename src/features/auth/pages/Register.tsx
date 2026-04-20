@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../../app/context/AuthContext';
+import { useMockAction } from '../../shared/useMockAction';
 
 const Register: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(true);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -15,6 +19,12 @@ const Register: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!acceptTerms) {
+      setError('يجب الموافقة على الشروط أولاً');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -37,6 +47,15 @@ const Register: React.FC = () => {
       </div>
 
       <form className="space-y-6" onSubmit={handleSubmit}>
+        {feedback && (
+          <div className={`text-sm p-4 rounded-xl font-medium ${feedback.tone === 'error' ? 'bg-error-container text-error' : 'bg-secondary-container/20 text-secondary'}`}>
+            <div className="flex items-center justify-between gap-3">
+              <span>{feedback.message}</span>
+              <button type="button" onClick={clearFeedback} className="text-xs underline underline-offset-2">Dismiss</button>
+            </div>
+          </div>
+        )}
+
         {error && <div className="text-error text-sm bg-error-container p-4 rounded-xl text-center font-medium">{error}</div>}
 
         <div className="space-y-4">
@@ -64,16 +83,30 @@ const Register: React.FC = () => {
           </div>
           <div>
             <label className="label-md mb-2 block">كلمة المرور</label>
-            <input
-              type="password"
-              required
-              className="input-editorial"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                className="input-editorial"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute top-1/2 -translate-y-1/2 left-3 text-xs text-on-surface-variant"
+              >
+                {showPassword ? 'إخفاء' : 'إظهار'}
+              </button>
+            </div>
           </div>
         </div>
+
+        <label className="flex items-center justify-end gap-2 text-sm">
+          <span>أوافق على شروط الاستخدام</span>
+          <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} />
+        </label>
 
         <button
           type="submit"
@@ -90,6 +123,16 @@ const Register: React.FC = () => {
           تسجيل الدخول
         </Link>
       </p>
+
+      <button
+        onClick={async () => {
+          await runAction({ key: 'register-help', successMessage: 'تم إرسال طلب المساعدة لفريق الدعم.', errorMessage: 'تعذر إرسال طلب المساعدة.' });
+        }}
+        disabled={isBusy('register-help')}
+        className="text-secondary text-sm font-bold underline underline-offset-4 disabled:opacity-50"
+      >
+        تحتاج مساعدة بالتسجيل؟
+      </button>
     </div>
   );
 };

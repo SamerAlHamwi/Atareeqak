@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useMockAction } from '../../shared/useMockAction';
 
 interface Employee {
   id: string;
@@ -44,19 +45,63 @@ const mockStaff: Employee[] = [
 const Staff: React.FC = () => {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'ar';
+  const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
+  const [staff, setStaff] = useState<Employee[]>(mockStaff);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee>(mockStaff[0]);
+  const [enabledPermissions, setEnabledPermissions] = useState<Record<string, boolean>>({
+    '0-0': true,
+    '1-0': true,
+    '2-0': true,
+    '3-0': true,
+  });
 
   return (
     <div className="space-y-10">
+      {feedback && (
+        <div className={`rounded-xl px-4 py-3 text-sm font-semibold border ${
+          feedback.tone === 'success'
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+            : feedback.tone === 'error'
+            ? 'bg-red-50 text-red-700 border-red-200'
+            : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+        }`}>
+          <div className="flex items-center justify-between">
+            <span>{feedback.message}</span>
+            <button onClick={clearFeedback} className="text-xs underline underline-offset-2">Dismiss</button>
+          </div>
+        </div>
+      )}
+
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h2 className="text-3xl font-black text-primary tracking-tight mb-2 font-headline">{t('staff.title')}</h2>
           <p className="text-on-surface-variant text-sm">{t('staff.subtitle')}</p>
         </div>
-        <button className="bg-primary text-white px-6 py-3 rounded-xl flex items-center gap-2 font-bold hover:opacity-90 transition-all active:scale-95 shadow-sm shadow-primary/20 self-start md:self-auto">
+        <button
+          onClick={async () => {
+            await runAction({
+              key: 'staff-add',
+              successMessage: 'New staff draft created.',
+              errorMessage: 'Could not create staff draft.',
+              onSuccess: () => {
+                setStaff((prev) => [{
+                  id: String(Date.now()),
+                  name: 'موظف جديد',
+                  email: `staff.${prev.length + 1}@atareeqak.com`,
+                  role: 'support',
+                  status: 'active',
+                  lastLogin: 'Just now',
+                  avatar: 'https://i.pravatar.cc/100?u=new-staff',
+                }, ...prev]);
+              },
+            });
+          }}
+          disabled={isBusy('staff-add')}
+          className="bg-primary text-white px-6 py-3 rounded-xl flex items-center gap-2 font-bold hover:opacity-90 transition-all active:scale-95 shadow-sm shadow-primary/20 self-start md:self-auto disabled:opacity-50"
+        >
           <span className="material-symbols-outlined text-lg">person_add</span>
-          {t('staff.add_new')}
+          {isBusy('staff-add') ? 'Adding...' : t('staff.add_new')}
         </button>
       </div>
 
@@ -114,7 +159,7 @@ const Staff: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-container/50">
-                {mockStaff.map((emp) => (
+                {staff.map((emp) => (
                   <tr
                     key={emp.id}
                     onClick={() => setSelectedEmployee(emp)}
@@ -150,8 +195,39 @@ const Staff: React.FC = () => {
                     <td className="px-6 py-5 text-xs text-on-surface-variant font-manrope text-start">{emp.lastLogin}</td>
                     <td className="px-6 py-5 text-center">
                       <div className={`flex justify-center gap-2 transition-opacity ${selectedEmployee.id === emp.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                        <button className="p-1.5 text-secondary hover:bg-secondary-container/20 rounded-lg"><span className="material-symbols-outlined text-sm">edit</span></button>
-                        <button className="p-1.5 text-error hover:bg-error-container/20 rounded-lg"><span className="material-symbols-outlined text-sm">delete</span></button>
+                        <button
+                          onClick={async (event) => {
+                            event.stopPropagation();
+                            await runAction({
+                              key: `staff-edit-${emp.id}`,
+                              successMessage: `Edit mode opened for ${emp.name}.`,
+                              errorMessage: 'Could not open employee editor.',
+                            });
+                          }}
+                          disabled={isBusy(`staff-edit-${emp.id}`)}
+                          className="p-1.5 text-secondary hover:bg-secondary-container/20 rounded-lg disabled:opacity-40"
+                        ><span className="material-symbols-outlined text-sm">edit</span></button>
+                        <button
+                          onClick={async (event) => {
+                            event.stopPropagation();
+                            await runAction({
+                              key: `staff-delete-${emp.id}`,
+                              successMessage: `${emp.name} removed from local list.`,
+                              errorMessage: 'Could not remove employee.',
+                              onSuccess: () => {
+                                setStaff((prev) => prev.filter((entry) => entry.id !== emp.id));
+                                if (selectedEmployee.id === emp.id && staff.length > 1) {
+                                  const fallback = staff.find((entry) => entry.id !== emp.id);
+                                  if (fallback) {
+                                    setSelectedEmployee(fallback);
+                                  }
+                                }
+                              },
+                            });
+                          }}
+                          disabled={isBusy(`staff-delete-${emp.id}`)}
+                          className="p-1.5 text-error hover:bg-error-container/20 rounded-lg disabled:opacity-40"
+                        ><span className="material-symbols-outlined text-sm">delete</span></button>
                       </div>
                     </td>
                   </tr>
@@ -202,7 +278,17 @@ const Staff: React.FC = () => {
                 {section.perms.map((perm, pIdx) => (
                   <label key={pIdx} className="flex items-center gap-3 cursor-pointer group w-fit">
                     <div className="relative w-5 h-5 border-2 border-outline-variant rounded group-hover:border-secondary transition-colors flex items-center justify-center bg-white">
-                      <input defaultChecked={pIdx === 0} className="hidden peer" type="checkbox" />
+                      <input
+                        checked={Boolean(enabledPermissions[`${idx}-${pIdx}`])}
+                        onChange={(event) => {
+                          setEnabledPermissions((prev) => ({
+                            ...prev,
+                            [`${idx}-${pIdx}`]: event.target.checked,
+                          }));
+                        }}
+                        className="hidden peer"
+                        type="checkbox"
+                      />
                       <span className="material-symbols-outlined text-white text-[16px] peer-checked:bg-secondary w-full h-full flex items-center justify-center rounded-[2px]">check</span>
                     </div>
                     <span className="text-sm font-medium">{perm}</span>
@@ -213,10 +299,31 @@ const Staff: React.FC = () => {
           </div>
 
           <div className="pt-6 flex gap-3">
-            <button className="flex-1 bg-secondary text-white py-3 rounded-xl font-bold hover:opacity-90 transition-all active:scale-95 text-sm shadow-md">
+            <button
+              onClick={async () => {
+                await runAction({
+                  key: 'save-perms',
+                  successMessage: `Permissions saved for ${selectedEmployee.name}.`,
+                  errorMessage: 'Could not save permissions.',
+                });
+              }}
+              disabled={isBusy('save-perms')}
+              className="flex-1 bg-secondary text-white py-3 rounded-xl font-bold hover:opacity-90 transition-all active:scale-95 text-sm shadow-md disabled:opacity-50"
+            >
               {t('staff.save_edits')}
             </button>
-            <button className="px-6 py-3 border border-outline-variant rounded-xl font-bold hover:bg-surface-container transition-all text-sm">
+            <button
+              onClick={async () => {
+                await runAction({ key: 'cancel-perms', successMessage: 'Permission changes reverted in UI.', errorMessage: 'Unable to reset changes.' });
+                setEnabledPermissions({
+                  '0-0': true,
+                  '1-0': true,
+                  '2-0': true,
+                  '3-0': true,
+                });
+              }}
+              className="px-6 py-3 border border-outline-variant rounded-xl font-bold hover:bg-surface-container transition-all text-sm"
+            >
               {t('staff.cancel')}
             </button>
           </div>

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useMockAction } from '../../shared/useMockAction';
 
 interface User {
   id: string;
@@ -70,22 +71,76 @@ const mockUsers: User[] = [
 
 const Users: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
+  const [users, setUsers] = useState<User[]>(mockUsers);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [typeFilter, setTypeFilter] = useState<'all' | User['type']>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | User['status']>('all');
   const isRtl = i18n.language === 'ar';
 
   const closePanel = () => setSelectedUser(null);
 
+  const visibleUsers = useMemo(() => users.filter((user) => {
+    const typePass = typeFilter === 'all' || user.type === typeFilter;
+    const statusPass = statusFilter === 'all' || user.status === statusFilter;
+    return typePass && statusPass;
+  }), [statusFilter, typeFilter, users]);
+
+  const createDemoUser = async () => {
+    await runAction({
+      key: 'add-user',
+      successMessage: 'User draft created and ready for API sync.',
+      errorMessage: 'Could not create user draft.',
+      onSuccess: () => {
+        setUsers((prev) => [{
+          id: String(Date.now()),
+          name: 'مستخدم جديد',
+          email: `new.user.${prev.length + 1}@email.com`,
+          type: prev.length % 2 === 0 ? 'driver' : 'passenger',
+          joinDate: '20 أبريل 2026',
+          status: 'pending',
+          phone: '+966 50 000 0000',
+          city: 'الرياض',
+          rating: 4.5,
+          totalTrips: 0,
+          walletBalance: 0,
+          avatar: 'https://i.pravatar.cc/120?u=new-user',
+          memberSince: 'أبريل 2026',
+        }, ...prev]);
+      },
+    });
+  };
+
   return (
     <div className="space-y-8 relative">
+      {feedback && (
+        <div className={`rounded-xl px-4 py-3 text-sm font-semibold border ${
+          feedback.tone === 'success'
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+            : feedback.tone === 'error'
+            ? 'bg-red-50 text-red-700 border-red-200'
+            : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+        }`}>
+          <div className="flex items-center justify-between gap-4">
+            <span>{feedback.message}</span>
+            <button onClick={clearFeedback} className="text-xs underline underline-offset-2">Dismiss</button>
+          </div>
+        </div>
+      )}
+
       {/* Page Header & Actions */}
       <section className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div className="space-y-1">
           <h3 className="text-3xl font-extrabold font-headline tracking-tight text-primary">{t('users.active_users')}</h3>
           <p className="text-on-surface-variant text-sm">{t('users.subtitle')}</p>
         </div>
-        <button className="bg-primary hover:opacity-90 text-on-primary px-6 py-2.5 rounded-xl flex items-center gap-2 font-medium transition-all shadow-lg shadow-primary/20 self-start md:self-auto">
+        <button
+          onClick={createDemoUser}
+          disabled={isBusy('add-user')}
+          className="bg-primary hover:opacity-90 text-on-primary px-6 py-2.5 rounded-xl flex items-center gap-2 font-medium transition-all shadow-lg shadow-primary/20 self-start md:self-auto disabled:opacity-60"
+        >
           <span className="material-symbols-outlined text-lg">add</span>
-          <span>{t('users.add_user')}</span>
+          <span>{isBusy('add-user') ? 'Creating...' : t('users.add_user')}</span>
         </button>
       </section>
 
@@ -93,17 +148,37 @@ const Users: React.FC = () => {
       <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-surface-container-lowest p-4 rounded-2xl flex flex-col gap-2 border border-outline-variant/10">
           <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">{t('users.filter_type')}</label>
-          <select className="bg-transparent border-none text-on-surface font-medium focus:ring-0 p-0 cursor-pointer">
-            <option>{t('users.all')}</option>
-            <option>{t('users.driver')}</option>
-            <option>{t('users.passenger')}</option>
+          <select
+            value={typeFilter}
+            onChange={(event) => setTypeFilter(event.target.value as 'all' | User['type'])}
+            className="bg-transparent border-none text-on-surface font-medium focus:ring-0 p-0 cursor-pointer"
+          >
+            <option value="all">{t('users.all')}</option>
+            <option value="driver">{t('users.driver')}</option>
+            <option value="passenger">{t('users.passenger')}</option>
           </select>
         </div>
         <div className="bg-surface-container-lowest p-4 rounded-2xl flex flex-col gap-2 border border-outline-variant/10">
           <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">{t('users.filter_status')}</label>
           <div className="flex gap-2 mt-1">
-            <span className="px-3 py-1 bg-secondary/10 text-secondary text-xs font-bold rounded-full cursor-pointer hover:bg-secondary hover:text-white transition-colors">{t('users.verified')}</span>
-            <span className="px-3 py-1 bg-surface-container-high text-on-surface-variant text-xs font-bold rounded-full cursor-pointer">{t('users.pending_review')}</span>
+            <button
+              onClick={() => setStatusFilter(statusFilter === 'verified' ? 'all' : 'verified')}
+              className={`px-3 py-1 text-xs font-bold rounded-full transition-colors ${statusFilter === 'verified' ? 'bg-secondary text-white' : 'bg-secondary/10 text-secondary hover:bg-secondary hover:text-white'}`}
+            >
+              {t('users.verified')}
+            </button>
+            <button
+              onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
+              className={`px-3 py-1 text-xs font-bold rounded-full transition-colors ${statusFilter === 'pending' ? 'bg-primary text-white' : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'}`}
+            >
+              {t('users.pending_review')}
+            </button>
+            <button
+              onClick={() => setStatusFilter(statusFilter === 'blocked' ? 'all' : 'blocked')}
+              className={`px-3 py-1 text-xs font-bold rounded-full transition-colors ${statusFilter === 'blocked' ? 'bg-error text-white' : 'bg-error-container text-error'}`}
+            >
+              {t('users.blocked')}
+            </button>
           </div>
         </div>
         <div className="bg-surface-container-lowest p-4 rounded-2xl flex flex-col gap-2 border border-outline-variant/10">
@@ -116,7 +191,7 @@ const Users: React.FC = () => {
         <div className="bg-primary-container p-4 rounded-2xl flex items-center justify-between text-on-primary-container shadow-lg shadow-primary/10">
           <div>
             <p className="text-xs opacity-70">{t('users.total_registered')}</p>
-            <p className="text-2xl font-bold font-headline">12,482</p>
+                <p className="text-2xl font-bold font-headline">{users.length.toLocaleString()}</p>
           </div>
           <span className="material-symbols-outlined text-3xl opacity-30">group</span>
         </div>
@@ -136,7 +211,7 @@ const Users: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/10">
-              {mockUsers.map((user) => (
+              {visibleUsers.map((user) => (
                 <tr
                   key={user.id}
                   className="group hover:bg-surface-container-low transition-colors cursor-pointer"
@@ -180,13 +255,55 @@ const Users: React.FC = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center ltr:justify-end rtl:justify-start gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="p-2 hover:bg-surface-container-high rounded-lg text-on-surface-variant" title={t('users.view_docs')}>
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setSelectedUser(user);
+                        }}
+                        className="p-2 hover:bg-surface-container-high rounded-lg text-on-surface-variant"
+                        title={t('users.view_docs')}
+                      >
                         <span className="material-symbols-outlined">description</span>
                       </button>
-                      <button className="p-2 hover:bg-surface-container-high rounded-lg text-on-surface-variant" title={t('users.edit')}>
+                      <button
+                        onClick={async (event) => {
+                          event.stopPropagation();
+                          await runAction({
+                            key: `edit-${user.id}`,
+                            successMessage: `${user.name} profile prepared for editing.`,
+                            errorMessage: 'Failed to load profile editor.',
+                          });
+                        }}
+                        disabled={isBusy(`edit-${user.id}`)}
+                        className="p-2 hover:bg-surface-container-high rounded-lg text-on-surface-variant disabled:opacity-40"
+                        title={t('users.edit')}
+                      >
                         <span className="material-symbols-outlined">edit</span>
                       </button>
-                      <button className="p-2 hover:bg-error-container text-error rounded-lg" title={t('users.block')}>
+                      <button
+                        onClick={async (event) => {
+                          event.stopPropagation();
+                          await runAction({
+                            key: `status-${user.id}`,
+                            successMessage: user.status === 'blocked' ? 'User unblocked successfully.' : 'User blocked successfully.',
+                            errorMessage: 'Status update failed.',
+                            onSuccess: () => {
+                              setUsers((prev) => prev.map((entry) => {
+                                if (entry.id !== user.id) {
+                                  return entry;
+                                }
+                                return {
+                                  ...entry,
+                                  status: entry.status === 'blocked' ? 'verified' : 'blocked',
+                                };
+                              }));
+                            },
+                          });
+                        }}
+                        disabled={isBusy(`status-${user.id}`)}
+                        className="p-2 hover:bg-error-container text-error rounded-lg disabled:opacity-40"
+                        title={t('users.block')}
+                      >
                         <span className="material-symbols-outlined">block</span>
                       </button>
                     </div>
@@ -296,10 +413,36 @@ const Users: React.FC = () => {
               </div>
 
               <div className="flex gap-3 pt-4">
-                <button className="flex-1 bg-secondary text-white py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-md">
+                <button
+                  onClick={async () => {
+                    if (!selectedUser) {
+                      return;
+                    }
+                    await runAction({
+                      key: `panel-edit-${selectedUser.id}`,
+                      successMessage: 'Profile changes queued for update API.',
+                      errorMessage: 'Could not save profile changes.',
+                    });
+                  }}
+                  disabled={!selectedUser || isBusy(`panel-edit-${selectedUser?.id ?? ''}`)}
+                  className="flex-1 bg-secondary text-white py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-md disabled:opacity-50"
+                >
                   {t('users.edit_profile')}
                 </button>
-                <button className="px-4 py-3 border border-error text-error rounded-xl hover:bg-error-container transition-all">
+                <button
+                  onClick={async () => {
+                    if (!selectedUser) {
+                      return;
+                    }
+                    await runAction({
+                      key: `panel-block-${selectedUser.id}`,
+                      successMessage: `${selectedUser.name} status updated from profile panel.`,
+                      errorMessage: 'Unable to update user status.',
+                    });
+                  }}
+                  disabled={!selectedUser || isBusy(`panel-block-${selectedUser?.id ?? ''}`)}
+                  className="px-4 py-3 border border-error text-error rounded-xl hover:bg-error-container transition-all disabled:opacity-50"
+                >
                   <span className="material-symbols-outlined">block</span>
                 </button>
               </div>

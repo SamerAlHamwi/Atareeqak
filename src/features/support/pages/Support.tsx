@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useMockAction } from '../../shared/useMockAction';
 
 interface Complaint {
   id: string;
@@ -60,10 +61,36 @@ const mockComplaints: Complaint[] = [
 const Support: React.FC = () => {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'ar';
+  const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
+  const [complaints, setComplaints] = useState<Complaint[]>(mockComplaints);
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint>(mockComplaints[1]);
+  const [statusFilter, setStatusFilter] = useState<'all' | Complaint['status']>('all');
+  const [replyText, setReplyText] = useState('');
+
+  const visibleComplaints = useMemo(() => {
+    if (statusFilter === 'all') {
+      return complaints;
+    }
+    return complaints.filter((item) => item.status === statusFilter);
+  }, [complaints, statusFilter]);
 
   return (
     <div className="space-y-10">
+      {feedback && (
+        <div className={`rounded-xl px-4 py-3 text-sm font-semibold border ${
+          feedback.tone === 'success'
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+            : feedback.tone === 'error'
+            ? 'bg-red-50 text-red-700 border-red-200'
+            : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+        }`}>
+          <div className="flex items-center justify-between">
+            <span>{feedback.message}</span>
+            <button onClick={clearFeedback} className="text-xs underline underline-offset-2">Dismiss</button>
+          </div>
+        </div>
+      )}
+
       {/* Summary Stats */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="bg-surface-container-lowest p-6 rounded-xl shadow-sm border-b-2 border-secondary flex items-center justify-between">
@@ -102,11 +129,15 @@ const Support: React.FC = () => {
           <div className="p-6 bg-surface-container-lowest border-b border-outline-variant/10 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <span className="text-sm font-bold text-on-surface">{t('support.filter_by')}</span>
-              <select className="bg-surface border-none text-xs rounded-full px-4 py-2 ring-1 ring-outline-variant/30 focus:ring-secondary cursor-pointer">
-                <option>{t('support.all_statuses')}</option>
-                <option>{t('support.pending')}</option>
-                <option>{t('support.processing')}</option>
-                <option>{t('support.resolved')}</option>
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value as 'all' | Complaint['status'])}
+                className="bg-surface border-none text-xs rounded-full px-4 py-2 ring-1 ring-outline-variant/30 focus:ring-secondary cursor-pointer"
+              >
+                <option value="all">{t('support.all_statuses')}</option>
+                <option value="pending">{t('support.pending')}</option>
+                <option value="processing">{t('support.processing')}</option>
+                <option value="resolved">{t('support.resolved')}</option>
               </select>
               <select className="bg-surface border-none text-xs rounded-full px-4 py-2 ring-1 ring-outline-variant/30 focus:ring-secondary cursor-pointer">
                 <option>{t('support.all_categories')}</option>
@@ -116,7 +147,17 @@ const Support: React.FC = () => {
                 <option>{t('support.category_driver_behavior')}</option>
               </select>
             </div>
-            <button className="flex items-center gap-2 text-xs font-bold text-secondary px-4 py-2 hover:bg-secondary/5 rounded-full transition-all">
+            <button
+              onClick={async () => {
+                await runAction({
+                  key: 'advanced-filter',
+                  successMessage: 'Advanced filters loaded. API endpoint can be attached next.',
+                  errorMessage: 'Could not load advanced filters.',
+                });
+              }}
+              disabled={isBusy('advanced-filter')}
+              className="flex items-center gap-2 text-xs font-bold text-secondary px-4 py-2 hover:bg-secondary/5 rounded-full transition-all disabled:opacity-50"
+            >
               <span className="material-symbols-outlined text-sm">filter_list</span>
               {t('support.advanced_filter')}
             </button>
@@ -135,7 +176,7 @@ const Support: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {mockComplaints.map((cmp) => (
+                {visibleComplaints.map((cmp) => (
                   <tr
                     key={cmp.id}
                     onClick={() => setSelectedComplaint(cmp)}
@@ -228,15 +269,42 @@ const Support: React.FC = () => {
               <div>
                 <h5 className="text-xs font-bold text-indigo-900 mb-2 text-start">{t('support.quick_reply')}</h5>
                 <textarea
+                  value={replyText}
+                  onChange={(event) => setReplyText(event.target.value)}
                   className="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm focus:ring-1 focus:ring-secondary min-h-[100px] outline-none mb-3 text-start"
                   placeholder={t('support.reply_placeholder')}
                 ></textarea>
                 <div className="flex gap-2">
-                  <button className="flex-1 bg-secondary text-on-secondary text-xs font-bold py-3 rounded-lg hover:bg-secondary/90 transition-all flex items-center justify-center gap-2 shadow-sm shadow-secondary/20">
+                  <button
+                    onClick={async () => {
+                      await runAction({
+                        key: `reply-${selectedComplaint.id}`,
+                        successMessage: `Reply sent to ${selectedComplaint.user}.`,
+                        errorMessage: 'Reply could not be sent.',
+                        onSuccess: () => {
+                          setComplaints((prev) => prev.map((entry) => entry.id === selectedComplaint.id ? { ...entry, status: 'processing' } : entry));
+                          setSelectedComplaint((prev) => ({ ...prev, status: 'processing' }));
+                          setReplyText('');
+                        },
+                      });
+                    }}
+                    disabled={!replyText.trim() || isBusy(`reply-${selectedComplaint.id}`)}
+                    className="flex-1 bg-secondary text-on-secondary text-xs font-bold py-3 rounded-lg hover:bg-secondary/90 transition-all flex items-center justify-center gap-2 shadow-sm shadow-secondary/20 disabled:opacity-50"
+                  >
                     <span className="material-symbols-outlined text-sm">send</span>
                     {t('support.send_reply')}
                   </button>
-                  <button className="bg-surface-container-high text-on-surface text-xs font-bold px-4 py-3 rounded-lg hover:bg-slate-200 transition-all">
+                  <button
+                    onClick={async () => {
+                      await runAction({
+                        key: `escalate-${selectedComplaint.id}`,
+                        successMessage: `${selectedComplaint.id} escalated to security team.`,
+                        errorMessage: 'Escalation failed.',
+                      });
+                    }}
+                    disabled={isBusy(`escalate-${selectedComplaint.id}`)}
+                    className="bg-surface-container-high text-on-surface text-xs font-bold px-4 py-3 rounded-lg hover:bg-slate-200 transition-all disabled:opacity-50"
+                  >
                     {t('support.escalate')}
                   </button>
                 </div>
@@ -245,11 +313,31 @@ const Support: React.FC = () => {
               <div className="pt-4 border-t border-outline-variant/20">
                 <p className="text-[10px] text-on-surface-variant mb-3 uppercase font-bold tracking-tight text-start">{t('support.moderation_tools')}</p>
                 <div className="flex gap-3">
-                  <button className="flex items-center gap-2 text-[11px] font-bold text-error border border-error/20 px-3 py-2 rounded-lg hover:bg-error-container/50 transition-all">
+                  <button
+                    onClick={async () => {
+                      await runAction({
+                        key: `hide-${selectedComplaint.id}`,
+                        successMessage: 'Comment hidden successfully.',
+                        errorMessage: 'Could not hide comment.',
+                      });
+                    }}
+                    disabled={isBusy(`hide-${selectedComplaint.id}`)}
+                    className="flex items-center gap-2 text-[11px] font-bold text-error border border-error/20 px-3 py-2 rounded-lg hover:bg-error-container/50 transition-all disabled:opacity-50"
+                  >
                     <span className="material-symbols-outlined text-sm">visibility_off</span>
                     {t('support.hide_comment')}
                   </button>
-                  <button className="flex items-center gap-2 text-[11px] font-bold text-indigo-900 border border-indigo-900/20 px-3 py-2 rounded-lg hover:bg-slate-100 transition-all">
+                  <button
+                    onClick={async () => {
+                      await runAction({
+                        key: `review-${selectedComplaint.id}`,
+                        successMessage: 'Security review requested.',
+                        errorMessage: 'Could not request security review.',
+                      });
+                    }}
+                    disabled={isBusy(`review-${selectedComplaint.id}`)}
+                    className="flex items-center gap-2 text-[11px] font-bold text-indigo-900 border border-indigo-900/20 px-3 py-2 rounded-lg hover:bg-slate-100 transition-all disabled:opacity-50"
+                  >
                     <span className="material-symbols-outlined text-sm">gavel</span>
                     {t('support.security_review')}
                   </button>
@@ -266,7 +354,17 @@ const Support: React.FC = () => {
       </section>
 
       {/* Floating Action Button */}
-      <button className="fixed bottom-8 ltr:right-8 rtl:left-8 bg-secondary text-white p-4 rounded-full shadow-xl shadow-secondary/40 hover:scale-110 transition-transform z-50 flex items-center justify-center active:scale-95">
+      <button
+        onClick={async () => {
+          await runAction({
+            key: 'new-complaint-note',
+            successMessage: 'Quick complaint note opened.',
+            errorMessage: 'Could not open quick note.',
+          });
+        }}
+        disabled={isBusy('new-complaint-note')}
+        className="fixed bottom-8 ltr:right-8 rtl:left-8 bg-secondary text-white p-4 rounded-full shadow-xl shadow-secondary/40 hover:scale-110 transition-transform z-50 flex items-center justify-center active:scale-95 disabled:opacity-50"
+      >
         <span className="material-symbols-outlined">add_comment</span>
       </button>
     </div>

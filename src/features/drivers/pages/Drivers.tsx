@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useMockAction } from '../../shared/useMockAction';
 
 interface Driver {
   id: string;
@@ -51,10 +52,35 @@ const mockDrivers: Driver[] = [
 
 const Drivers: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
+  const [drivers, setDrivers] = useState<Driver[]>(mockDrivers);
+  const [statusFilter, setStatusFilter] = useState<'all' | Driver['status']>('all');
   const isRtl = i18n.language === 'ar';
+
+  const visibleDrivers = useMemo(() => {
+    if (statusFilter === 'all') {
+      return drivers;
+    }
+    return drivers.filter((driver) => driver.status === statusFilter);
+  }, [drivers, statusFilter]);
 
   return (
     <div className="space-y-10">
+      {feedback && (
+        <div className={`rounded-xl px-4 py-3 text-sm font-semibold border ${
+          feedback.tone === 'success'
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+            : feedback.tone === 'error'
+            ? 'bg-red-50 text-red-700 border-red-200'
+            : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+        }`}>
+          <div className="flex items-center justify-between">
+            <span>{feedback.message}</span>
+            <button onClick={clearFeedback} className="text-xs underline underline-offset-2">Dismiss</button>
+          </div>
+        </div>
+      )}
+
       {/* Summary Bento Grid */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-surface-container-lowest p-6 rounded-xl flex flex-col justify-between h-40 group hover:translate-y-[-4px] transition-transform duration-300 border border-outline-variant/10 shadow-sm">
@@ -116,15 +142,59 @@ const Drivers: React.FC = () => {
             {t('drivers.filter')}
           </button>
           <div className="flex bg-surface-container-low rounded-full p-1">
-            <button className="bg-surface-container-lowest text-on-surface px-6 py-1.5 rounded-full text-sm font-bold shadow-sm">{t('users.all')}</button>
-            <button className="text-on-surface-variant px-6 py-1.5 rounded-full text-sm font-medium hover:text-on-surface transition-colors">{t('drivers.status_verified')}</button>
-            <button className="text-on-surface-variant px-6 py-1.5 rounded-full text-sm font-medium hover:text-on-surface transition-colors">{t('users.pending_review')}</button>
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={`px-6 py-1.5 rounded-full text-sm font-bold shadow-sm ${statusFilter === 'all' ? 'bg-surface-container-lowest text-on-surface' : 'text-on-surface-variant hover:text-on-surface transition-colors'}`}
+            >
+              {t('users.all')}
+            </button>
+            <button
+              onClick={() => setStatusFilter('verified')}
+              className={`px-6 py-1.5 rounded-full text-sm font-medium transition-colors ${statusFilter === 'verified' ? 'bg-secondary text-white' : 'text-on-surface-variant hover:text-on-surface'}`}
+            >
+              {t('drivers.status_verified')}
+            </button>
+            <button
+              onClick={() => setStatusFilter('pending')}
+              className={`px-6 py-1.5 rounded-full text-sm font-medium transition-colors ${statusFilter === 'pending' ? 'bg-primary text-white' : 'text-on-surface-variant hover:text-on-surface'}`}
+            >
+              {t('users.pending_review')}
+            </button>
+            <button
+              onClick={() => setStatusFilter('suspended')}
+              className={`px-6 py-1.5 rounded-full text-sm font-medium transition-colors ${statusFilter === 'suspended' ? 'bg-error text-white' : 'text-on-surface-variant hover:text-on-surface'}`}
+            >
+              {t('drivers.status_suspended')}
+            </button>
           </div>
         </div>
         <div className="flex gap-3 w-full md:w-auto">
-          <button className="bg-primary text-on-primary px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:opacity-90 transition-opacity shadow-lg shadow-primary/20">
+          <button
+            onClick={async () => {
+              await runAction({
+                key: 'add-driver',
+                successMessage: 'Driver draft added and ready for onboarding API.',
+                errorMessage: 'Could not create driver draft.',
+                onSuccess: () => {
+                  setDrivers((prev) => [{
+                    id: String(Date.now()),
+                    name: 'سائق جديد',
+                    displayId: `#DR-${9000 + prev.length}`,
+                    phone: '+966 50 000 1111',
+                    vehicle: 'تويوتا يارس',
+                    vehicleDetails: '2024 | رمادي',
+                    status: 'pending',
+                    rating: null,
+                    avatar: 'https://i.pravatar.cc/100?u=new-driver',
+                  }, ...prev]);
+                },
+              });
+            }}
+            disabled={isBusy('add-driver')}
+            className="bg-primary text-on-primary px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:opacity-90 transition-opacity shadow-lg shadow-primary/20 disabled:opacity-50"
+          >
             <span className="material-symbols-outlined">person_add</span>
-            {t('drivers.add_new')}
+            {isBusy('add-driver') ? 'Adding...' : t('drivers.add_new')}
           </button>
         </div>
       </section>
@@ -144,7 +214,7 @@ const Drivers: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-container text-sm">
-              {mockDrivers.map((driver) => (
+              {visibleDrivers.map((driver) => (
                 <tr key={driver.id} className="hover:bg-surface-container/30 transition-colors group">
                   <td className="px-8 py-5 text-start">
                     <div className="flex items-center gap-3">
@@ -185,13 +255,54 @@ const Drivers: React.FC = () => {
                   </td>
                   <td className="px-8 py-5">
                     <div className="flex items-center ltr:justify-end rtl:justify-start gap-2">
-                      <button className="p-2 hover:bg-surface-container-high rounded-lg text-primary transition-colors" title={t('drivers.view_profile')}>
+                      <button
+                        onClick={async () => {
+                          await runAction({
+                            key: `view-${driver.id}`,
+                            successMessage: `${driver.name} profile data loaded.`,
+                            errorMessage: 'Could not fetch driver profile.',
+                          });
+                        }}
+                        disabled={isBusy(`view-${driver.id}`)}
+                        className="p-2 hover:bg-surface-container-high rounded-lg text-primary transition-colors disabled:opacity-40"
+                        title={t('drivers.view_profile')}
+                      >
                         <span className="material-symbols-outlined">visibility</span>
                       </button>
-                      <button className="p-2 hover:bg-surface-container-high rounded-lg text-on-surface-variant transition-colors" title={t('users.edit')}>
+                      <button
+                        onClick={async () => {
+                          await runAction({
+                            key: `edit-${driver.id}`,
+                            successMessage: `Editing mode opened for ${driver.name}.`,
+                            errorMessage: 'Failed to open edit mode.',
+                          });
+                        }}
+                        disabled={isBusy(`edit-${driver.id}`)}
+                        className="p-2 hover:bg-surface-container-high rounded-lg text-on-surface-variant transition-colors disabled:opacity-40"
+                        title={t('users.edit')}
+                      >
                         <span className="material-symbols-outlined">edit</span>
                       </button>
                       <button
+                        onClick={async () => {
+                          await runAction({
+                            key: `status-${driver.id}`,
+                            successMessage: driver.status === 'suspended' ? 'Driver reactivated.' : 'Driver suspended.',
+                            errorMessage: 'Failed to update driver status.',
+                            onSuccess: () => {
+                              setDrivers((prev) => prev.map((entry) => {
+                                if (entry.id !== driver.id) {
+                                  return entry;
+                                }
+                                return {
+                                  ...entry,
+                                  status: entry.status === 'suspended' ? 'verified' : 'suspended',
+                                };
+                              }));
+                            },
+                          });
+                        }}
+                        disabled={isBusy(`status-${driver.id}`)}
                         className={`p-2 rounded-lg transition-colors ${driver.status === 'suspended' ? 'hover:bg-secondary/10 text-secondary' : 'hover:bg-error/10 text-error'}`}
                         title={driver.status === 'suspended' ? t('users.approve') : t('users.block')}
                       >
@@ -275,7 +386,17 @@ const Drivers: React.FC = () => {
             </div>
             <p className="text-xs font-medium">{t('drivers.efficiency_growth', { percent: 5 })}</p>
           </div>
-          <button className="relative z-10 mt-8 w-full py-3 bg-on-primary text-primary rounded-xl font-bold text-sm hover:bg-surface-container-low transition-colors">
+          <button
+            onClick={async () => {
+              await runAction({
+                key: 'download-driver-report',
+                successMessage: 'Driver performance report export queued.',
+                errorMessage: 'Could not start report export.',
+              });
+            }}
+            disabled={isBusy('download-driver-report')}
+            className="relative z-10 mt-8 w-full py-3 bg-on-primary text-primary rounded-xl font-bold text-sm hover:bg-surface-container-low transition-colors disabled:opacity-50"
+          >
             {t('drivers.download_report')}
           </button>
         </div>

@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useMockAction } from '../../shared/useMockAction';
 
 interface Transaction {
   id: string;
@@ -58,9 +59,36 @@ const mockTransactions: Transaction[] = [
 const Reports: React.FC = () => {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'ar';
+  const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
+  const [commissionRate, setCommissionRate] = useState('15');
+  const [walletQuery, setWalletQuery] = useState('');
+  const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions);
+
+  const filteredTransactions = useMemo(() => transactions.filter((entry) => {
+    if (!walletQuery.trim()) {
+      return true;
+    }
+    const query = walletQuery.toLowerCase();
+    return entry.id.toLowerCase().includes(query) || entry.user.toLowerCase().includes(query);
+  }), [transactions, walletQuery]);
 
   return (
     <div className="space-y-10">
+      {feedback && (
+        <div className={`rounded-xl px-4 py-3 text-sm font-semibold border ${
+          feedback.tone === 'success'
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+            : feedback.tone === 'error'
+            ? 'bg-red-50 text-red-700 border-red-200'
+            : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+        }`}>
+          <div className="flex items-center justify-between">
+            <span>{feedback.message}</span>
+            <button onClick={clearFeedback} className="text-xs underline underline-offset-2">Dismiss</button>
+          </div>
+        </div>
+      )}
+
       {/* Overview Bento Grid */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Platform Commission */}
@@ -127,11 +155,24 @@ const Reports: React.FC = () => {
                   <input
                     className="w-full bg-surface-container-lowest border-none border-b-2 border-outline-variant focus:border-secondary focus:ring-0 rounded-t-lg py-3 px-4 font-bold text-lg text-primary text-start"
                     type="number"
-                    defaultValue="15"
+                    value={commissionRate}
+                    onChange={(event) => setCommissionRate(event.target.value)}
                   />
                   <span className={`absolute ${isRtl ? 'left-4' : 'right-4'} top-3 text-outline`}>%</span>
                 </div>
-                <button className="bg-primary text-white px-6 py-3 rounded-lg font-medium text-sm hover:opacity-90 transition-opacity">{t('reports.update')}</button>
+                <button
+                  onClick={async () => {
+                    await runAction({
+                      key: 'update-commission',
+                      successMessage: `Commission set to ${commissionRate || '0'}%.`,
+                      errorMessage: 'Failed to update commission rate.',
+                    });
+                  }}
+                  disabled={isBusy('update-commission')}
+                  className="bg-primary text-white px-6 py-3 rounded-lg font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  {isBusy('update-commission') ? 'Saving...' : t('reports.update')}
+                </button>
               </div>
             </div>
           </div>
@@ -148,8 +189,20 @@ const Reports: React.FC = () => {
                   className="flex-1 bg-surface-container border-none rounded-lg text-sm px-4 focus:ring-2 focus:ring-secondary/20 text-start"
                   placeholder={t('reports.wallet_search_placeholder')}
                   type="text"
+                  value={walletQuery}
+                  onChange={(event) => setWalletQuery(event.target.value)}
                 />
-                <button className="p-3 bg-secondary text-white rounded-lg">
+                <button
+                  onClick={async () => {
+                    await runAction({
+                      key: 'wallet-search',
+                      successMessage: walletQuery.trim() ? `Search done for "${walletQuery}".` : 'Wallet search reset.',
+                      errorMessage: 'Wallet search failed.',
+                    });
+                  }}
+                  disabled={isBusy('wallet-search')}
+                  className="p-3 bg-secondary text-white rounded-lg disabled:opacity-50"
+                >
                   <span className="material-symbols-outlined">search</span>
                 </button>
               </div>
@@ -158,11 +211,31 @@ const Reports: React.FC = () => {
                 <p className="text-xs text-outline italic text-center">{t('reports.wallet_search_empty')}</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <button className="bg-surface-container-high text-primary-container px-4 py-3 rounded-lg text-xs font-bold flex items-center justify-center gap-2 hover:bg-primary-fixed transition-colors">
+                <button
+                  onClick={async () => {
+                    await runAction({
+                      key: 'manual-credit',
+                      successMessage: 'Manual credit form prepared for API submit.',
+                      errorMessage: 'Could not open manual credit form.',
+                    });
+                  }}
+                  disabled={isBusy('manual-credit')}
+                  className="bg-surface-container-high text-primary-container px-4 py-3 rounded-lg text-xs font-bold flex items-center justify-center gap-2 hover:bg-primary-fixed transition-colors disabled:opacity-50"
+                >
                   <span className="material-symbols-outlined text-sm">add_card</span>
                   {t('reports.manual_credit')}
                 </button>
-                <button className="bg-surface-container-high text-error px-4 py-3 rounded-lg text-xs font-bold flex items-center justify-center gap-2 hover:bg-error-container transition-colors">
+                <button
+                  onClick={async () => {
+                    await runAction({
+                      key: 'withdraw-balance',
+                      successMessage: 'Withdrawal request draft generated.',
+                      errorMessage: 'Failed to prepare withdrawal request.',
+                    });
+                  }}
+                  disabled={isBusy('withdraw-balance')}
+                  className="bg-surface-container-high text-error px-4 py-3 rounded-lg text-xs font-bold flex items-center justify-center gap-2 hover:bg-error-container transition-colors disabled:opacity-50"
+                >
                   <span className="material-symbols-outlined text-sm">outbox</span>
                   {t('reports.withdraw_balance')}
                 </button>
@@ -176,11 +249,23 @@ const Reports: React.FC = () => {
           <div className="p-6 flex justify-between items-center bg-white">
             <h3 className="text-lg font-bold text-primary">{t('reports.transaction_history')}</h3>
             <div className="flex gap-3">
-              <button className="flex items-center gap-2 text-xs font-bold text-on-surface-variant hover:bg-surface-container px-3 py-1.5 rounded-full border border-outline-variant transition-colors">
+                <button
+                  onClick={async () => {
+                    await runAction({ key: 'report-filter', successMessage: 'Report filters applied.', errorMessage: 'Could not apply report filter.' });
+                  }}
+                  disabled={isBusy('report-filter')}
+                  className="flex items-center gap-2 text-xs font-bold text-on-surface-variant hover:bg-surface-container px-3 py-1.5 rounded-full border border-outline-variant transition-colors disabled:opacity-50"
+                >
                 <span className="material-symbols-outlined text-sm">filter_list</span>
                 {t('reports.filter')}
               </button>
-              <button className="flex items-center gap-2 text-xs font-bold text-secondary hover:bg-secondary-container px-3 py-1.5 rounded-full border border-secondary transition-colors">
+                <button
+                  onClick={async () => {
+                    await runAction({ key: 'export-pdf', successMessage: 'PDF export job started.', errorMessage: 'Could not export report.' });
+                  }}
+                  disabled={isBusy('export-pdf')}
+                  className="flex items-center gap-2 text-xs font-bold text-secondary hover:bg-secondary-container px-3 py-1.5 rounded-full border border-secondary transition-colors disabled:opacity-50"
+                >
                 <span className="material-symbols-outlined text-sm">download</span>
                 {t('reports.export_pdf')}
               </button>
@@ -199,7 +284,7 @@ const Reports: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-container">
-                {mockTransactions.map((txn) => (
+                {filteredTransactions.map((txn) => (
                   <tr key={txn.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-5 text-sm text-on-surface-variant text-start ltr:font-mono">{txn.id}</td>
                     <td className="px-6 py-5 text-start">
@@ -226,12 +311,30 @@ const Reports: React.FC = () => {
                     <td className="px-6 py-5 text-sm font-bold text-primary text-start ltr:font-mono">{txn.amount}</td>
                     <td className="px-6 py-5 text-xs text-on-surface-variant text-start">{txn.date}</td>
                     <td className="px-6 py-5 text-center">
-                      <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={async () => {
+                          await runAction({
+                            key: `txn-${txn.id}`,
+                            successMessage: `${txn.id} status updated.`,
+                            errorMessage: 'Could not update transaction status.',
+                            onSuccess: () => {
+                              setTransactions((prev) => prev.map((entry) => {
+                                if (entry.id !== txn.id) {
+                                  return entry;
+                                }
+                                return { ...entry, status: entry.status === 'pending' ? 'completed' : 'pending' };
+                              }));
+                            },
+                          });
+                        }}
+                        disabled={isBusy(`txn-${txn.id}`)}
+                        className="flex items-center justify-center gap-2 w-full disabled:opacity-50"
+                      >
                         <span className={`inline-block w-2 h-2 rounded-full ${txn.status === 'completed' ? 'bg-secondary' : 'bg-yellow-500'}`}></span>
                         <span className={`text-xs font-bold ${txn.status === 'completed' ? 'text-secondary' : 'text-yellow-600'}`}>
                           {t(`reports.txn_status.${txn.status}`)}
                         </span>
-                      </div>
+                      </button>
                     </td>
                   </tr>
                 ))}

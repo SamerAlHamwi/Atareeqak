@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../app/context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { useMockAction } from '../../shared/useMockAction';
 
 const Login: React.FC = () => {
   const { t } = useTranslation();
+  const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -53,7 +55,27 @@ const Login: React.FC = () => {
 
       <div className="w-full bg-white rounded-[32px] shadow-ambient p-12">
         <form className="space-y-8" onSubmit={handleSubmit}>
+          {feedback && (
+            <div className={`text-sm p-4 rounded-xl font-medium ${feedback.tone === 'error' ? 'bg-error-container text-error' : 'bg-secondary-container/20 text-secondary'}`}>
+              <div className="flex items-center justify-between gap-3">
+                <span>{feedback.message}</span>
+                <button type="button" onClick={clearFeedback} className="text-xs underline underline-offset-2">Dismiss</button>
+              </div>
+            </div>
+          )}
+
           {error && <div className="text-error text-sm bg-error-container p-4 rounded-xl text-center font-medium">{error}</div>}
+
+          <button
+            type="button"
+            onClick={() => {
+              setEmail('admin@atareeqak.com');
+              setPassword('123456');
+            }}
+            className="text-xs font-semibold text-primary underline underline-offset-4"
+          >
+            Use demo credentials
+          </button>
 
           <div>
             <label className="text-sm font-medium text-on-surface-variant mb-3 block">
@@ -76,7 +98,18 @@ const Login: React.FC = () => {
 
           <div>
             <div className="flex justify-between mb-3">
-              <button type="button" className="text-sm font-bold text-secondary hover:underline transition-all">
+              <button
+                type="button"
+                onClick={async () => {
+                  await runAction({
+                    key: 'forgot-password',
+                    successMessage: email ? `Password reset link sent to ${email}.` : 'Enter email first to request a reset link.',
+                    errorMessage: 'Could not send reset link.',
+                  });
+                }}
+                disabled={isBusy('forgot-password')}
+                className="text-sm font-bold text-secondary hover:underline transition-all disabled:opacity-50"
+              >
                 {t('auth.forgot_password')}
               </button>
               <label className="text-sm font-medium text-on-surface-variant">
@@ -137,7 +170,13 @@ const Login: React.FC = () => {
 
       <p className="mt-10 text-on-surface-variant">
         {t('auth.no_account')}{' '}
-        <button className="text-secondary font-bold hover:underline">
+        <button
+          onClick={async () => {
+            await runAction({ key: 'contact-support', successMessage: 'Support request submitted.', errorMessage: 'Could not contact support.' });
+          }}
+          disabled={isBusy('contact-support')}
+          className="text-secondary font-bold hover:underline disabled:opacity-50"
+        >
           {t('auth.contact_support')}
         </button>
       </p>

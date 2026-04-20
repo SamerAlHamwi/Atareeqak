@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useMockAction } from '../../shared/useMockAction';
 
 interface Trip {
   id: string;
@@ -55,33 +56,91 @@ const mockTrips: Trip[] = [
 
 const Trips: React.FC = () => {
   const { t } = useTranslation();
+  const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
+  const [trips, setTrips] = useState<Trip[]>(mockTrips);
+  const [activeFilter, setActiveFilter] = useState<Trip['status'] | 'all'>('all');
+  const [selectedTripId, setSelectedTripId] = useState<string>(mockTrips[0].id);
+
+  const visibleTrips = useMemo(() => {
+    if (activeFilter === 'all') {
+      return trips;
+    }
+    return trips.filter((trip) => trip.status === activeFilter);
+  }, [activeFilter, trips]);
+
+  const selectedTrip = useMemo(
+    () => trips.find((trip) => trip.id === selectedTripId) ?? trips[0],
+    [selectedTripId, trips],
+  );
 
   return (
     <div className="grid grid-cols-12 gap-8">
       {/* Left Column: Trips Management */}
       <div className="col-span-12 xl:col-span-8 space-y-10">
+        {feedback && (
+          <div className={`rounded-xl px-4 py-3 text-sm font-semibold border ${
+            feedback.tone === 'success'
+              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+              : feedback.tone === 'error'
+              ? 'bg-red-50 text-red-700 border-red-200'
+              : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+          }`}>
+            <div className="flex items-center justify-between gap-3">
+              <span>{feedback.message}</span>
+              <button onClick={clearFeedback} className="text-xs underline underline-offset-2">Dismiss</button>
+            </div>
+          </div>
+        )}
+
         {/* Filters Section */}
         <section className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex p-1 bg-surface-container-low rounded-xl">
-            <button className="px-6 py-2 text-sm font-medium rounded-lg bg-surface-container-lowest text-primary shadow-sm">
+            <button
+              onClick={() => setActiveFilter('all')}
+              className={`px-6 py-2 text-sm font-medium rounded-lg ${activeFilter === 'all' ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface transition-colors'}`}
+            >
               {t('trips.filter_all')}
             </button>
-            <button className="px-6 py-2 text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">
+            <button onClick={() => setActiveFilter('active')} className={`px-6 py-2 text-sm font-medium transition-colors ${activeFilter === 'active' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-on-surface'}`}>
               {t('trips.filter_active')}
             </button>
-            <button className="px-6 py-2 text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">
+            <button onClick={() => setActiveFilter('scheduled')} className={`px-6 py-2 text-sm font-medium transition-colors ${activeFilter === 'scheduled' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-on-surface'}`}>
               {t('trips.filter_scheduled')}
             </button>
-            <button className="px-6 py-2 text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">
+            <button onClick={() => setActiveFilter('completed')} className={`px-6 py-2 text-sm font-medium transition-colors ${activeFilter === 'completed' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-on-surface'}`}>
               {t('trips.filter_completed')}
             </button>
-            <button className="px-6 py-2 text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">
+            <button onClick={() => setActiveFilter('cancelled')} className={`px-6 py-2 text-sm font-medium transition-colors ${activeFilter === 'cancelled' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-on-surface'}`}>
               {t('trips.filter_cancelled')}
             </button>
           </div>
-          <button className="flex items-center gap-2 bg-primary text-on-primary px-5 py-2.5 rounded-xl font-medium shadow-lg hover:opacity-90 transition-opacity">
+          <button
+            onClick={async () => {
+              await runAction({
+                key: 'new-trip',
+                successMessage: 'Trip draft created and queued for backend validation.',
+                errorMessage: 'Could not create trip draft.',
+                onSuccess: () => {
+                  setTrips((prev) => [{
+                    id: `#TR-${9000 + prev.length}`,
+                    driver: 'سائق جديد',
+                    driverInitial: 'س.ج',
+                    from: 'الرياض',
+                    to: 'جدة',
+                    timing: 'today',
+                    timeDetail: '07:30 م',
+                    passengers: '0/4',
+                    status: 'scheduled',
+                    color: 'primary',
+                  }, ...prev]);
+                },
+              });
+            }}
+            disabled={isBusy('new-trip')}
+            className="flex items-center gap-2 bg-primary text-on-primary px-5 py-2.5 rounded-xl font-medium shadow-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
             <span className="material-symbols-outlined text-sm">add</span>
-            <span>{t('trips.new_trip')}</span>
+            <span>{isBusy('new-trip') ? 'Creating...' : t('trips.new_trip')}</span>
           </button>
         </section>
 
@@ -101,8 +160,12 @@ const Trips: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/5">
-                {mockTrips.map((trip) => (
-                  <tr key={trip.id} className="group hover:bg-surface-container-low/30 transition-colors">
+                {visibleTrips.map((trip) => (
+                  <tr
+                    key={trip.id}
+                    onClick={() => setSelectedTripId(trip.id)}
+                    className={`group hover:bg-surface-container-low/30 transition-colors cursor-pointer ${selectedTripId === trip.id ? 'bg-surface-container-low/40' : ''}`}
+                  >
                     <td className="py-6 px-4 font-bold text-primary text-start">{trip.id}</td>
                     <td className="py-6 px-4 text-start">
                       <div className="flex items-center gap-3">
@@ -138,15 +201,52 @@ const Trips: React.FC = () => {
                     <td className="py-6 px-4">
                       <div className="flex items-center ltr:justify-end rtl:justify-start gap-2">
                         {trip.status === 'completed' ? (
-                           <button className="p-2 text-on-surface-variant hover:text-primary transition-colors">
+                            <button
+                              onClick={async (event) => {
+                                event.stopPropagation();
+                                await runAction({
+                                  key: `history-${trip.id}`,
+                                  successMessage: `${trip.id} history opened.`,
+                                  errorMessage: 'Could not load trip history.',
+                                });
+                              }}
+                              disabled={isBusy(`history-${trip.id}`)}
+                              className="p-2 text-on-surface-variant hover:text-primary transition-colors disabled:opacity-40"
+                            >
                             <span className="material-symbols-outlined text-lg">history</span>
                           </button>
                         ) : (
                           <>
-                            <button className="p-2 text-on-surface-variant hover:text-primary transition-colors">
+                            <button
+                              onClick={async (event) => {
+                                event.stopPropagation();
+                                setSelectedTripId(trip.id);
+                                await runAction({
+                                  key: `view-${trip.id}`,
+                                  successMessage: `${trip.id} details refreshed.`,
+                                  errorMessage: 'Failed to load trip details.',
+                                });
+                              }}
+                              disabled={isBusy(`view-${trip.id}`)}
+                              className="p-2 text-on-surface-variant hover:text-primary transition-colors disabled:opacity-40"
+                            >
                               <span className="material-symbols-outlined text-lg">visibility</span>
                             </button>
-                            <button className="p-2 text-on-surface-variant hover:text-error transition-colors">
+                            <button
+                              onClick={async (event) => {
+                                event.stopPropagation();
+                                await runAction({
+                                  key: `cancel-${trip.id}`,
+                                  successMessage: `${trip.id} marked as cancelled.`,
+                                  errorMessage: 'Could not cancel trip.',
+                                  onSuccess: () => {
+                                    setTrips((prev) => prev.map((entry) => entry.id === trip.id ? { ...entry, status: 'cancelled' } : entry));
+                                  },
+                                });
+                              }}
+                              disabled={isBusy(`cancel-${trip.id}`) || trip.status === 'cancelled'}
+                              className="p-2 text-on-surface-variant hover:text-error transition-colors disabled:opacity-40"
+                            >
                               <span className="material-symbols-outlined text-lg">cancel</span>
                             </button>
                           </>
@@ -166,7 +266,7 @@ const Trips: React.FC = () => {
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20"></div>
             <div>
               <h3 className="font-headline text-2xl font-bold mb-2">{t('trips.active_trip_details')}</h3>
-              <p className="text-primary-fixed-dim/80 text-sm">{t('trips.on_the_road', { from: 'دمشق', to: 'حلب' })}</p>
+              <p className="text-primary-fixed-dim/80 text-sm">{t('trips.on_the_road', { from: selectedTrip?.from ?? '---', to: selectedTrip?.to ?? '---' })}</p>
             </div>
             <div className="mt-8 grid grid-cols-2 gap-4 relative z-10">
               <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-sm">
@@ -190,7 +290,17 @@ const Trips: React.FC = () => {
                 ))}
                 <div className="w-10 h-10 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center text-xs font-bold border-2 border-primary-container">+2</div>
               </div>
-              <button className="bg-secondary text-on-secondary px-6 py-2 rounded-xl text-sm font-bold shadow-md hover:opacity-90 transition-all">
+              <button
+                onClick={async () => {
+                  await runAction({
+                    key: 'contact-driver',
+                    successMessage: `Contact request sent to ${selectedTrip?.driver ?? 'driver'}.`,
+                    errorMessage: 'Could not send contact request.',
+                  });
+                }}
+                disabled={isBusy('contact-driver')}
+                className="bg-secondary text-on-secondary px-6 py-2 rounded-xl text-sm font-bold shadow-md hover:opacity-90 transition-all disabled:opacity-50"
+              >
                 {t('trips.contact_driver')}
               </button>
             </div>

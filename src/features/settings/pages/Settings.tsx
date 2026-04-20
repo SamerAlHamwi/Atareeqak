@@ -1,21 +1,55 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useMockAction } from '../../shared/useMockAction';
 
 const Settings: React.FC = () => {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'ar';
+  const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
+  const [appName, setAppName] = useState(t('auth.brand_name'));
+  const [supportEmail, setSupportEmail] = useState('support@atareeqak.com');
+  const [commission, setCommission] = useState(15);
+  const [minWithdrawal, setMinWithdrawal] = useState(100);
+  const [moderationWords, setModerationWords] = useState('كلمة1، كلمة2، رابط، احتيال، كود خصم غير رسمي');
+
+  const saveChanges = async () => {
+    await runAction({
+      key: 'save-settings',
+      successMessage: 'Settings saved locally and ready for API sync.',
+      errorMessage: 'Could not save settings.',
+    });
+  };
 
   return (
     <div className="space-y-10">
+      {feedback && (
+        <div className={`rounded-xl px-4 py-3 text-sm font-semibold border ${
+          feedback.tone === 'success'
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+            : feedback.tone === 'error'
+            ? 'bg-red-50 text-red-700 border-red-200'
+            : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+        }`}>
+          <div className="flex items-center justify-between">
+            <span>{feedback.message}</span>
+            <button onClick={clearFeedback} className="text-xs underline underline-offset-2">Dismiss</button>
+          </div>
+        </div>
+      )}
+
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h2 className="text-3xl font-extrabold font-headline text-on-surface tracking-tight">{t('settings.title')}</h2>
           <p className="text-on-surface-variant mt-1">{t('settings.subtitle')}</p>
         </div>
-        <button className="bg-primary text-on-primary px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:opacity-90 transition-all shadow-lg shadow-primary/20 self-start md:self-auto">
+        <button
+          onClick={saveChanges}
+          disabled={isBusy('save-settings')}
+          className="bg-primary text-on-primary px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:opacity-90 transition-all shadow-lg shadow-primary/20 self-start md:self-auto disabled:opacity-50"
+        >
           <span className="material-symbols-outlined">save</span>
-          {t('settings.save_changes')}
+          {isBusy('save-settings') ? 'Saving...' : t('settings.save_changes')}
         </button>
       </div>
 
@@ -35,7 +69,8 @@ const Settings: React.FC = () => {
               <input
                 className="w-full bg-surface-container-low border-none border-b-2 border-outline-variant/30 focus:border-secondary transition-all p-3 rounded-lg text-on-surface font-medium text-start outline-none"
                 type="text"
-                defaultValue={t('auth.brand_name')}
+                  value={appName}
+                  onChange={(event) => setAppName(event.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -44,7 +79,8 @@ const Settings: React.FC = () => {
                 className="w-full bg-surface-container-low border-none border-b-2 border-outline-variant/30 focus:border-secondary transition-all p-3 rounded-lg text-on-surface font-medium text-start ltr:font-mono outline-none"
                 dir="ltr"
                 type="email"
-                defaultValue="support@atareeqak.com"
+                  value={supportEmail}
+                  onChange={(event) => setSupportEmail(event.target.value)}
               />
             </div>
             <div className="col-span-1 md:col-span-2 space-y-2">
@@ -84,14 +120,26 @@ const Settings: React.FC = () => {
             <div className="space-y-2">
               <label className="text-sm font-semibold text-on-surface-variant flex justify-between">
                 {t('settings.platform_commission')}
-                <span className="text-secondary font-bold">15%</span>
+                <span className="text-secondary font-bold">{commission}%</span>
               </label>
-              <input className="w-full h-2 bg-surface-container-high rounded-full appearance-none cursor-pointer accent-secondary" max="50" min="0" type="range" defaultValue="15" />
+              <input
+                className="w-full h-2 bg-surface-container-high rounded-full appearance-none cursor-pointer accent-secondary"
+                max="50"
+                min="0"
+                type="range"
+                value={commission}
+                onChange={(event) => setCommission(Number(event.target.value))}
+              />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-semibold text-on-surface-variant block text-start">{t('settings.min_withdrawal')}</label>
               <div className="relative">
-                <input className="w-full bg-surface-container-low border-none border-b-2 border-outline-variant/30 focus:border-secondary p-3 rounded-lg text-on-surface font-bold text-start outline-none" type="number" defaultValue="100" />
+                <input
+                  className="w-full bg-surface-container-low border-none border-b-2 border-outline-variant/30 focus:border-secondary p-3 rounded-lg text-on-surface font-bold text-start outline-none"
+                  type="number"
+                  value={minWithdrawal}
+                  onChange={(event) => setMinWithdrawal(Number(event.target.value))}
+                />
                 <span className={`absolute ${isRtl ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-on-surface-variant text-xs font-bold uppercase`}>{t('users.currency')}</span>
               </div>
             </div>
@@ -175,7 +223,8 @@ const Settings: React.FC = () => {
                 className="w-full bg-surface-container-low border-none border-b-2 border-outline-variant/30 focus:border-secondary p-3 rounded-lg text-sm text-on-surface leading-relaxed text-start outline-none resize-none"
                 placeholder={t('settings.words_placeholder')}
                 rows={3}
-                defaultValue="كلمة1، كلمة2، رابط، احتيال، كود خصم غير رسمي"
+                value={moderationWords}
+                onChange={(event) => setModerationWords(event.target.value)}
               ></textarea>
               <p className="text-[10px] text-on-surface-variant italic text-start">{t('settings.words_desc')}</p>
             </div>
