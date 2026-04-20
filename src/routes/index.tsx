@@ -9,7 +9,9 @@ import Register from '../features/auth/pages/Register';
 import Dashboard from '../features/dashboard/pages/Dashboard';
 import Home from '../features/home/pages/Home';
 import Users from '../features/users/pages/Users';
+import UserDetails from '../features/users/pages/UserDetails';
 import Drivers from '../features/drivers/pages/Drivers';
+import DriverDetails from '../features/drivers/pages/DriverDetails';
 import Trips from '../features/trips/pages/Trips';
 import Reports from '../features/reports/pages/Reports';
 import Support from '../features/support/pages/Support';
@@ -32,7 +34,9 @@ const AppRoutes: React.FC = () => {
             <Route path="/" element={<Home />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/passengers" element={<Users />} />
+            <Route path="/passengers/:userId" element={<UserDetails />} />
             <Route path="/drivers" element={<Drivers />} />
+            <Route path="/drivers/:driverId" element={<DriverDetails />} />
             <Route path="/staff" element={<Staff />} />
             <Route path="/trips" element={<Trips />} />
             <Route path="/reports" element={<Reports />} />

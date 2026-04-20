@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMockAction } from '../../shared/useMockAction';
 import ActionBanner from '../../shared/components/ActionBanner';
@@ -72,6 +73,7 @@ const mockUsers: User[] = [
 
 const Users: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
   const [users, setUsers] = useState<User[]>(mockUsers);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -243,6 +245,16 @@ const Users: React.FC = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center ltr:justify-end rtl:justify-start gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          navigate(`/passengers/${user.id}`);
+                        }}
+                        className="p-2 hover:bg-surface-container-high rounded-lg text-primary"
+                        title="Open profile"
+                      >
+                        <span className="material-symbols-outlined">visibility</span>
+                      </button>
                       <button
                         onClick={(event) => {
                           event.stopPropagation();

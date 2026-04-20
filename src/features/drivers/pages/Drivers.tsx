@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMockAction } from '../../shared/useMockAction';
 import ActionBanner from '../../shared/components/ActionBanner';
@@ -53,6 +54,7 @@ const mockDrivers: Driver[] = [
 
 const Drivers: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
   const [drivers, setDrivers] = useState<Driver[]>(mockDrivers);
   const [statusFilter, setStatusFilter] = useState<'all' | Driver['status']>('all');
@@ -249,6 +251,9 @@ const Drivers: React.FC = () => {
                             key: `view-${driver.id}`,
                             successMessage: `${driver.name} profile data loaded.`,
                             errorMessage: 'Could not fetch driver profile.',
+                            onSuccess: () => {
+                              navigate(`/drivers/${driver.id}`);
+                            },
                           });
                         }}
                         disabled={isBusy(`view-${driver.id}`)}
