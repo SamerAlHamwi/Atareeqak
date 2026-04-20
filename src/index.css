@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Manrope:wght@400;500;700;800&family=Inter:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-surface text-on-surface font-sans antialiased;
+    direction: rtl;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-surface-lowest/70 backdrop-blur-[20px] shadow-ambient;
+  }
+
+  .display-lg {
+    @apply font-display text-5xl font-extrabold tracking-tight;
+  }
+
+  .display-sm {
+    @apply font-display text-3xl font-bold tracking-tight;
+  }
+
+  .title-lg {
+    @apply text-xl font-semibold text-on-surface;
+  }
+
+  .headline-sm {
+    @apply text-sm font-medium text-on-surface;
+  }
+
+  .label-md {
+    @apply text-xs font-medium text-on-surface-variant uppercase tracking-wider;
+  }
+
+  .input-editorial {
+    @apply bg-surface-lowest border-b-2 border-outline-variant focus:border-secondary outline-none px-4 py-3 transition-all duration-200 w-full;
+  }
+
+  .btn-primary {
+    @apply bg-gradient-to-r from-primary to-primary-container text-white px-6 py-2.5 rounded-md font-medium transition-all hover:opacity-90 active:scale-95;
+  }
+
+  .btn-ghost {
+    @apply text-on-surface px-6 py-2.5 rounded-md font-medium hover:bg-surface-high transition-all;
+  }
+}
