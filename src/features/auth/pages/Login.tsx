@@ -63,7 +63,7 @@ const Login: React.FC = () => {
               <input
                 type="text"
                 required
-                className="w-full bg-surface-low border-none rounded-2xl ltr:pl-14 ltr:pr-6 rtl:pr-14 rtl:pl-6 py-4 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                className="w-full bg-surface-container-low border-none rounded-2xl ltr:pl-14 ltr:pr-6 rtl:pr-14 rtl:pl-6 py-4 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                 placeholder={t('auth.username_placeholder')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -87,7 +87,7 @@ const Login: React.FC = () => {
               <input
                 type={showPassword ? "text" : "password"}
                 required
-                className="w-full bg-surface-low border-none rounded-2xl ltr:pl-14 ltr:pr-14 rtl:pr-14 rtl:pl-14 py-4 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                className="w-full bg-surface-container-low border-none rounded-2xl ltr:pl-14 ltr:pr-14 rtl:pr-14 rtl:pl-14 py-4 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                 placeholder={t('auth.password_placeholder')}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

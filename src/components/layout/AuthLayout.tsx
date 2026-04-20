@@ -41,7 +41,7 @@ const AuthLayout: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="w-full h-20 bg-surface-low/50 flex items-center justify-between px-10 z-20 text-on-surface-variant text-sm">
+      <footer className="w-full h-20 bg-surface-container-low/50 flex items-center justify-between px-10 z-20 text-on-surface-variant text-sm">
         <div className="flex items-center gap-8">
           <a href="#" className="hover:text-primary transition-colors">{t('auth.help_center')}</a>
           <a href="#" className="hover:text-primary transition-colors">{t('auth.terms_of_use')}</a>

@@ -13,7 +13,7 @@
 
 @layer components {
   .glass {
-    @apply bg-surface-lowest/70 backdrop-blur-[20px] shadow-ambient;
+    @apply bg-surface-container-lowest/70 backdrop-blur-[20px] shadow-ambient;
   }
 
   .display-lg {
@@ -37,7 +37,7 @@
   }
 
   .input-editorial {
-    @apply bg-surface-lowest border-b-2 border-outline-variant focus:border-secondary outline-none px-4 py-3 transition-all duration-200 w-full;
+    @apply bg-surface-container-lowest border-b-2 border-outline-variant focus:border-secondary outline-none px-4 py-3 transition-all duration-200 w-full;
   }
 
   .btn-primary {
@@ -45,6 +45,6 @@
   }
 
   .btn-ghost {
-    @apply text-on-surface px-6 py-2.5 rounded-md font-medium hover:bg-surface-high transition-all;
+    @apply text-on-surface px-6 py-2.5 rounded-md font-medium hover:bg-surface-container-high transition-all;
   }
 }
