@@ -4,6 +4,7 @@ import { useAuth } from '../../../app/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useMockAction } from '../../shared/useMockAction';
 import ActionBanner from '../../shared/components/ActionBanner';
+import { authApi } from '../api/authApi';
 
 const Login: React.FC = () => {
   const { t } = useTranslation();
@@ -27,16 +28,24 @@ const Login: React.FC = () => {
     setIsLoading(true);
 
     try {
-      if (email === 'admin@atareeqak.com' || email === 'admin') {
-        const mockUser = { id: '1', name: 'سارة خالد', email: 'admin@atareeqak.com' };
-        const mockToken = 'mock_jwt_token_12345';
-        login(mockUser, mockToken);
+      const response = await authApi.login({ email, password });
+
+      if (response.status === 'success' && response.admin && response.tokens) {
+        const userData = {
+          id: response.admin.id,
+          name: response.admin.name,
+          email: response.admin.email,
+          type: response.admin.type,
+          phone: response.admin.phone,
+        };
+        login(userData, response.tokens.access_token, response.tokens.refresh_token);
         navigate(from, { replace: true });
       } else {
         throw new Error(t('auth.invalid_credentials') || 'Invalid credentials');
       }
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      const errorMessage = err.response?.data?.message || err.message || 'Login failed';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -63,8 +72,8 @@ const Login: React.FC = () => {
           <button
             type="button"
             onClick={() => {
-              setEmail('admin@atareeqak.com');
-              setPassword('123456');
+              setEmail('primary@admin.com');
+              setPassword('admin_password');
             }}
             className="text-xs font-semibold text-primary underline underline-offset-4"
           >

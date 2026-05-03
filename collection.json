@@ -1,0 +1,1649 @@
+{
+  "info": {
+    "_postman_id": "20596ce7-1957-421d-a47a-bcbf6c2ee271",
+    "name": "SyRide Admin Dashboard API",
+    "description": "Complete collection for SyRide Admin Dashboard endpoints including Auth, Dashboard BFF, Wallet, Reports, and Verifications.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "40838737",
+    "_collection_link": "https://go.postman.co/collection/40838737-20596ce7-1957-421d-a47a-bcbf6c2ee271?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.status === 'success') {",
+                  "  pm.collectionVariables.set('access_token', res.tokens.access_token);",
+                  "  pm.collectionVariables.set('refresh_token', res.tokens.refresh_token);",
+                  "  console.log('Tokens saved to collection variables.');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"primary@admin.com\",\n  \"password\": \"admin_password\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "login"
+              ]
+            },
+            "description": "Authenticate as an admin. On success, access_token and refresh_token are saved automatically to collection variables.\n\nReturns:\n- tokens.access_token\n- tokens.refresh_token\n- admin.type (primary | sycash)\n- admin.email, name, phone"
+          },
+          "response": [
+            {
+              "name": "200 – Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"primary@admin.com\",\n  \"password\": \"admin_password\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "login"
+                  ]
+                },
+                "description": "Authenticate as an admin. On success, access_token and refresh_token are saved automatically to collection variables.\n\nReturns:\n- tokens.access_token\n- tokens.refresh_token\n- admin.type (primary | sycash)\n- admin.email, name, phone"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"success\",\n  \"message\": \"Login successful\",\n  \"admin\": {\n    \"type\": \"primary\",\n    \"email\": \"primary@admin.com\",\n    \"name\": \"Admin Name\",\n    \"phone\": \"+963999999999\"\n  },\n  \"tokens\": {\n    \"access_token\": \"<jwt_access_token>\",\n    \"refresh_token\": \"<jwt_refresh_token>\",\n    \"token_type\": \"Bearer\",\n    \"expires_in\": 3600\n  }\n}"
+            },
+            {
+              "name": "401 – Invalid Credentials",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"primary@admin.com\",\n  \"password\": \"admin_password\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "login"
+                  ]
+                },
+                "description": "Authenticate as an admin. On success, access_token and refresh_token are saved automatically to collection variables.\n\nReturns:\n- tokens.access_token\n- tokens.refresh_token\n- admin.type (primary | sycash)\n- admin.email, name, phone"
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"error\",\n  \"code\": \"INVALID_CREDENTIALS\",\n  \"message\": \"Invalid admin credentials\"\n}"
+            },
+            {
+              "name": "422 – Validation Error",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"primary@admin.com\",\n  \"password\": \"admin_password\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "login"
+                  ]
+                },
+                "description": "Authenticate as an admin. On success, access_token and refresh_token are saved automatically to collection variables.\n\nReturns:\n- tokens.access_token\n- tokens.refresh_token\n- admin.type (primary | sycash)\n- admin.email, name, phone"
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"error\",\n  \"code\": \"VALIDATION_FAILED\",\n  \"errors\": {\n    \"email\": [\"The email field is required.\"],\n    \"password\": [\"The password field is required.\"]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.status === 'success') {",
+                  "  pm.collectionVariables.set('access_token', res.tokens.access_token);",
+                  "  if (res.tokens.refresh_token) {",
+                  "    pm.collectionVariables.set('refresh_token', res.tokens.refresh_token);",
+                  "  }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/refresh",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "refresh"
+              ]
+            },
+            "description": "Exchange a refresh token for a new access token. New access_token is saved automatically."
+          },
+          "response": [
+            {
+              "name": "200 – New Tokens",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/refresh",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "refresh"
+                  ]
+                },
+                "description": "Exchange a refresh token for a new access token. New access_token is saved automatically."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"success\",\n  \"tokens\": {\n    \"access_token\": \"<new_jwt_access_token>\",\n    \"refresh_token\": \"<new_jwt_refresh_token>\",\n    \"token_type\": \"Bearer\",\n    \"expires_in\": 3600\n  }\n}"
+            },
+            {
+              "name": "401 – Invalid Refresh Token",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/refresh",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "refresh"
+                  ]
+                },
+                "description": "Exchange a refresh token for a new access token. New access_token is saved automatically."
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"error\",\n  \"code\": \"REFRESH_TOKEN_INVALID\",\n  \"message\": \"Invalid or expired refresh token\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "logout"
+              ]
+            },
+            "description": "Revokes all refresh tokens for the authenticated admin. Requires a valid access token."
+          },
+          "response": [
+            {
+              "name": "200 – Logged Out",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/logout",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "logout"
+                  ]
+                },
+                "description": "Revokes all refresh tokens for the authenticated admin. Requires a valid access token."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"success\",\n  \"message\": \"Logged out successfully\"\n}"
+            }
+          ]
+        }
+      ],
+      "description": "Admin authentication endpoints (public — no token required)"
+    },
+    {
+      "name": "Dashboard – BFF",
+      "item": [
+        {
+          "name": "Full Dashboard (all widgets)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/dashboard",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "dashboard"
+              ]
+            },
+            "description": "BFF mega-payload. Returns all four widget datasets in a single round-trip:\n- stats (KPI cards)\n- growth_chart (bar chart, last 6 months)\n- city_distribution (horizontal bars)\n- recent_activities (activity table)"
+          },
+          "response": [
+            {
+              "name": "200 – Full Dashboard Payload",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/dashboard",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "dashboard"
+                  ]
+                },
+                "description": "BFF mega-payload. Returns all four widget datasets in a single round-trip:\n- stats (KPI cards)\n- growth_chart (bar chart, last 6 months)\n- city_distribution (horizontal bars)\n- recent_activities (activity table)"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"stats\": {\n      \"total_users\": 1250,\n      \"active_trips\": 47,\n      \"completed_trips\": 3840,\n      \"total_revenue\": { \"raw\": 18500000, \"formatted\": \"185,000.00 SYP\" },\n      \"pending_complaints\": 0,\n      \"verification_requests\": 12\n    },\n    \"growth_chart\": {\n      \"period\": \"last_6_months\",\n      \"data\": [\n        { \"month\": \"Nov\", \"label\": \"Nov 2024\", \"completed_trips\": 580, \"new_users\": 120 },\n        { \"month\": \"Dec\", \"label\": \"Dec 2024\", \"completed_trips\": 640, \"new_users\": 145 }\n      ]\n    },\n    \"city_distribution\": [\n      { \"city\": \"دمشق\", \"city_en\": \"Damascus\", \"count\": 450, \"percentage\": 45 },\n      { \"city\": \"حلب\",  \"city_en\": \"Aleppo\",   \"count\": 210, \"percentage\": 21 }\n    ],\n    \"recent_activities\": [\n      {\n        \"booking_id\": 101,\n        \"user\":   { \"name\": \"Ahmad Khalil\", \"number\": \"XXX-XXX-1234\" },\n        \"driver\": \"Samer Ali\",\n        \"route\":  \"دمشق ← حلب\",\n        \"date\":   { \"raw\": \"2025-04-25T10:30:00+03:00\", \"human\": \"Today, 10:30\" },\n        \"status\": \"completed\",\n        \"value\":  \"5,000.00 SYP\"\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Dashboard – Stats Only (KPI Cards)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/dashboard/stats",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "dashboard",
+                "stats"
+              ]
+            },
+            "description": "Widget refresh: returns only the five KPI stat cards without fetching other widget data."
+          },
+          "response": [
+            {
+              "name": "200 – Stats",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/dashboard/stats",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "dashboard",
+                    "stats"
+                  ]
+                },
+                "description": "Widget refresh: returns only the five KPI stat cards without fetching other widget data."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"total_users\": 1250,\n    \"active_trips\": 47,\n    \"completed_trips\": 3840,\n    \"total_revenue\": { \"raw\": 18500000, \"formatted\": \"185,000.00 SYP\" },\n    \"pending_complaints\": 0,\n    \"verification_requests\": 12\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Dashboard – Growth Chart",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/dashboard/growth?months=6",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "dashboard",
+                "growth"
+              ],
+              "query": [
+                {
+                  "key": "months",
+                  "value": "6",
+                  "description": "Number of months to include (1–12). Default: 6."
+                }
+              ]
+            },
+            "description": "Widget refresh: returns bar chart data (Completed Trips vs New Users) for the last N months.\n\nQuery params:\n- months (integer, 1–12, default 6)"
+          },
+          "response": [
+            {
+              "name": "200 – Growth Chart",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/dashboard/growth?months=6",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "dashboard",
+                    "growth"
+                  ],
+                  "query": [
+                    {
+                      "key": "months",
+                      "value": "6",
+                      "description": "Number of months to include (1–12). Default: 6."
+                    }
+                  ]
+                },
+                "description": "Widget refresh: returns bar chart data (Completed Trips vs New Users) for the last N months.\n\nQuery params:\n- months (integer, 1–12, default 6)"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"period\": \"last_6_months\",\n    \"data\": [\n      { \"month\": \"Nov\", \"label\": \"Nov 2024\", \"completed_trips\": 580, \"new_users\": 120 },\n      { \"month\": \"Dec\", \"label\": \"Dec 2024\", \"completed_trips\": 640, \"new_users\": 145 },\n      { \"month\": \"Jan\", \"label\": \"Jan 2025\", \"completed_trips\": 590, \"new_users\": 98 },\n      { \"month\": \"Feb\", \"label\": \"Feb 2025\", \"completed_trips\": 710, \"new_users\": 175 },\n      { \"month\": \"Mar\", \"label\": \"Mar 2025\", \"completed_trips\": 820, \"new_users\": 210 },\n      { \"month\": \"Apr\", \"label\": \"Apr 2025\", \"completed_trips\": 500, \"new_users\": 130 }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Dashboard – City Distribution",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/dashboard/cities",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "dashboard",
+                "cities"
+              ]
+            },
+            "description": "Widget refresh: returns user count grouped by Syrian governorate (top 6), with percentage of total."
+          },
+          "response": [
+            {
+              "name": "200 – City Distribution",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/dashboard/cities",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "dashboard",
+                    "cities"
+                  ]
+                },
+                "description": "Widget refresh: returns user count grouped by Syrian governorate (top 6), with percentage of total."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"success\",\n  \"data\": [\n    { \"city\": \"دمشق\",    \"city_en\": \"Damascus\",       \"count\": 450, \"percentage\": 45 },\n    { \"city\": \"حلب\",     \"city_en\": \"Aleppo\",         \"count\": 210, \"percentage\": 21 },\n    { \"city\": \"حمص\",     \"city_en\": \"Homs\",           \"count\": 130, \"percentage\": 13 },\n    { \"city\": \"اللاذقية\",\"city_en\": \"Latakia\",        \"count\": 95,  \"percentage\": 9  },\n    { \"city\": \"حماة\",    \"city_en\": \"Hama\",           \"count\": 70,  \"percentage\": 7  },\n    { \"city\": \"درعا\",    \"city_en\": \"Daraa\",          \"count\": 45,  \"percentage\": 5  }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Dashboard – Recent Activities",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/dashboard/recent?limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "dashboard",
+                "recent"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of rows to return (1–50). Default: 10."
+                }
+              ]
+            },
+            "description": "Widget refresh: returns the latest N booking activity rows for the activity table.\n\nQuery params:\n- limit (integer, 1–50, default 10)"
+          },
+          "response": [
+            {
+              "name": "200 – Recent Activities",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/dashboard/recent?limit=10",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "dashboard",
+                    "recent"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10",
+                      "description": "Number of rows to return (1–50). Default: 10."
+                    }
+                  ]
+                },
+                "description": "Widget refresh: returns the latest N booking activity rows for the activity table.\n\nQuery params:\n- limit (integer, 1–50, default 10)"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"success\",\n  \"data\": [\n    {\n      \"booking_id\": 101,\n      \"user\":   { \"name\": \"Ahmad Khalil\", \"number\": \"XXX-XXX-1234\" },\n      \"driver\": \"Samer Ali\",\n      \"route\":  \"دمشق ← حلب\",\n      \"date\":   { \"raw\": \"2025-04-25T10:30:00+03:00\", \"human\": \"Today, 10:30\" },\n      \"status\": \"completed\",\n      \"value\":  \"5,000.00 SYP\"\n    },\n    {\n      \"booking_id\": 100,\n      \"user\":   { \"name\": \"Layla Hassan\", \"number\": \"XXX-XXX-5678\" },\n      \"driver\": \"Omar Nasser\",\n      \"route\":  \"حلب ← حمص\",\n      \"date\":   { \"raw\": \"2025-04-25T08:15:00+03:00\", \"human\": \"Today, 08:15\" },\n      \"status\": \"cancelled\",\n      \"value\":  \"---\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "admin-change-photo",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "uuid": "95be532f-928f-4360-a466-f4989c38b151",
+                  "src": "/C:/Users/ALZOUBI/Pictures/Screenshots/laptop.png"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}admin/photo",
+              "host": [
+                "{{base_url}}admin"
+              ],
+              "path": [
+                "photo"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Dashboard widget endpoints. All require Bearer access token."
+    },
+    {
+      "name": "Wallet",
+      "item": [
+        {
+          "name": "Get My Wallet",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/wallet",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "wallet"
+              ]
+            },
+            "description": "Returns the authenticated admin's own wallet details (balance, wallet number, phone). Works for both primary and sycash admins."
+          },
+          "response": [
+            {
+              "name": "200 – My Wallet",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/wallet",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "wallet"
+                  ]
+                },
+                "description": "Returns the authenticated admin's own wallet details (balance, wallet number, phone). Works for both primary and sycash admins."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"success\",\n  \"wallet\": {\n    \"id\": 1,\n    \"wallet_number\": \"1234567890123456\",\n    \"phone_number\": \"+963999999999\",\n    \"balance\": \"500,000.00 SYP\",\n    \"admin_type\": \"primary\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get All Wallets (Overview)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/wallets",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "wallets"
+              ]
+            },
+            "description": "Returns both admin wallets (primary + sycash) and all user wallets in the system."
+          },
+          "response": [
+            {
+              "name": "200 – All Wallets",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/wallets",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "wallets"
+                  ]
+                },
+                "description": "Returns both admin wallets (primary + sycash) and all user wallets in the system."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"success\",\n  \"admin_wallets\": [\n    {\n      \"id\": 1,\n      \"wallet_number\": \"PRI-0000000001\",\n      \"phone_number\": \"+963999999999\",\n      \"balance\": \"500,000.00 SYP\",\n      \"owner\": \"Primary Admin\",\n      \"admin_type\": \"primary\"\n    },\n    {\n      \"id\": 2,\n      \"wallet_number\": \"SYC-0000000001\",\n      \"phone_number\": \"+963988888888\",\n      \"balance\": \"75,000.00 SYP\",\n      \"owner\": \"SyCash Admin\",\n      \"admin_type\": \"sycash\"\n    }\n  ],\n  \"all_wallets\": [\n    {\n      \"id\": 3,\n      \"wallet_number\": \"9876543210987654\",\n      \"phone_number\": \"0912345678\",\n      \"balance\": \"10,000.00 SYP\",\n      \"owner\": \"Ahmad Khalil\",\n      \"owner_email\": \"ahmad@example.com\",\n      \"created_at\": \"2025-01-15 10:00:00\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Charge User Wallet [Primary Only]",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number\": \"0912345678\",\n  \"amount\": 50000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/wallet/charge",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "wallet",
+                "charge"
+              ]
+            },
+            "description": "**Primary admin only.** Credits a user wallet by phone number.\n\nBody:\n- phone_number (string, 10–15 chars) — the user's wallet phone number\n- amount (numeric, 1–1,000,000) — amount in SYP to add"
+          },
+          "response": [
+            {
+              "name": "200 – Wallet Charged",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"phone_number\": \"0912345678\",\n  \"amount\": 50000\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/wallet/charge",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "wallet",
+                    "charge"
+                  ]
+                },
+                "description": "**Primary admin only.** Credits a user wallet by phone number.\n\nBody:\n- phone_number (string, 10–15 chars) — the user's wallet phone number\n- amount (numeric, 1–1,000,000) — amount in SYP to add"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"success\",\n  \"message\": \"Wallet charged successfully\",\n  \"wallet\": {\n    \"phone_number\": \"0912345678\",\n    \"previous_balance\": \"10,000.00 SYP\",\n    \"new_balance\": \"60,000.00 SYP\"\n  },\n  \"transaction_id\": \"PRIMARY_1714040000_Ab3xYz\"\n}"
+            },
+            {
+              "name": "404 – Wallet Not Found",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"phone_number\": \"0912345678\",\n  \"amount\": 50000\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/wallet/charge",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "wallet",
+                    "charge"
+                  ]
+                },
+                "description": "**Primary admin only.** Credits a user wallet by phone number.\n\nBody:\n- phone_number (string, 10–15 chars) — the user's wallet phone number\n- amount (numeric, 1–1,000,000) — amount in SYP to add"
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"error\",\n  \"code\": \"WALLET_NOT_FOUND\",\n  \"message\": \"No wallet found for this phone number\"\n}"
+            },
+            {
+              "name": "422 – Validation Error",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"phone_number\": \"0912345678\",\n  \"amount\": 50000\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/wallet/charge",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "wallet",
+                    "charge"
+                  ]
+                },
+                "description": "**Primary admin only.** Credits a user wallet by phone number.\n\nBody:\n- phone_number (string, 10–15 chars) — the user's wallet phone number\n- amount (numeric, 1–1,000,000) — amount in SYP to add"
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"error\",\n  \"code\": \"VALIDATION_FAILED\",\n  \"errors\": {\n    \"phone_number\": [\"The phone number field is required.\"],\n    \"amount\": [\"The amount must be at least 1.\"]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Wallet Transactions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/wallet/1/transactions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "wallet",
+                "1",
+                "transactions"
+              ]
+            },
+            "description": "Returns paginated transaction history for a specific wallet by its database ID.\n\nPath param:\n- {walletId} — the wallet's integer ID (get from Get All Wallets)"
+          },
+          "response": [
+            {
+              "name": "200 – Wallet Transactions",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/wallet/1/transactions",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "wallet",
+                    "1",
+                    "transactions"
+                  ]
+                },
+                "description": "Returns paginated transaction history for a specific wallet by its database ID.\n\nPath param:\n- {walletId} — the wallet's integer ID (get from Get All Wallets)"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"success\",\n  \"wallet\": {\n    \"id\": 1,\n    \"wallet_number\": \"PRI-0000000001\",\n    \"phone_number\": \"+963999999999\",\n    \"balance\": 500000.00\n  },\n  \"transactions\": {\n    \"current_page\": 1,\n    \"data\": [\n      {\n        \"id\": 55,\n        \"wallet_id\": 1,\n        \"type\": \"ride_booking_received\",\n        \"amount\": 5000.00,\n        \"previous_balance\": 495000.00,\n        \"new_balance\": 500000.00,\n        \"description\": \"Booking payment from Ahmad Khalil — 1 seat(s)\",\n        \"transaction_id\": \"ADMIN_RB_1714040000_AbCdEfGh\",\n        \"status\": \"completed\",\n        \"created_at\": \"2025-04-25T10:30:00.000000Z\"\n      }\n    ],\n    \"per_page\": 10,\n    \"total\": 1\n  }\n}"
+            },
+            {
+              "name": "404 – Wallet Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/wallet/1/transactions",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "wallet",
+                    "1",
+                    "transactions"
+                  ]
+                },
+                "description": "Returns paginated transaction history for a specific wallet by its database ID.\n\nPath param:\n- {walletId} — the wallet's integer ID (get from Get All Wallets)"
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"error\",\n  \"message\": \"Wallet not found\"\n}"
+            }
+          ]
+        }
+      ],
+      "description": "Admin wallet management. All require Bearer access token."
+    },
+    {
+      "name": "Reports [Primary Only]",
+      "item": [
+        {
+          "name": "Generate Financial Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/reports?start_date=2025-01-01&end_date=2025-04-30",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reports"
+              ],
+              "query": [
+                {
+                  "key": "start_date",
+                  "value": "2025-01-01",
+                  "description": "Start of date range (Y-m-d). Optional — omit for all-time."
+                },
+                {
+                  "key": "end_date",
+                  "value": "2025-04-30",
+                  "description": "End of date range (Y-m-d, must be ≥ start_date). Optional."
+                }
+              ]
+            },
+            "description": "**Primary admin only.** Generates a financial report for the given date range.\n\nQuery params (both optional):\n- start_date (Y-m-d)\n- end_date (Y-m-d, must be ≥ start_date)\n\nOmit both to get an all-time report."
+          },
+          "response": [
+            {
+              "name": "200 – Report",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/reports?start_date=2025-01-01&end_date=2025-04-30",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "reports"
+                  ],
+                  "query": [
+                    {
+                      "key": "start_date",
+                      "value": "2025-01-01",
+                      "description": "Start of date range (Y-m-d). Optional — omit for all-time."
+                    },
+                    {
+                      "key": "end_date",
+                      "value": "2025-04-30",
+                      "description": "End of date range (Y-m-d, must be ≥ start_date). Optional."
+                    }
+                  ]
+                },
+                "description": "**Primary admin only.** Generates a financial report for the given date range.\n\nQuery params (both optional):\n- start_date (Y-m-d)\n- end_date (Y-m-d, must be ≥ start_date)\n\nOmit both to get an all-time report."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"success\",\n  \"report_data\": {\n    \"ride_stats\": {\n      \"total\": 4800,\n      \"active\": 47,\n      \"completed\": 3840,\n      \"cancelled\": 720,\n      \"awaiting_confirmation\": 193\n    },\n    \"financial_stats\": {\n      \"sycash\": {\n        \"current_balance\": \"75,000.00 SYP\",\n        \"total_creation_fees\": \"240,000.00 SYP\"\n      },\n      \"primary_admin\": {\n        \"current_balance\": \"500,000.00 SYP\",\n        \"total_collected\": \"18,500,000.00 SYP\",\n        \"total_disbursed\": \"17,900,000.00 SYP\"\n      },\n      \"active_rides_locked\": \"100,000.00 SYP\"\n    },\n    \"date_range\": {\n      \"start\": \"2025-01-01 00:00:00\",\n      \"end\":   \"2025-04-30 23:59:59\"\n    }\n  }\n}"
+            },
+            {
+              "name": "422 – Validation Error",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/reports?start_date=2025-01-01&end_date=2025-04-30",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "reports"
+                  ],
+                  "query": [
+                    {
+                      "key": "start_date",
+                      "value": "2025-01-01",
+                      "description": "Start of date range (Y-m-d). Optional — omit for all-time."
+                    },
+                    {
+                      "key": "end_date",
+                      "value": "2025-04-30",
+                      "description": "End of date range (Y-m-d, must be ≥ start_date). Optional."
+                    }
+                  ]
+                },
+                "description": "**Primary admin only.** Generates a financial report for the given date range.\n\nQuery params (both optional):\n- start_date (Y-m-d)\n- end_date (Y-m-d, must be ≥ start_date)\n\nOmit both to get an all-time report."
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"error\",\n  \"errors\": {\n    \"end_date\": [\"The end date must be a date after or equal to start date.\"]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "export to pdf",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}admin/export/pdf",
+              "host": [
+                "{{base_url}}admin"
+              ],
+              "path": [
+                "export",
+                "pdf"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Financial reporting endpoints. Restricted to the primary admin."
+    },
+    {
+      "name": "Verifications [Primary Only]",
+      "item": [
+        {
+          "name": "List Pending Verifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/verifications/pending",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "verifications",
+                "pending"
+              ]
+            },
+            "description": "**Primary admin only.** Returns all users whose verification_status is 'pending', with their uploaded documents.\n\nType is inferred from documents:\n- Has license or mechanic_card → driver\n- Otherwise → passenger"
+          },
+          "response": [
+            {
+              "name": "200 – Pending Verifications",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/verifications/pending",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "verifications",
+                    "pending"
+                  ]
+                },
+                "description": "**Primary admin only.** Returns all users whose verification_status is 'pending', with their uploaded documents.\n\nType is inferred from documents:\n- Has license or mechanic_card → driver\n- Otherwise → passenger"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"success\",\n  \"data\": [\n    {\n      \"user_id\": 42,\n      \"name\": \"Ahmad Khalil\",\n      \"email\": \"ahmad@example.com\",\n      \"type\": \"driver\",\n      \"documents\": [\n        { \"type\": \"face_id\",       \"url\": \"http://localhost/storage/verifications/face_id/42_1714040000.jpg\" },\n        { \"type\": \"back_id\",       \"url\": \"http://localhost/storage/verifications/back_id/42_1714040000.jpg\" },\n        { \"type\": \"license\",       \"url\": \"http://localhost/storage/verifications/license/42_1714040000.jpg\" },\n        { \"type\": \"mechanic_card\", \"url\": \"http://localhost/storage/verifications/mechanic_card/42_1714040000.jpg\" }\n      ],\n      \"submitted_at\": \"2025-04-24T18:00:00+03:00\"\n    },\n    {\n      \"user_id\": 55,\n      \"name\": \"Layla Hassan\",\n      \"email\": \"layla@example.com\",\n      \"type\": \"passenger\",\n      \"documents\": [\n        { \"type\": \"face_id\", \"url\": \"http://localhost/storage/verifications/face_id/55_1714041234.jpg\" },\n        { \"type\": \"back_id\", \"url\": \"http://localhost/storage/verifications/back_id/55_1714041234.jpg\" }\n      ],\n      \"submitted_at\": \"2025-04-25T09:00:00+03:00\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Approve Verification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/verifications/42/approve",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "verifications",
+                "42",
+                "approve"
+              ]
+            },
+            "description": "**Primary admin only.** Approves a pending verification request.\n\nPath param:\n- {userId} — the user's integer ID\n\nIf user has license/mechanic_card documents → verifies as driver (is_verified_driver = true).\nOtherwise → verifies as passenger (is_verified_passenger = true).\nSets verification_status = 'approved'."
+          },
+          "response": [
+            {
+              "name": "200 – Approved",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/verifications/42/approve",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "verifications",
+                    "42",
+                    "approve"
+                  ]
+                },
+                "description": "**Primary admin only.** Approves a pending verification request.\n\nPath param:\n- {userId} — the user's integer ID\n\nIf user has license/mechanic_card documents → verifies as driver (is_verified_driver = true).\nOtherwise → verifies as passenger (is_verified_passenger = true).\nSets verification_status = 'approved'."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"success\",\n  \"message\": \"Driver verification approved\",\n  \"user\": {\n    \"id\": 42,\n    \"verification_status\": \"approved\"\n  }\n}"
+            },
+            {
+              "name": "422 – Not in Pending State",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/verifications/42/approve",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "verifications",
+                    "42",
+                    "approve"
+                  ]
+                },
+                "description": "**Primary admin only.** Approves a pending verification request.\n\nPath param:\n- {userId} — the user's integer ID\n\nIf user has license/mechanic_card documents → verifies as driver (is_verified_driver = true).\nOtherwise → verifies as passenger (is_verified_passenger = true).\nSets verification_status = 'approved'."
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"error\",\n  \"message\": \"Cannot approve driver: not in pending state\"\n}"
+            },
+            {
+              "name": "404 – User Not Found",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/verifications/42/approve",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "verifications",
+                    "42",
+                    "approve"
+                  ]
+                },
+                "description": "**Primary admin only.** Approves a pending verification request.\n\nPath param:\n- {userId} — the user's integer ID\n\nIf user has license/mechanic_card documents → verifies as driver (is_verified_driver = true).\nOtherwise → verifies as passenger (is_verified_passenger = true).\nSets verification_status = 'approved'."
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"message\": \"No query results for model [App\\\\Models\\\\User] 999\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reject Verification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/verifications/42/reject",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "verifications",
+                "42",
+                "reject"
+              ]
+            },
+            "description": "**Primary admin only.** Rejects a verification request.\n\nPath param:\n- {userId} — the user's integer ID\n\nSets verification_status = 'rejected', is_verified_driver = false, is_verified_passenger = false."
+          },
+          "response": [
+            {
+              "name": "200 – Rejected",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/verifications/42/reject",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "verifications",
+                    "42",
+                    "reject"
+                  ]
+                },
+                "description": "**Primary admin only.** Rejects a verification request.\n\nPath param:\n- {userId} — the user's integer ID\n\nSets verification_status = 'rejected', is_verified_driver = false, is_verified_passenger = false."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"success\",\n  \"message\": \"Verification rejected\"\n}"
+            },
+            {
+              "name": "404 – User Not Found",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/verifications/42/reject",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "verifications",
+                    "42",
+                    "reject"
+                  ]
+                },
+                "description": "**Primary admin only.** Rejects a verification request.\n\nPath param:\n- {userId} — the user's integer ID\n\nSets verification_status = 'rejected', is_verified_driver = false, is_verified_passenger = false."
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"message\": \"No query results for model [App\\\\Models\\\\User] 999\"\n}"
+            }
+          ]
+        }
+      ],
+      "description": "User verification management. Restricted to the primary admin."
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('Status code is not 500', function () {",
+          "  pm.expect(pm.response.code).to.not.equal(500);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost/4th_year_project/public/api"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "description": "Set automatically after login"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "description": "Set automatically after login"
+    }
+  ]
+}
