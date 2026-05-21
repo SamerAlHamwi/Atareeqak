@@ -8,7 +8,7 @@ import { ManagementSidebar } from '../components/ManagementSidebar';
 import { TransactionTable } from '../components/TransactionTable';
 
 const Reports: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const isRtl = i18n.language === 'ar';
   const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
 

@@ -147,7 +147,14 @@ const Staff: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-container/50">
-                {staff.map((emp) => (
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-10 text-center text-on-surface-variant font-medium">
+                      {t('common.loading', 'Loading...')}
+                    </td>
+                  </tr>
+                ) : (
+                  staff.map((emp) => (
                   <tr
                     key={emp.id}
                     onClick={() => setSelectedEmployee(emp)}
@@ -204,7 +211,7 @@ const Staff: React.FC = () => {
                               errorMessage: 'Could not remove employee.',
                               onSuccess: () => {
                                 setStaff((prev) => prev.filter((entry) => entry.id !== emp.id));
-                                if (selectedEmployee.id === emp.id && staff.length > 1) {
+                                if (selectedEmployee?.id === emp.id && staff.length > 1) {
                                   const fallback = staff.find((entry) => entry.id !== emp.id);
                                   if (fallback) {
                                     setSelectedEmployee(fallback);
@@ -219,8 +226,9 @@ const Staff: React.FC = () => {
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
+                ))
+              )}
+            </tbody>
             </table>
           </div>
           <div className="p-4 bg-surface-container-low/50 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-on-surface-variant font-manrope">

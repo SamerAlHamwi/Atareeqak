@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Trip } from '../hooks/useTrips';
+import type { Trip } from '../hooks/useTrips';
 
 interface TripsTableProps {
   trips: Trip[];

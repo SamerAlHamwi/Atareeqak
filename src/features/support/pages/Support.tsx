@@ -2,7 +2,8 @@ import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMockAction } from '../../shared/useMockAction';
 import ActionBanner from '../../shared/components/ActionBanner';
-import { useSupport, StatusFilter } from '../hooks/useSupport';
+import { useSupport } from '../hooks/useSupport';
+import type { StatusFilter } from '../hooks/useSupport';
 import { SupportStats } from '../components/SupportStats';
 import { ComplaintDetails } from '../components/ComplaintDetails';
 

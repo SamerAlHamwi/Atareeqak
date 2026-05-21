@@ -184,7 +184,14 @@ const Users: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/10">
-              {visibleUsers.map((user) => (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={5} className="px-8 py-10 text-center text-on-surface-variant font-medium">
+                    {t('common.loading', 'Loading...')}
+                  </td>
+                </tr>
+              ) : (
+                visibleUsers.map((user) => (
                 <tr
                   key={user.id}
                   className="group hover:bg-surface-container-low transition-colors cursor-pointer"
@@ -292,7 +299,8 @@ const Users: React.FC = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>

@@ -46,7 +46,8 @@ export const useRegister = (): UseRegisterReturn => {
         // Mocked API call logic
         const mockUser = { id: '2', name, email };
         const mockToken = 'mock_jwt_token_new_user';
-        login(mockUser, mockToken);
+        const mockRefreshToken = 'mock_refresh_token_new_user';
+        login(mockUser, mockToken, mockRefreshToken);
         navigate('/dashboard');
       } catch (err) {
         const message = err instanceof Error ? err.message : 'فشل إنشاء الحساب';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Transaction } from '../hooks/useReports';
+import type { Transaction } from '../hooks/useReports';
 
 interface TransactionTableProps {
   transactions: Transaction[];

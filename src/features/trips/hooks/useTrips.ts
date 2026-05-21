@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { tripsApi, TripResponse } from '../api/tripsApi';
+import { tripsApi } from '../api/tripsApi';
+import type { TripResponse } from '../api/tripsApi';
 
 export interface Trip {
   id: string;

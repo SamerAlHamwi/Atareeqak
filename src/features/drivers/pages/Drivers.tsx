@@ -196,107 +196,115 @@ const Drivers: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-container text-sm">
-              {visibleDrivers.map((driver) => (
-                <tr key={driver.id} className="hover:bg-surface-container/30 transition-colors group">
-                  <td className="px-8 py-5 text-start">
-                    <div className="flex items-center gap-3">
-                      <img alt={driver.name} className="w-10 h-10 rounded-full object-cover" src={driver.avatar} />
-                      <div className="flex flex-col">
-                        <span className="font-bold text-on-surface">{driver.name}</span>
-                        <span className="text-xs text-on-surface-variant">{t('dashboard.phone_label')}: {driver.displayId}</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-5 text-on-surface-variant font-medium text-start ltr:font-mono">{driver.phone}</td>
-                  <td className="px-6 py-5 text-start">
-                    <div className="flex flex-col">
-                      <span className="text-on-surface font-medium">{driver.vehicle}</span>
-                      <span className="text-xs text-on-surface-variant">{driver.vehicleDetails}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-5 text-start">
-                    <span
-                      className={`px-3 py-1 rounded-full text-[10px] font-bold ${
-                        driver.status === 'verified'
-                          ? 'bg-secondary-fixed text-on-secondary-container'
-                          : driver.status === 'pending'
-                          ? 'bg-tertiary-fixed text-on-tertiary-fixed-variant'
-                          : 'bg-error-container text-on-error-container'
-                      }`}
-                    >
-                      {t(`drivers.status_${driver.status}`)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-5 text-start">
-                    <div className={`flex items-center gap-1 ${driver.rating ? 'text-amber-500' : 'text-slate-400'}`}>
-                      <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: driver.rating ? "'FILL' 1" : "" }}>
-                        {driver.rating ? 'star' : 'star_outline'}
-                      </span>
-                      <span className="font-bold">{driver.rating || '--'}</span>
-                    </div>
-                  </td>
-                  <td className="px-8 py-5">
-                    <div className="flex items-center ltr:justify-end rtl:justify-start gap-2">
-                      <button
-                        onClick={async () => {
-                          await runAction({
-                            key: `view-${driver.id}`,
-                            successMessage: `${driver.name} profile data loaded.`,
-                            errorMessage: 'Could not fetch driver profile.',
-                            onSuccess: () => {
-                              navigate(`/drivers/${driver.id}`);
-                            },
-                          });
-                        }}
-                        disabled={isBusy(`view-${driver.id}`)}
-                        className="p-2 hover:bg-surface-container-high rounded-lg text-primary transition-colors disabled:opacity-40"
-                        title={t('drivers.view_profile')}
-                      >
-                        <span className="material-symbols-outlined">visibility</span>
-                      </button>
-                      <button
-                        onClick={async () => {
-                          await runAction({
-                            key: `edit-${driver.id}`,
-                            successMessage: `Editing mode opened for ${driver.name}.`,
-                            errorMessage: 'Failed to open edit mode.',
-                          });
-                        }}
-                        disabled={isBusy(`edit-${driver.id}`)}
-                        className="p-2 hover:bg-surface-container-high rounded-lg text-on-surface-variant transition-colors disabled:opacity-40"
-                        title={t('users.edit')}
-                      >
-                        <span className="material-symbols-outlined">edit</span>
-                      </button>
-                      <button
-                        onClick={async () => {
-                          await runAction({
-                            key: `status-${driver.id}`,
-                            successMessage: driver.status === 'suspended' ? 'Driver reactivated.' : 'Driver suspended.',
-                            errorMessage: 'Failed to update driver status.',
-                            onSuccess: () => {
-                              setDrivers((prev) => prev.map((entry) => {
-                                if (entry.id !== driver.id) {
-                                  return entry;
-                                }
-                                return {
-                                  ...entry,
-                                  status: entry.status === 'suspended' ? 'verified' : 'suspended',
-                                };
-                              }));
-                            },
-                          });
-                        }}
-                        disabled={isBusy(`status-${driver.id}`)}
-                        className={`p-2 rounded-lg transition-colors ${driver.status === 'suspended' ? 'hover:bg-secondary/10 text-secondary' : 'hover:bg-error/10 text-error'}`}
-                        title={driver.status === 'suspended' ? t('users.approve') : t('users.block')}
-                      >
-                        <span className="material-symbols-outlined">{driver.status === 'suspended' ? 'undo' : 'block'}</span>
-                      </button>
-                    </div>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="px-8 py-10 text-center text-on-surface-variant font-medium">
+                    {t('common.loading', 'Loading...')}
                   </td>
                 </tr>
-              ))}
+              ) : (
+                visibleDrivers.map((driver) => (
+                  <tr key={driver.id} className="hover:bg-surface-container/30 transition-colors group">
+                    <td className="px-8 py-5 text-start">
+                      <div className="flex items-center gap-3">
+                        <img alt={driver.name} className="w-10 h-10 rounded-full object-cover" src={driver.avatar} />
+                        <div className="flex flex-col">
+                          <span className="font-bold text-on-surface">{driver.name}</span>
+                          <span className="text-xs text-on-surface-variant">{t('dashboard.phone_label')}: {driver.displayId}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5 text-on-surface-variant font-medium text-start ltr:font-mono">{driver.phone}</td>
+                    <td className="px-6 py-5 text-start">
+                      <div className="flex flex-col">
+                        <span className="text-on-surface font-medium">{driver.vehicle}</span>
+                        <span className="text-xs text-on-surface-variant">{driver.vehicleDetails}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5 text-start">
+                      <span
+                        className={`px-3 py-1 rounded-full text-[10px] font-bold ${
+                          driver.status === 'verified'
+                            ? 'bg-secondary-fixed text-on-secondary-container'
+                            : driver.status === 'pending'
+                            ? 'bg-tertiary-fixed text-on-tertiary-fixed-variant'
+                            : 'bg-error-container text-on-error-container'
+                        }`}
+                      >
+                        {t(`drivers.status_${driver.status}`)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5 text-start">
+                      <div className={`flex items-center gap-1 ${driver.rating ? 'text-amber-500' : 'text-slate-400'}`}>
+                        <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: driver.rating ? "'FILL' 1" : "" }}>
+                          {driver.rating ? 'star' : 'star_outline'}
+                        </span>
+                        <span className="font-bold">{driver.rating || '--'}</span>
+                      </div>
+                    </td>
+                    <td className="px-8 py-5">
+                      <div className="flex items-center ltr:justify-end rtl:justify-start gap-2">
+                        <button
+                          onClick={async () => {
+                            await runAction({
+                              key: `view-${driver.id}`,
+                              successMessage: `${driver.name} profile data loaded.`,
+                              errorMessage: 'Could not fetch driver profile.',
+                              onSuccess: () => {
+                                navigate(`/drivers/${driver.id}`);
+                              },
+                            });
+                          }}
+                          disabled={isBusy(`view-${driver.id}`)}
+                          className="p-2 hover:bg-surface-container-high rounded-lg text-primary transition-colors disabled:opacity-40"
+                          title={t('drivers.view_profile')}
+                        >
+                          <span className="material-symbols-outlined">visibility</span>
+                        </button>
+                        <button
+                          onClick={async () => {
+                            await runAction({
+                              key: `edit-${driver.id}`,
+                              successMessage: `Editing mode opened for ${driver.name}.`,
+                              errorMessage: 'Failed to open edit mode.',
+                            });
+                          }}
+                          disabled={isBusy(`edit-${driver.id}`)}
+                          className="p-2 hover:bg-surface-container-high rounded-lg text-on-surface-variant transition-colors disabled:opacity-40"
+                          title={t('users.edit')}
+                        >
+                          <span className="material-symbols-outlined">edit</span>
+                        </button>
+                        <button
+                          onClick={async () => {
+                            await runAction({
+                              key: `status-${driver.id}`,
+                              successMessage: driver.status === 'suspended' ? 'Driver reactivated.' : 'Driver suspended.',
+                              errorMessage: 'Failed to update driver status.',
+                              onSuccess: () => {
+                                setDrivers((prev) => prev.map((entry) => {
+                                  if (entry.id !== driver.id) {
+                                    return entry;
+                                  }
+                                  return {
+                                    ...entry,
+                                    status: entry.status === 'suspended' ? 'verified' : 'suspended',
+                                  };
+                                }));
+                              },
+                            });
+                          }}
+                          disabled={isBusy(`status-${driver.id}`)}
+                          className={`p-2 rounded-lg transition-colors ${driver.status === 'suspended' ? 'hover:bg-secondary/10 text-secondary' : 'hover:bg-error/10 text-error'}`}
+                          title={driver.status === 'suspended' ? t('users.approve') : t('users.block')}
+                        >
+                          <span className="material-symbols-outlined">{driver.status === 'suspended' ? 'undo' : 'block'}</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

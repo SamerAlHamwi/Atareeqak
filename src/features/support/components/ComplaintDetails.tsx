@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Complaint } from '../hooks/useSupport';
+import type { Complaint } from '../hooks/useSupport';
 
 interface ComplaintDetailsProps {
   complaint: Complaint | null;
