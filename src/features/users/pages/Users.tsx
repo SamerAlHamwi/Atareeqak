@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMockAction } from '../../shared/useMockAction';
 import ActionBanner from '../../shared/components/ActionBanner';
+import { usersApi } from '../api/usersApi';
 
 interface User {
   id: string;
@@ -21,65 +22,47 @@ interface User {
   memberSince: string;
 }
 
-const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'أحمد محمود',
-    email: 'ahmed.m@email.com',
-    type: 'driver',
-    joinDate: '12 أكتوبر 2023',
-    status: 'verified',
-    phone: '+966 50 123 4567',
-    carType: 'تويوتا كامري 2022',
-    city: 'الرياض',
-    rating: 4.9,
-    totalTrips: 842,
-    walletBalance: 1450.5,
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDA18Z5mZrjO-ChSarcRLrYML0Q7dcEEevD4B93G9JtG9X3LubkuaN58ZNi2T5NGohU7XzDoqIzIvHBKBFIMbcFZqNK3oDcUxzKvzwsS3cRd8DvGbni8XauPLy77AjIlnbsQJA3JVrG-yB661Dx_YFqfunR6AzU-oWbUysj5tybVXV6XiA9YdxP1AXw_1OzlbxlKl-BND7Y4kKcb9l6nmcPIXDqUEHKqqW2fWIrZDP3QMmTN93Zi5Hi4lQ50REAXAmiyqojQXHC7QQ',
-    memberSince: 'يناير 2023',
-  },
-  {
-    id: '2',
-    name: 'سارة الكيلاني',
-    email: 'sara.k@email.com',
-    type: 'passenger',
-    joinDate: '15 أكتوبر 2023',
-    status: 'pending',
-    phone: '+966 55 987 6543',
-    city: 'جدة',
-    rating: 4.7,
-    totalTrips: 156,
-    walletBalance: 240.0,
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD3H0r0hCLo64GCSbpxzVYDdAGPrqvsYarQ30L4tbOJaampRwua-QFMOmcLx0TcBWA79ZwTGBws3b9slo7QBFjRSINJd7lF-BVcHsU-aWjUUVRycHHkpOiVs9Moj9ORW35jang4CFssAuEZH7oAd1xH1ctwbgGp5HTUOhxLUvHMJQ0fw1E7PtccwGocPwzMiGvPkwpm-ZRVULL3RUGaX1drD1q8bD-qwKMa2T7w2TFRraSag65R-VHHI4hfq6CPuQqSOJ9ih1CT90o',
-    memberSince: 'مارس 2023',
-  },
-  {
-    id: '3',
-    name: 'ياسين عمر',
-    email: 'yasin.o@email.com',
-    type: 'driver',
-    joinDate: '18 أكتوبر 2023',
-    status: 'blocked',
-    phone: '+966 54 321 0987',
-    carType: 'هيونداي إلنترا 2021',
-    city: 'الدمام',
-    rating: 3.2,
-    totalTrips: 45,
-    walletBalance: -12.5,
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAttem1e4cmCZ-flW81pfotjLayDqoHvYb0SdI8RhQrAViWrpfGWSKVnxYcTTcriZL9Fzp54L0AwvLrSLKBu7FwlPe92lF7d1c8amLJBzq_JWwYyxemE3TKpEyVXhOGJGeKABZufIZB1T-n2ecbap65O1Kgjn5jYtjizBuQc2GrBqB1aTjYUAccBR3igzCWr-q87P9-Vqd2rKr5NFmJ58JtyE9Ue7YaNxTQXYmmYGT_AcX-yUZ6tIrxOJhLZgjpoPSGnN5v1UtSeNM',
-    memberSince: 'يونيو 2023',
-  },
-];
-
 const Users: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [typeFilter, setTypeFilter] = useState<'all' | User['type']>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | User['status']>('all');
   const isRtl = i18n.language === 'ar';
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setIsLoading(true);
+      try {
+        const response = await usersApi.getAllUsers();
+        const data = response.data || [];
+        setUsers(data.map((u: any) => ({
+          id: String(u.id),
+          name: u.first_name ? `${u.first_name} ${u.last_name || ''}`.trim() : (u.name || 'غير معروف'),
+          email: u.email || '',
+          type: u.type || 'passenger',
+          joinDate: u.created_at || 'Recently',
+          status: u.is_banned ? 'blocked' : 'verified',
+          phone: u.number || u.phone || '',
+          carType: u.vehicle_type || '',
+          city: u.city || '',
+          rating: u.rating || 0,
+          totalTrips: u.total_trips || 0,
+          walletBalance: u.wallet_balance || 0,
+          avatar: u.profile_photo || `https://i.pravatar.cc/100?u=${u.id}`,
+          memberSince: u.created_at || 'Recently',
+        })));
+      } catch (err) {
+        console.error('Failed to load users', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const closePanel = () => setSelectedUser(null);
 

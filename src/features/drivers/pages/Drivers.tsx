@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMockAction } from '../../shared/useMockAction';
 import ActionBanner from '../../shared/components/ActionBanner';
+import { driversApi } from '../api/driversApi';
 
 interface Driver {
   id: string;
@@ -16,49 +17,40 @@ interface Driver {
   avatar: string;
 }
 
-const mockDrivers: Driver[] = [
-  {
-    id: '1',
-    name: 'أحمد محمود الخالدي',
-    displayId: '#DR-9921',
-    phone: '+966 50 123 4567',
-    vehicle: 'كيا سيراتو',
-    vehicleDetails: '2021 | أبيض',
-    status: 'verified',
-    rating: 4.9,
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDD4VNGsonziGKZwtSfXpx-b6AeoCQGzLxMm0NVU_KpoKIO9SHsjpmsJaRxgVLlS99JqtWv6689ZCj8FqlGsZgNb7KRfSJk40Z0RUUGAcvtPrb9dy1J4dceA9An7d1LAzpVvr3kL0-FqeJQ5EKPgw83N0BHueXaiqm3sItl-QnDtqapN68g3Bkk-WMljSQMHjQ0pWK__Tx5-w-XFnGzM9Zcy0MoRieLl9oBqQQLHI76zV6VOZOuWAp-f6a2wS4V4-BfezQ5PJWSCsc',
-  },
-  {
-    id: '2',
-    name: 'سارة إبراهيم منصور',
-    displayId: '#DR-8842',
-    phone: '+966 55 987 6543',
-    vehicle: 'تويوتا كامري',
-    vehicleDetails: '2023 | فضي',
-    status: 'pending',
-    rating: null,
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBpCc4srRFa_T8I4LTmZJ9ZuhjXKjaDN2fLpF-uwPYX3DfH3LPo614zcWy2oYCqoAZOPtLeL9TKMdoCwrJ2bAcigzP4dNoIuOOYe51q6LJBLmwrtzbgr-nX0klmgxh45CTIWIJ8Uj2sDcQSDpYBb9xS2Sf_0F-rucq9ShxJpGoeG18dq1QWqYK8YZQrhcLP5XTNY8vnWtwKqM8OMNbX8e6UwT9NlyR5hF4j7VC8GtPYtc512vpprlRcEomX6GXK1qnie0m9NpKWhe8',
-  },
-  {
-    id: '3',
-    name: 'خالد يوسف العلي',
-    displayId: '#DR-7715',
-    phone: '+966 54 555 1212',
-    vehicle: 'هيونداي إلنترا',
-    vehicleDetails: '2020 | أسود',
-    status: 'suspended',
-    rating: 4.2,
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCXuZR2QuRZlghPOpPjt3-e0xsWiTyCg3cOFgQZ2wmskGGNELQ5T6LdC8FwFNbyM2aq66o64IArpucisrg8edCYhQECqvuA_tef6asEgQZYe2U82etq-2DPjloACms4fPxzapelb8UokwLizdN3Z4BIUjvZArY0-heBKUefFsxhUa9tsO9mec1wlv8mgvl5PlJH8fsNJy7L501VWqH23T9Hv5fQ6PDvv3D9cyYc7giiBOqwzJiwLdii6k85GZTxJU3aaq0UzDHUYLc',
-  },
-];
-
 const Drivers: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
-  const [drivers, setDrivers] = useState<Driver[]>(mockDrivers);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
   const [statusFilter, setStatusFilter] = useState<'all' | Driver['status']>('all');
   const isRtl = i18n.language === 'ar';
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchDrivers = async () => {
+      setIsLoading(true);
+      try {
+        const response = await driversApi.getAllDrivers();
+        const data = response.data || [];
+        setDrivers(data.map((d: any) => ({
+          id: String(d.id),
+          name: d.name || 'غير معروف',
+          displayId: `#DR-${d.id}`,
+          phone: d.phone || '',
+          vehicle: d.vehicle || 'غير معروف',
+          vehicleDetails: d.vehicle_details || '',
+          status: d.status || 'pending',
+          rating: d.rating || null,
+          avatar: d.avatar || `https://i.pravatar.cc/100?u=${d.id}`,
+        })));
+      } catch (err) {
+        console.error('Failed to load drivers', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchDrivers();
+  }, []);
 
   const visibleDrivers = useMemo(() => {
     if (statusFilter === 'all') {

@@ -1,60 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMockAction } from '../../shared/useMockAction';
 import ActionBanner from '../../shared/components/ActionBanner';
+import { staffApi } from '../api/staffApi';
 
 interface Employee {
   id: string;
   name: string;
   email: string;
-  role: 'ops_manager' | 'finance' | 'support';
+  role: 'ops_manager' | 'finance' | 'support' | string;
   status: 'active' | 'inactive';
   lastLogin: string;
   avatar: string;
 }
 
-const mockStaff: Employee[] = [
-  {
-    id: '1',
-    name: 'أحمد العتيبي',
-    email: 'ahmed@atareeqak.com',
-    role: 'ops_manager',
-    status: 'active',
-    lastLogin: '10 mins',
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAG-3cRZIUHvu1KqXmAJpQxcjVmtPop1MSS2xI8t-p5twRXWxNSbzVfVWhDRddfozKLdXsd_oTtb8sIx4CoAcr6z6pS18Vj6U0m3FfbeXiSSY0iKHEQWXCAz4O-VTVqptIZ__lxLap6zQtejm04_5LOMZzUxe1RLCRH4KnlUy7OdCz-FGuDAKsX-nhdckIPJF0gKUTsb0d314HUiVKPrWaT5GhrGUOApArgvNS0EcC3PjXtOFY-6QQFXLSwemFqIxMlMc_-7ow_Dpk',
-  },
-  {
-    id: '2',
-    name: 'سارة الشمري',
-    email: 'sara@atareeqak.com',
-    role: 'finance',
-    status: 'active',
-    lastLogin: 'Yesterday, 4:30 PM',
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAU7C3H4JzB7mzw3GqMqCHATAIJgMOp8TupE4oiCsFV8i2HMwjXe4T3w6VdzHMoW-eB1mOmP-FnxIpePAcCiOfgh7hs_NThOjd7UZf6-_OR_uVs4om_gyeeW8OQ6g9xmnHH_-BGjy0hB0-ajtgKEq3aDiOKBCzRYqA2twRJefbaFDsShdIJmOd0qeVWsPG8Tn33ip_2e81SJYiRq0bmk0buo2_3m0vF5GaTFw_XxQCKwrut_tsE5-tvD3Ap4TuDvofLlnvVbxoIWsc',
-  },
-  {
-    id: '3',
-    name: 'ريم القحطاني',
-    email: 'reem@atareeqak.com',
-    role: 'support',
-    status: 'inactive',
-    lastLogin: '12 Oct 2023',
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA0B4e8PmjKGZXJwnF9FDH4oM0gpr1gHqmf9fIOTR-4IomyxTa7OQB58PB5evt7AbDjmVPkmR7pvtOvfu5yJOXMr4phFvEtskWcHpM5lXaZYx3ddLScOaMoMZKWim8fb1BLfmjAoKw7jACUeaQta1o_S3NA-5hmtG9zP_1v10eVQ6Vu36E_5LPq2Rtf_pS5YJImcBHxjRlJZBnQdG3PR5ZoQvNMo6aGOKPXFzSlbQUMVISQsFcWmZEMxgBQY2U8rkwtt3tS5elhnAk',
-  },
-];
-
 const Staff: React.FC = () => {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'ar';
   const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
-  const [staff, setStaff] = useState<Employee[]>(mockStaff);
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee>(mockStaff[0]);
+  const [staff, setStaff] = useState<Employee[]>([]);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [enabledPermissions, setEnabledPermissions] = useState<Record<string, boolean>>({
     '0-0': true,
     '1-0': true,
     '2-0': true,
     '3-0': true,
   });
+
+  useEffect(() => {
+    const fetchStaff = async () => {
+      setIsLoading(true);
+      try {
+        const response = await staffApi.getAllStaff();
+        const data = response.data || [];
+        const mapped = data.map((e: any) => ({
+          id: String(e.id),
+          name: e.name || 'مستخدم غير معروف',
+          email: e.email || '',
+          role: e.type || e.role || 'support',
+          status: e.is_active || !e.is_banned ? 'active' : 'inactive',
+          lastLogin: e.last_active || 'Recently',
+          avatar: e.profile_photo || `https://i.pravatar.cc/100?u=${e.id}`,
+        }));
+        setStaff(mapped);
+        if (mapped.length > 0) {
+          setSelectedEmployee(mapped[0]);
+        }
+      } catch (err) {
+        console.error('Failed to load staff', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchStaff();
+  }, []);
 
   return (
     <div className="space-y-10">
@@ -151,7 +151,7 @@ const Staff: React.FC = () => {
                   <tr
                     key={emp.id}
                     onClick={() => setSelectedEmployee(emp)}
-                    className={`hover:bg-slate-50 transition-colors group cursor-pointer ${selectedEmployee.id === emp.id ? 'bg-slate-50/80' : ''}`}
+                    className={`hover:bg-slate-50 transition-colors group cursor-pointer ${selectedEmployee?.id === emp.id ? 'bg-slate-50/80' : ''}`}
                   >
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-3">
@@ -182,7 +182,7 @@ const Staff: React.FC = () => {
                     </td>
                     <td className="px-6 py-5 text-xs text-on-surface-variant font-manrope text-start">{emp.lastLogin}</td>
                     <td className="px-6 py-5 text-center">
-                      <div className={`flex justify-center gap-2 transition-opacity ${selectedEmployee.id === emp.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                      <div className={`flex justify-center gap-2 transition-opacity ${selectedEmployee?.id === emp.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                         <button
                           onClick={async (event) => {
                             event.stopPropagation();
@@ -246,10 +246,10 @@ const Staff: React.FC = () => {
               <span className="material-symbols-outlined text-secondary">security</span>
             </div>
             <div className="flex items-center gap-3 p-4 bg-surface-container-low rounded-2xl">
-              <img className="w-10 h-10 rounded-full object-cover shrink-0" src={selectedEmployee.avatar} alt="Avatar" />
+              <img className="w-10 h-10 rounded-full object-cover shrink-0" src={selectedEmployee?.avatar} alt="Avatar" />
               <div className="text-start">
-                <p className="text-sm font-bold text-primary">{selectedEmployee.name}</p>
-                <p className="text-[10px] text-on-surface-variant">{t('staff.editing_for', { role: t(`staff.roles.${selectedEmployee.role}`) })}</p>
+                <p className="text-sm font-bold text-primary">{selectedEmployee?.name}</p>
+                <p className="text-[10px] text-on-surface-variant">{t('staff.editing_for', { role: t(`staff.roles.${selectedEmployee?.role}`) })}</p>
               </div>
             </div>
           </div>
@@ -291,7 +291,7 @@ const Staff: React.FC = () => {
               onClick={async () => {
                 await runAction({
                   key: 'save-perms',
-                  successMessage: `Permissions saved for ${selectedEmployee.name}.`,
+                  successMessage: `Permissions saved for ${selectedEmployee?.name}.`,
                   errorMessage: 'Could not save permissions.',
                 });
               }}

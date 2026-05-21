@@ -1,10 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMockAction } from '../../shared/useMockAction';
 import ActionBanner from '../../shared/components/ActionBanner';
+import { tripsApi, TripResponse } from '../api/tripsApi';
 
 interface Trip {
   id: string;
+  rawId: number | string;
   driver: string;
   driverInitial: string;
   from: string;
@@ -16,51 +18,47 @@ interface Trip {
   color: string;
 }
 
-const mockTrips: Trip[] = [
-  {
-    id: '#TR-8921',
-    driver: 'أحمد العلي',
-    driverInitial: 'أ.ع',
-    from: 'دمشق',
-    to: 'حلب',
-    timing: 'today',
-    timeDetail: '04:30 م',
-    passengers: '3/4',
-    status: 'active',
-    color: 'secondary',
-  },
-  {
-    id: '#TR-8945',
-    driver: 'محمود سعيد',
-    driverInitial: 'م.س',
-    from: 'حمص',
-    to: 'اللاذقية',
-    timing: 'tomorrow',
-    timeDetail: '09:00 ص',
-    passengers: '1/4',
-    status: 'scheduled',
-    color: 'primary',
-  },
-  {
-    id: '#TR-8700',
-    driver: 'نور حسن',
-    driverInitial: 'ن.ح',
-    from: 'دمشق',
-    to: 'طرطوس',
-    timing: 'yesterday',
-    timeDetail: '11:15 ص',
-    passengers: '4/4',
-    status: 'completed',
-    color: 'slate',
-  },
-];
-
 const Trips: React.FC = () => {
   const { t } = useTranslation();
   const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
-  const [trips, setTrips] = useState<Trip[]>(mockTrips);
+  const [trips, setTrips] = useState<Trip[]>([]);
   const [activeFilter, setActiveFilter] = useState<Trip['status'] | 'all'>('all');
-  const [selectedTripId, setSelectedTripId] = useState<string>(mockTrips[0].id);
+  const [selectedTripId, setSelectedTripId] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const fetchTrips = async () => {
+    setIsLoading(true);
+    try {
+      const response = await tripsApi.getAllTrips(1, activeFilter);
+      const data = response.data || [];
+      const formattedTrips = data.map((trip: TripResponse) => ({
+        id: trip.trip_ref,
+        rawId: trip.id,
+        driver: trip.driver?.name || 'غير معروف',
+        driverInitial: trip.driver?.name ? trip.driver.name.split(' ').map(n => n[0]).join('.') : '?',
+        from: trip.route?.from || '',
+        to: trip.route?.to || '',
+        timing: trip.timing?.label?.toLowerCase() || 'today',
+        timeDetail: trip.timing?.time_only || '',
+        passengers: trip.passengers?.label || '0/4',
+        status: (trip.status === 'awaiting' ? 'scheduled' : trip.status) as Trip['status'],
+        color: trip.status === 'active' ? 'secondary' : 'primary',
+      }));
+      setTrips(formattedTrips);
+      if (formattedTrips.length > 0 && !selectedTripId) {
+        setSelectedTripId(formattedTrips[0].id);
+      }
+    } catch (err) {
+      console.error('Failed to fetch trips:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTrips();
+  }, [activeFilter]);
+
 
   const visibleTrips = useMemo(() => {
     if (activeFilter === 'all') {
@@ -227,7 +225,8 @@ const Trips: React.FC = () => {
                                   key: `cancel-${trip.id}`,
                                   successMessage: `${trip.id} marked as cancelled.`,
                                   errorMessage: 'Could not cancel trip.',
-                                  onSuccess: () => {
+                                  onSuccess: async () => {
+                                    await tripsApi.cancelTrip(trip.rawId);
                                     setTrips((prev) => prev.map((entry) => entry.id === trip.id ? { ...entry, status: 'cancelled' } : entry));
                                   },
                                 });

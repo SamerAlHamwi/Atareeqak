@@ -1,10 +1,11 @@
 import api from '../../../services/api';
+import { ENDPOINTS } from '../../../services/endpoints';
 import type { AuthResponse } from '../../../types/index';
-import type { LoginCredentials, RefreshTokenRequest } from '../types';
+import type { LoginCredentials } from '../types';
 
 export const authApi = {
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/admin/login', {
+    const response = await api.post<AuthResponse>(ENDPOINTS.AUTH.LOGIN, {
       email: credentials.email,
       password: credentials.password,
     });
@@ -12,7 +13,7 @@ export const authApi = {
   },
 
   refresh: async (refreshToken: string): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/admin/refresh', {
+    const response = await api.post<AuthResponse>(ENDPOINTS.AUTH.REFRESH, {
       refresh_token: refreshToken,
     });
     return response.data;
@@ -20,7 +21,7 @@ export const authApi = {
 
   logout: async (): Promise<void> => {
     try {
-      await api.post('/admin/logout');
+      await api.post(ENDPOINTS.AUTH.LOGOUT);
     } finally {
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');

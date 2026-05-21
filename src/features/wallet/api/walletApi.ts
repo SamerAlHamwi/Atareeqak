@@ -1,4 +1,5 @@
 import api from '../../../services/api';
+import { ENDPOINTS } from '../../../services/endpoints';
 
 export interface Wallet {
   id: number;
@@ -25,31 +26,20 @@ export interface WalletTransaction {
 }
 
 export const walletApi = {
-  /**
-   * Get the authenticated admin's own wallet details
-   */
   getMyWallet: async (): Promise<{ status: string; wallet: Wallet }> => {
-    const response = await api.get('/admin/wallet');
+    const response = await api.get(ENDPOINTS.WALLET.ADMIN_WALLET);
     return response.data;
   },
 
-  /**
-   * Get all admin and user wallets
-   */
   getAllWallets: async (): Promise<{
     status: string;
     admin_wallets: Wallet[];
     all_wallets: Wallet[]
   }> => {
-    const response = await api.get('/admin/wallets');
+    const response = await api.get(ENDPOINTS.WALLET.WALLETS);
     return response.data;
   },
 
-  /**
-   * Charge a user wallet (Primary admin only)
-   * @param phoneNumber User's wallet phone number
-   * @param amount Amount in SYP to add (1-1,000,000)
-   */
   chargeUserWallet: async (phoneNumber: string, amount: number): Promise<{
     status: string;
     message: string;
@@ -60,17 +50,13 @@ export const walletApi = {
     };
     transaction_id: string;
   }> => {
-    const response = await api.post('/admin/wallet/charge', {
+    const response = await api.post(ENDPOINTS.WALLET.CHARGE, {
       phone_number: phoneNumber,
       amount,
     });
     return response.data;
   },
 
-  /**
-   * Get wallet transaction history
-   * @param walletId The wallet's database ID
-   */
   getWalletTransactions: async (walletId: number): Promise<{
     status: string;
     wallet: Wallet;
@@ -81,8 +67,7 @@ export const walletApi = {
       total: number;
     };
   }> => {
-    const response = await api.get(`/admin/wallet/${walletId}/transactions`);
+    const response = await api.get(ENDPOINTS.WALLET.TRANSACTIONS(walletId));
     return response.data;
   },
 };
-

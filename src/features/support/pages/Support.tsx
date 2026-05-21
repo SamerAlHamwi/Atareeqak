@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMockAction } from '../../shared/useMockAction';
 import ActionBanner from '../../shared/components/ActionBanner';
+import { supportApi } from '../api/supportApi';
 
 interface Complaint {
   id: string;
@@ -17,53 +18,40 @@ interface Complaint {
   userRating: string;
 }
 
-const mockComplaints: Complaint[] = [
-  {
-    id: '#CMP-9042',
-    user: 'سارة حسن',
-    userType: 'passenger',
-    userAvatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBkbB6v3yo8UqkoxrWowwAMVnOmF5xz32zrl1r8iwKodUmXs-eoKekMNmn8XkTJrCi6t4nCeWoi3s-aJnqlVmvxNMyf5ID1ieovSo1j3_RO-AkA_qSGwbP7vT-rJpH8PSqapPNtyT1MWOO_ytfcWdExvqvTR18HqtePNmsEIiYbQnrgPAPa6V0WsYWi5Ohh91JGpcyGhFzU5RPc1glMneseqMlEo9ZNRbN6XeqbajZim-U3n0XwkkdlisJ1nkcnPO86GM3p6RV63CI',
-    category: 'تحرش لفظي',
-    date: '12 أكتوبر 2023',
-    status: 'pending',
-    content: 'مرحباً، أواجه مشكلة في سلوك السائق...',
-    tripId: 'TRIP-X991',
-    location: 'الرياض، حي النخيل',
-    userRating: '4.5',
-  },
-  {
-    id: '#CMP-8812',
-    user: 'خالد محمود',
-    userType: 'driver',
-    userAvatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAjNPvCkf6LVe6OlZ5vuOq1_rqod8s4qaHD_8WtI4P31kSaYj9A4qlBiazCPgDB4SXLYDlDwfInh0Oeel6wEAs7T5BFEoItm9-kEYlbc7ixrBLzHxwd7fvnrgrFHW_AeiIHz_toHqP3KuZ0710Sbs1qWgDGy9e8mGF4GNSzyqZ-dn0FUOQY4G0H_qmJX2fafC5oGo9AEvQ2sapSHh-Hagv7jN-jqd6W_zTjnAoIqq9rH3OnK_SGx8Ek6dyc9oChC39tgLw9n-oGTsM',
-    category: 'خطأ في التسعير',
-    date: '12 أكتوبر 2023',
-    status: 'processing',
-    content: '"مرحباً، أواجه مشكلة في احتساب قيمة الرحلة رقم TRIP-X992. تم خصم مبلغ 45 ريال بينما السعر المتفق عليه كان 30 ريال. الرجاء المراجعة وتعديل الرصيد."',
-    tripId: 'TRIP-X992',
-    location: 'الرياض، حي النخيل',
-    userRating: '4.8',
-  },
-  {
-    id: '#CMP-8750',
-    user: 'ياسين علي',
-    userType: 'passenger',
-    userAvatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDbFOCGjCqsPpKkryLvFgS000rOVTo_Ul02KwvFWanmDtS8L8Mx8dZ1hcOWHlqcjUlBNfef0_S1EJrQ8LIYL-2zkk-wjT7kzol7SCaqDbMvOLHvdj8l7smoRQ2kykSZGg7HbbKf2c5YnwcvwER3PvTkXdDHM3Bhy5a1s-lDuh56fOLUKX0Fckqpwq1jnB_JzyOByveOA7gFfwPyK4rdUFuGA7uvEHWuskmxsEQgwYl6tBm15RriQCaumWdy7Yf-uhwH0a5pnFpy46Q',
-    category: 'مشكلة تقنية (التطبيق)',
-    date: '11 أكتوبر 2023',
-    status: 'resolved',
-    content: 'التطبيق يتوقف فجأة عند اختيار الوجهة...',
-    tripId: 'N/A',
-    location: 'جدة',
-    userRating: '5.0',
-  },
-];
-
 const Support: React.FC = () => {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'ar';
   const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
-  const [complaints, setComplaints] = useState<Complaint[]>(mockComplaints);
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchComplaints = async () => {
+      setIsLoading(true);
+      try {
+        const response = await supportApi.getComplaints();
+        const data = response.data || [];
+        setComplaints(data.map((c: any) => ({
+          id: `#CMP-${c.id}`,
+          user: c.user?.name || 'مستخدم غير معروف',
+          userType: c.user?.type || 'passenger',
+          userAvatar: c.user?.profile_photo || `https://i.pravatar.cc/100?u=${c.user?.id}`,
+          category: c.subject || c.category || 'شكوى عامة',
+          date: c.created_at || 'Recently',
+          status: c.status || 'pending',
+          content: c.description || c.content || '',
+          tripId: c.ride_id ? `TRIP-${c.ride_id}` : 'N/A',
+          location: c.location || 'غير محدد',
+          userRating: c.user?.rating || 'N/A',
+        })));
+      } catch (err) {
+        console.error('Failed to load complaints', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchComplaints();
+  }, []);
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint>(mockComplaints[1]);
   const [statusFilter, setStatusFilter] = useState<'all' | Complaint['status']>('all');
   const [replyText, setReplyText] = useState('');

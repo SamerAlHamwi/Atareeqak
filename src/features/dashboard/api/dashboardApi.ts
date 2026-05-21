@@ -1,4 +1,5 @@
 import api from '../../../services/api';
+import { ENDPOINTS } from '../../../services/endpoints';
 import type {
   DashboardData,
   DashboardStats,
@@ -8,50 +9,32 @@ import type {
 } from '../../../types/index';
 
 export const dashboardApi = {
-  /**
-   * Get full dashboard data (all widgets in one call)
-   */
   getFullDashboard: async (): Promise<DashboardData> => {
-    const response = await api.get<DashboardData>('/admin/dashboard');
+    const response = await api.get<DashboardData>(ENDPOINTS.DASHBOARD.BASE);
     return response.data;
   },
 
-  /**
-   * Get only stats/KPI cards data
-   */
   getStats: async (): Promise<{ status: string; data: DashboardStats }> => {
-    const response = await api.get('/admin/dashboard/stats');
+    const response = await api.get(ENDPOINTS.DASHBOARD.STATS);
     return response.data;
   },
 
-  /**
-   * Get growth chart data for the last N months
-   * @param months Number of months (1-12, default 6)
-   */
   getGrowthChart: async (months: number = 6): Promise<{ status: string; data: { period: string; data: GrowthChartData[] } }> => {
-    const response = await api.get('/admin/dashboard/growth', {
+    const response = await api.get(ENDPOINTS.DASHBOARD.GROWTH, {
       params: { months },
     });
     return response.data;
   },
 
-  /**
-   * Get city distribution data
-   */
   getCityDistribution: async (): Promise<{ status: string; data: CityDistribution[] }> => {
-    const response = await api.get('/admin/dashboard/cities');
+    const response = await api.get(ENDPOINTS.DASHBOARD.CITIES);
     return response.data;
   },
 
-  /**
-   * Get recent activities/bookings
-   * @param limit Number of records to return (1-50, default 10)
-   */
   getRecentActivities: async (limit: number = 10): Promise<{ status: string; data: RecentActivity[] }> => {
-    const response = await api.get('/admin/dashboard/recent', {
+    const response = await api.get(ENDPOINTS.DASHBOARD.RECENT, {
       params: { limit },
     });
     return response.data;
   },
 };
-
