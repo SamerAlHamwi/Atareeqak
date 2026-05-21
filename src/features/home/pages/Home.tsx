@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMockAction } from '../../shared/useMockAction';
@@ -8,9 +8,29 @@ const Home: React.FC = () => {
   const { t } = useTranslation();
   const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
 
+  const handleSync = useCallback(async () => {
+    await runAction({
+      key: 'home-sync',
+      successMessage: 'Live data sync triggered.',
+      errorMessage: 'Live sync failed.',
+    });
+  }, [runAction]);
+
+  const handleNotice = useCallback(async () => {
+    await runAction({
+      key: 'home-notice',
+      successMessage: 'Notice center opened.',
+      errorMessage: 'Could not open notice center.',
+    });
+  }, [runAction]);
+
   return (
     <div className="text-center py-24 space-y-10">
-      <ActionBanner feedback={feedback} onDismiss={clearFeedback} className="mx-auto max-w-2xl text-start" />
+      <ActionBanner
+        feedback={feedback}
+        onDismiss={clearFeedback}
+        className="mx-auto max-w-2xl text-start"
+      />
 
       <div className="space-y-4">
         <p className="label-md text-secondary font-bold tracking-[0.2em]">{t('common.welcome')}</p>
@@ -30,24 +50,34 @@ const Home: React.FC = () => {
           className="btn-primary h-14 flex items-center px-10 text-lg shadow-ambient gap-3"
         >
           <span>{t('dashboard.view_all')}</span>
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="rotate-180"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="rotate-180"
+          >
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
         </Link>
       </div>
 
       <div className="flex items-center justify-center gap-4 flex-wrap">
         <button
-          onClick={async () => {
-            await runAction({ key: 'home-sync', successMessage: 'Live data sync triggered.', errorMessage: 'Live sync failed.' });
-          }}
+          onClick={handleSync}
           disabled={isBusy('home-sync')}
           className="px-6 py-3 rounded-xl bg-secondary text-white font-bold disabled:opacity-50"
         >
           {isBusy('home-sync') ? 'Syncing...' : 'Sync data'}
         </button>
         <button
-          onClick={async () => {
-            await runAction({ key: 'home-notice', successMessage: 'Notice center opened.', errorMessage: 'Could not open notice center.' });
-          }}
+          onClick={handleNotice}
           disabled={isBusy('home-notice')}
           className="px-6 py-3 rounded-xl border border-outline-variant font-bold disabled:opacity-50"
         >

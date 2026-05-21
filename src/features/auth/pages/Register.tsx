@@ -1,43 +1,33 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../../../app/context/AuthContext';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { useMockAction } from '../../shared/useMockAction';
 import ActionBanner from '../../shared/components/ActionBanner';
+import { useRegister } from '../hooks/useRegister';
 
 const Register: React.FC = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [acceptTerms, setAcceptTerms] = useState(true);
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
+  const {
+    name,
+    setName,
+    email,
+    setEmail,
+    password,
+    setPassword,
+    showPassword,
+    setShowPassword,
+    acceptTerms,
+    setAcceptTerms,
+    error,
+    isLoading,
+    handleSubmit,
+  } = useRegister();
 
-  const { login } = useAuth();
-  const navigate = useNavigate();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (!acceptTerms) {
-      setError('يجب الموافقة على الشروط أولاً');
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const mockUser = { id: '2', name, email };
-      const mockToken = 'mock_jwt_token_new_user';
-      login(mockUser, mockToken);
-      navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'فشل إنشاء الحساب');
-    } finally {
-      setIsLoading(false);
-    }
+  const handleHelp = async () => {
+    await runAction({
+      key: 'register-help',
+      successMessage: 'تم إرسال طلب المساعدة لفريق الدعم.',
+      errorMessage: 'تعذر إرسال طلب المساعدة.',
+    });
   };
 
   return (
@@ -50,7 +40,11 @@ const Register: React.FC = () => {
       <form className="space-y-6" onSubmit={handleSubmit}>
         <ActionBanner feedback={feedback} onDismiss={clearFeedback} variant="compact" />
 
-        {error && <div className="text-error text-sm bg-error-container p-4 rounded-xl text-center font-medium">{error}</div>}
+        {error && (
+          <div className="text-error text-sm bg-error-container p-4 rounded-xl text-center font-medium">
+            {error}
+          </div>
+        )}
 
         <div className="space-y-4">
           <div>
@@ -99,7 +93,11 @@ const Register: React.FC = () => {
 
         <label className="flex items-center justify-end gap-2 text-sm">
           <span>أوافق على شروط الاستخدام</span>
-          <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={acceptTerms}
+            onChange={(e) => setAcceptTerms(e.target.checked)}
+          />
         </label>
 
         <button
@@ -119,9 +117,8 @@ const Register: React.FC = () => {
       </p>
 
       <button
-        onClick={async () => {
-          await runAction({ key: 'register-help', successMessage: 'تم إرسال طلب المساعدة لفريق الدعم.', errorMessage: 'تعذر إرسال طلب المساعدة.' });
-        }}
+        type="button"
+        onClick={handleHelp}
         disabled={isBusy('register-help')}
         className="text-secondary text-sm font-bold underline underline-offset-4 disabled:opacity-50"
       >
