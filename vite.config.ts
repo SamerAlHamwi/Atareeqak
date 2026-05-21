@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://api.onwayride.me/public/api',
+        target: 'https://api.onwayride.me/api',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
