@@ -1,0 +1,98 @@
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { tripsApi } from '../api/tripsApi';
+import type { LiveTripResponse, LatLng } from '../api/tripsApi';
+
+export interface LiveTripPassenger {
+  id: number | null;
+  name: string;
+  seats: number;
+}
+
+export interface LiveTrip {
+  id: number;
+  tripRef: string;
+  driverName: string;
+  driverPhone: string | null;
+  from: string;
+  to: string;
+  pickupCoords: LatLng | null;
+  destinationCoords: LatLng | null;
+  /** Route path as [lat, lng] pairs, ready for Leaflet */
+  path: [number, number][];
+  etaMinutes: number | null;
+  minutesElapsed: number;
+  passengers: LiveTripPassenger[];
+  passengerCount: number;
+  distanceKm: number | null;
+  vehicleType: string | null;
+}
+
+const REFRESH_INTERVAL_MS = 30_000;
+
+const toPath = (geometry: LiveTripResponse['route']['geometry']): [number, number][] => {
+  if (!geometry || !Array.isArray(geometry.coordinates)) {
+    return [];
+  }
+  // GeoJSON stores [lng, lat]; Leaflet wants [lat, lng]
+  return geometry.coordinates
+    .filter((pair) => Array.isArray(pair) && pair.length >= 2)
+    .map(([lng, lat]) => [lat, lng] as [number, number]);
+};
+
+const mapLiveTrip = (trip: LiveTripResponse): LiveTrip => ({
+  id: trip.id,
+  tripRef: trip.trip_ref,
+  driverName: trip.driver?.name || 'غير معروف',
+  driverPhone: trip.driver?.communication_number ?? null,
+  from: trip.route?.from || '',
+  to: trip.route?.to || '',
+  pickupCoords: trip.route?.pickup_coords ?? null,
+  destinationCoords: trip.route?.destination_coords ?? null,
+  path: toPath(trip.route?.geometry ?? null),
+  etaMinutes: trip.timing?.eta_minutes ?? null,
+  minutesElapsed: trip.timing?.minutes_elapsed ?? 0,
+  passengers: trip.passengers || [],
+  passengerCount: trip.passenger_count ?? 0,
+  distanceKm: trip.distance_km,
+  vehicleType: trip.vehicle_type,
+});
+
+interface UseLiveTripsReturn {
+  liveTrips: LiveTrip[];
+  isLoading: boolean;
+  error: Error | null;
+  refresh: () => Promise<void>;
+}
+
+export const useLiveTrips = (): UseLiveTripsReturn => {
+  const [liveTrips, setLiveTrips] = useState<LiveTrip[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const hasLoadedRef = useRef(false);
+
+  const fetchLiveTrips = useCallback(async () => {
+    if (!hasLoadedRef.current) {
+      setIsLoading(true);
+    }
+    try {
+      const trips = await tripsApi.getLiveTrips();
+      setLiveTrips((trips || []).map(mapLiveTrip));
+      setError(null);
+      hasLoadedRef.current = true;
+    } catch (err) {
+      const fetchError = err instanceof Error ? err : new Error('Failed to load live trips');
+      setError(fetchError);
+      console.error(fetchError.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchLiveTrips();
+    const interval = setInterval(() => void fetchLiveTrips(), REFRESH_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [fetchLiveTrips]);
+
+  return { liveTrips, isLoading, error, refresh: fetchLiveTrips };
+};

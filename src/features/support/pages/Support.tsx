@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
 import { useSupport } from '../hooks/useSupport';
-import type { StatusFilter } from '../hooks/useSupport';
+import type { StatusFilter, SupportView } from '../hooks/useSupport';
 import { SupportStats } from '../components/SupportStats';
 import { ComplaintDetails } from '../components/ComplaintDetails';
 
@@ -15,6 +15,9 @@ const statusBadgeClasses: Record<string, string> = {
   escalated: 'bg-red-100 text-red-700',
 };
 
+const inboxStatusOptions: StatusFilter[] = ['pending', 'in_review', 'resolved', 'closed'];
+const escalatedStatusOptions: StatusFilter[] = ['escalated', 'resolved', 'closed'];
+
 const Support: React.FC = () => {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'ar';
@@ -22,17 +25,21 @@ const Support: React.FC = () => {
 
   const {
     counts,
+    escalatedCounts,
     isLoading,
     error,
     selectedComplaint,
     setSelectedComplaint,
     statusFilter,
     setStatusFilter,
+    view,
+    setView,
     replyText,
     setReplyText,
     visibleComplaints,
     respondToComplaint,
     escalateComplaint,
+    resolveEscalatedComplaint,
   } = useSupport();
 
   const handleSendReply = useCallback(async () => {
@@ -50,12 +57,35 @@ const Support: React.FC = () => {
     if (!selectedComplaint) return;
     await runAction({
       key: `resolve-${selectedComplaint.id}`,
-      action: () => respondToComplaint(selectedComplaint, replyText.trim(), 'resolved'),
+      action: () =>
+        view === 'escalated'
+          ? resolveEscalatedComplaint(selectedComplaint, replyText.trim(), 'resolved')
+          : respondToComplaint(selectedComplaint, replyText.trim(), 'resolved'),
       successMessage: t('support.resolve_success', { id: selectedComplaint.id }),
       errorMessage: t('support.resolve_failed'),
       onSuccess: () => setReplyText(''),
     });
-  }, [selectedComplaint, replyText, respondToComplaint, setReplyText, runAction, t]);
+  }, [
+    selectedComplaint,
+    replyText,
+    view,
+    respondToComplaint,
+    resolveEscalatedComplaint,
+    setReplyText,
+    runAction,
+    t,
+  ]);
+
+  const handleCloseComplaint = useCallback(async () => {
+    if (!selectedComplaint) return;
+    await runAction({
+      key: `close-${selectedComplaint.id}`,
+      action: () => resolveEscalatedComplaint(selectedComplaint, replyText.trim(), 'closed'),
+      successMessage: t('support.close_success', { id: selectedComplaint.id }),
+      errorMessage: t('support.close_failed'),
+      onSuccess: () => setReplyText(''),
+    });
+  }, [selectedComplaint, replyText, resolveEscalatedComplaint, setReplyText, runAction, t]);
 
   const handleEscalate = useCallback(async () => {
     if (!selectedComplaint) return;
@@ -70,6 +100,8 @@ const Support: React.FC = () => {
     });
   }, [selectedComplaint, replyText, escalateComplaint, setReplyText, runAction, t]);
 
+  const statusOptions = view === 'escalated' ? escalatedStatusOptions : inboxStatusOptions;
+
   return (
     <div className="space-y-10">
       <ActionBanner feedback={feedback} onDismiss={clearFeedback} />
@@ -80,8 +112,35 @@ const Support: React.FC = () => {
         </div>
       )}
 
-      {/* Summary Stats */}
-      <SupportStats counts={counts} isLoading={isLoading} />
+      {/* View Tabs */}
+      <section className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex p-1 bg-surface-container-low rounded-xl">
+          {(['inbox', 'escalated'] as SupportView[]).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setView(tab)}
+              className={`flex items-center gap-2 px-6 py-2 text-sm font-medium rounded-lg transition-colors ${
+                view === tab
+                  ? 'bg-surface-container-lowest text-primary font-bold shadow-sm'
+                  : 'text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              <span className="material-symbols-outlined text-lg">
+                {tab === 'inbox' ? 'inbox' : 'priority_high'}
+              </span>
+              {t(`support.tab_${tab}`)}
+              {tab === 'escalated' && escalatedCounts && escalatedCounts.escalated > 0 && (
+                <span className="bg-error text-on-error text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  {escalatedCounts.escalated}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Summary Stats (global complaint counts) */}
+      <SupportStats counts={counts} isLoading={isLoading && !counts} />
 
       {/* Main Workspace Layout */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -96,10 +155,11 @@ const Support: React.FC = () => {
                 className="bg-surface border-none text-xs rounded-full px-4 py-2 ring-1 ring-outline-variant/30 focus:ring-secondary cursor-pointer"
               >
                 <option value="all">{t('support.all_statuses')}</option>
-                <option value="pending">{t('support.pending')}</option>
-                <option value="in_review">{t('support.in_review')}</option>
-                <option value="resolved">{t('support.resolved')}</option>
-                <option value="closed">{t('support.closed')}</option>
+                {statusOptions.map((status) => (
+                  <option key={status} value={status}>
+                    {t(`support.${status}`)}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -126,7 +186,7 @@ const Support: React.FC = () => {
                 ) : visibleComplaints.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-12 text-center text-on-surface-variant">
-                      {t('common.no_data')}
+                      {view === 'escalated' ? t('support.no_escalated') : t('common.no_data')}
                     </td>
                   </tr>
                 ) : (
@@ -203,6 +263,8 @@ const Support: React.FC = () => {
           onResolve={handleResolve}
           onEscalate={handleEscalate}
           isBusy={isBusy}
+          mode={view}
+          onCloseComplaint={handleCloseComplaint}
         />
       </section>
     </div>

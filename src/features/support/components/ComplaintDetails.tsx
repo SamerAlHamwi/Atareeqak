@@ -10,6 +10,8 @@ interface ComplaintDetailsProps {
   onResolve: () => void;
   onEscalate: () => void;
   isBusy: (key: string) => boolean;
+  mode?: 'inbox' | 'escalated';
+  onCloseComplaint?: () => void;
 }
 
 export const ComplaintDetails: React.FC<ComplaintDetailsProps> = ({
@@ -20,6 +22,8 @@ export const ComplaintDetails: React.FC<ComplaintDetailsProps> = ({
   onResolve,
   onEscalate,
   isBusy,
+  mode = 'inbox',
+  onCloseComplaint,
 }) => {
   const { t } = useTranslation();
 
@@ -98,7 +102,41 @@ export const ComplaintDetails: React.FC<ComplaintDetailsProps> = ({
             </p>
           )}
 
-          {!isClosed && (
+          {!isClosed && mode === 'escalated' && (
+            <div>
+              <h5 className="text-xs font-bold text-indigo-900 mb-2 text-start">
+                {t('support.resolution_title')}
+              </h5>
+              <textarea
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                className="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm focus:ring-1 focus:ring-secondary min-h-[100px] outline-none mb-3 text-start"
+                placeholder={t('support.resolution_placeholder')}
+              ></textarea>
+              <div className="flex gap-2">
+                <button
+                  onClick={onResolve}
+                  disabled={replyText.trim().length < 10 || isBusy(`resolve-${complaint.id}`)}
+                  className="flex-1 bg-secondary text-on-secondary text-xs font-bold py-3 rounded-lg hover:bg-secondary/90 transition-all flex items-center justify-center gap-2 shadow-sm shadow-secondary/20 disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined text-sm">task_alt</span>
+                  {t('support.resolve_and_notify')}
+                </button>
+                <button
+                  onClick={onCloseComplaint}
+                  disabled={replyText.trim().length < 10 || isBusy(`close-${complaint.id}`)}
+                  className="bg-surface-container-high text-on-surface text-xs font-bold px-4 py-3 rounded-lg hover:bg-slate-200 transition-all disabled:opacity-50"
+                >
+                  {t('support.close_complaint')}
+                </button>
+              </div>
+              <p className="text-[10px] text-on-surface-variant mt-2 text-start">
+                {t('support.reply_min_hint')}
+              </p>
+            </div>
+          )}
+
+          {!isClosed && mode === 'inbox' && (
             <div>
               <h5 className="text-xs font-bold text-indigo-900 mb-2 text-start">
                 {t('support.quick_reply')}

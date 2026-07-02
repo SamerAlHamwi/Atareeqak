@@ -49,6 +49,40 @@ export interface TripsListResponse {
   };
 }
 
+export interface LatLng {
+  lat: number;
+  lng: number;
+}
+
+export interface LiveTripResponse {
+  id: number;
+  trip_ref: string;
+  driver: {
+    id: number | null;
+    name: string;
+    profile_photo: string | null;
+    communication_number: string | null;
+  };
+  route: {
+    from: string;
+    to: string;
+    pickup_coords: LatLng | null;
+    destination_coords: LatLng | null;
+    // GeoJSON LineString: coordinates are [lng, lat] pairs
+    geometry: { type: string; coordinates: [number, number][] } | null;
+  };
+  timing: {
+    departure_time: string;
+    minutes_elapsed: number;
+    eta_minutes: number | null;
+    duration_total: number | null;
+  };
+  passengers: { id: number | null; name: string; seats: number }[];
+  passenger_count: number;
+  vehicle_type: string | null;
+  distance_km: number | null;
+}
+
 export interface PopularRouteResponse {
   from: string;
   to: string;
@@ -76,7 +110,7 @@ export const tripsApi = {
     });
     return response.data;
   },
-  getLiveTrips: async (): Promise<TripResponse[]> => {
+  getLiveTrips: async (): Promise<LiveTripResponse[]> => {
     const response = await api.get(ENDPOINTS.TRIPS.LIVE);
     return response.data.data || response.data;
   },

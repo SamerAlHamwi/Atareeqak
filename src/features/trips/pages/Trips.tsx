@@ -5,6 +5,7 @@ import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
 import { useTrips } from '../hooks/useTrips';
 import type { Trip } from '../hooks/useTrips';
+import { useLiveTrips } from '../hooks/useLiveTrips';
 import { TripsTable } from '../components/TripsTable';
 import { TripDetailsCard } from '../components/TripDetailsCard';
 import { MonitoringSidebar } from '../components/MonitoringSidebar';
@@ -31,6 +32,8 @@ const Trips: React.FC = () => {
     addDraftTrip,
     isLoading,
   } = useTrips();
+
+  const { liveTrips, isLoading: isLoadingLive } = useLiveTrips();
 
   const handleNewTrip = async () => {
     await runAction({
@@ -153,6 +156,8 @@ const Trips: React.FC = () => {
         {/* Detailed Trip Preview Card */}
         <TripDetailsCard
           trip={selectedTrip}
+          liveTrips={liveTrips}
+          isLoadingLive={isLoadingLive}
           onContactDriver={handleContactDriver}
           isContacting={isBusy('contact-driver')}
         />

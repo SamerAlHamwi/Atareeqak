@@ -46,7 +46,26 @@ export interface ComplaintsListResponse {
   counts: ComplaintCounts;
 }
 
+export interface EscalatedCounts {
+  escalated: number;
+  resolved: number;
+  closed: number;
+}
+
+export interface EscalatedComplaintsResponse {
+  status: string;
+  data: ComplaintResponse[];
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
+  counts: EscalatedCounts;
+}
+
 export type RespondStatus = 'in_review' | 'resolved' | 'closed';
+export type EscalatedResolveStatus = 'resolved' | 'closed';
 
 export const supportApi = {
   getComplaints: async (
@@ -80,16 +99,16 @@ export const supportApi = {
     return response.data;
   },
   getEscalatedComplaints: async (
-    params: { page?: number; per_page?: number } = {}
-  ): Promise<ComplaintsListResponse> => {
+    params: { status?: string; type?: string; page?: number; per_page?: number } = {}
+  ): Promise<EscalatedComplaintsResponse> => {
     const response = await api.get(ENDPOINTS.STAFF.ESCALATED_COMPLAINTS, { params });
     return response.data;
   },
   resolveEscalatedComplaint: async (
     id: string | number,
     resolutionNotes: string,
-    status: 'resolved' | 'closed' = 'resolved'
-  ) => {
+    status: EscalatedResolveStatus = 'resolved'
+  ): Promise<{ status: string; message: string; data: ComplaintResponse }> => {
     const response = await api.patch(ENDPOINTS.STAFF.RESOLVE_ESCALATED(id), {
       resolution_notes: resolutionNotes,
       status,

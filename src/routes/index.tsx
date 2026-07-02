@@ -17,6 +17,8 @@ import Reports from '../features/reports/pages/Reports';
 import Support from '../features/support/pages/Support';
 import Settings from '../features/settings/pages/Settings';
 import Staff from '../features/staff/pages/Staff';
+import Verifications from '../features/verification/pages/Verifications';
+import Reviews from '../features/reviews/pages/Reviews';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -38,6 +40,8 @@ const AppRoutes: React.FC = () => {
             <Route path="/drivers" element={<Drivers />} />
             <Route path="/drivers/:driverId" element={<DriverDetails />} />
             <Route path="/staff" element={<Staff />} />
+            <Route path="/verifications" element={<Verifications />} />
+            <Route path="/reviews" element={<Reviews />} />
             <Route path="/trips" element={<Trips />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/support" element={<Support />} />

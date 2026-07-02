@@ -100,6 +100,45 @@ const MainLayout: React.FC = () => {
             <span>{t('nav.passengers')}</span>
           </NavLink>
           <NavLink
+            to="/verifications"
+            className={({ isActive }) =>
+              `flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-black transition-all duration-200 ${
+                isActive
+                  ? 'bg-[#d1f5ea] text-[#134e48]'
+                  : 'text-slate-500 hover:bg-slate-50'
+              }`
+            }
+          >
+            <span className="material-symbols-outlined text-2xl font-bold">verified_user</span>
+            <span>{t('nav.verifications')}</span>
+          </NavLink>
+          <NavLink
+            to="/reviews"
+            className={({ isActive }) =>
+              `flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-black transition-all duration-200 ${
+                isActive
+                  ? 'bg-[#d1f5ea] text-[#134e48]'
+                  : 'text-slate-500 hover:bg-slate-50'
+              }`
+            }
+          >
+            <span className="material-symbols-outlined text-2xl font-bold">rate_review</span>
+            <span>{t('nav.reviews')}</span>
+          </NavLink>
+          <NavLink
+            to="/support"
+            className={({ isActive }) =>
+              `flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-black transition-all duration-200 ${
+                isActive
+                  ? 'bg-[#d1f5ea] text-[#134e48]'
+                  : 'text-slate-500 hover:bg-slate-50'
+              }`
+            }
+          >
+            <span className="material-symbols-outlined text-2xl font-bold">support_agent</span>
+            <span>{t('nav.support')}</span>
+          </NavLink>
+          <NavLink
             to="/reports"
             className={({ isActive }) =>
               `flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-black transition-all duration-200 ${
