@@ -1,4 +1,5 @@
 import api from '../../../services/api';
+import { ENDPOINTS } from '../../../services/endpoints';
 
 export interface RideStats {
   total: number;
@@ -44,7 +45,7 @@ export const reportsApi = {
     if (startDate) params.start_date = startDate;
     if (endDate) params.end_date = endDate;
 
-    const response = await api.get('/admin/reports', { params });
+    const response = await api.get(ENDPOINTS.REPORTS, { params });
     return response.data;
   },
 
@@ -56,7 +57,7 @@ export const reportsApi = {
     if (startDate) params.start_date = startDate;
     if (endDate) params.end_date = endDate;
 
-    const response = await api.get('/admin/export/pdf', {
+    const response = await api.get(ENDPOINTS.EXPORT_PDF, {
       params,
       responseType: 'blob',
     });

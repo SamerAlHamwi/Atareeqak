@@ -1,6 +1,9 @@
 {
   "common": {
-    "dismiss": "Dismiss"
+    "dismiss": "Dismiss",
+    "loading": "Loading...",
+    "load_failed": "Failed to load data",
+    "no_data": "No data available"
   },
   "auth": {
     "login_title": "Administrative Dashboard",
@@ -95,7 +98,9 @@
       "active": "Active",
       "completed": "Completed",
       "cancelled": "Cancelled"
-    }
+    },
+    "export_success": "Dashboard report PDF downloaded",
+    "export_failed": "Could not export report — requires system admin privileges"
   },
   "users": {
     "title": "User Management",
@@ -133,7 +138,34 @@
     "phone": "Phone Number",
     "car_type": "Car Type",
     "city": "City",
-    "edit_profile": "Edit Profile"
+    "edit_profile": "Edit Profile",
+    "suspended_users": "Suspended accounts",
+    "open_profile": "Open full profile",
+    "ban_reason_default": "Account suspended by admin for violating platform policies",
+    "ban_success": "{{name}} has been suspended",
+    "unban_success": "{{name}} has been reactivated",
+    "status_update_failed": "Could not update user status",
+    "back_to_list": "Back to passengers",
+    "active_label": "Active",
+    "charge_wallet": "Charge wallet",
+    "charge_amount_placeholder": "Amount",
+    "confirm_charge": "Confirm charge",
+    "charge_success": "Wallet charged with {{amount}}",
+    "charge_failed": "Could not charge wallet",
+    "total_spending": "Total spending",
+    "monthly_stats_title": "Monthly trip statistics",
+    "monthly_stats_subtitle": "Passenger activity over recent months",
+    "recent_trips": "Recent trips",
+    "show_latest": "Show latest",
+    "trip_cost": "Cost",
+    "complaints_title": "Complaints & reports",
+    "wallet_charge_log": "Wallet charge log",
+    "transaction_id": "Transaction ID",
+    "amount": "Amount",
+    "processed_by": "Processed by",
+    "charge_completed": "Completed",
+    "account_info": "Account information",
+    "ban_reason_label": "Ban reason"
   },
   "drivers": {
     "title": "Driver Management",
@@ -167,7 +199,27 @@
     },
     "by_system": "by System",
     "by_admin": "by Admin",
-    "pagination_info": "Showing {{start}}-{{end}} of {{total}} drivers"
+    "pagination_info": "Showing {{start}}-{{end}} of {{total}} drivers",
+    "ban_reason_default": "Account suspended by admin for violating platform policies",
+    "ban_success": "{{name}} has been suspended",
+    "unban_success": "{{name}} has been reactivated",
+    "status_update_failed": "Could not update driver status",
+    "back_to_list": "Back to drivers list",
+    "member_since": "Member since: {{date}}",
+    "total_rides": "Total rides",
+    "completed_rides": "{{count}} completed rides",
+    "cancelled_rides": "{{count}} cancelled rides",
+    "total_earnings": "Total earnings",
+    "net_after_fees": "Net earnings after commission",
+    "cancel_rate": "Cancellation rate",
+    "favorite_destination": "Favorite destination",
+    "visit_count": "{{count}} visits",
+    "vehicle_color": "Color",
+    "vehicle_seats": "Seats",
+    "documents_title": "Verification & documents",
+    "view_document": "View file",
+    "recent_rides": "Recent rides",
+    "price_per_seat": "Price per seat"
   },
   "trips": {
     "title": "Trip Management",
@@ -193,9 +245,10 @@
     "map_update_freq": "Updated every 30 seconds",
     "route_monitoring": "Route Monitoring",
     "congestion": {
-        "very_high": "Very High",
-        "medium": "Medium",
-        "low": "Low"
+      "very_high": "Very High",
+      "medium": "Medium",
+      "low": "Low",
+      "high": "High"
     },
     "current_trips": "{{count}} current trips",
     "current_passengers": "{{count}} passengers",
@@ -209,7 +262,10 @@
     "view_all_activity": "View All Activity",
     "top_drivers": "Top Drivers",
     "minutes_ago": "{{count}} mins ago",
-    "tomorrow": "Tomorrow"
+    "tomorrow": "Tomorrow",
+    "cancel_reason_default": "Trip cancelled by admin from the dashboard",
+    "cancel_success": "Trip {{id}} cancelled successfully",
+    "cancel_failed": "Could not cancel trip"
   },
   "reports": {
     "title": "Financial Management",
@@ -238,15 +294,40 @@
     "filter": "Filter",
     "pagination_info": "Showing {{count}} of {{total}} transactions",
     "types": {
-        "commission": "Platform Commission",
-        "credit": "Credit Recharge",
-        "refund": "Refund Request",
-        "withdrawal": "Balance Withdrawal"
+      "commission": "Platform Commission",
+      "credit": "Credit Recharge",
+      "refund": "Refund Request",
+      "withdrawal": "Balance Withdrawal"
     },
     "txn_status": {
-        "completed": "Completed",
-        "pending": "Pending"
-    }
+      "completed": "Completed",
+      "pending": "Pending"
+    },
+    "locked_funds": "Funds locked in active rides",
+    "active_rides_count": "{{count}} active rides",
+    "wallet_requests": "Wallet requests",
+    "request_type": {
+      "charge": "Charge",
+      "withdraw": "Withdraw"
+    },
+    "request_status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "approve": "Approve",
+    "reject": "Reject",
+    "approve_success": "Request {{id}} approved and wallet balance updated",
+    "reject_success": "Request {{id}} rejected",
+    "request_action_failed": "Could not process the request",
+    "manual_credit_desc": "Charge a user wallet directly by phone number (system admin only)",
+    "credit_phone_placeholder": "Phone number",
+    "credit_amount_placeholder": "Amount",
+    "credit_success": "Charged {{amount}} to wallet {{phone}}",
+    "credit_failed": "Could not charge wallet",
+    "export_success": "Financial report PDF downloaded",
+    "export_failed": "Could not export report",
+    "load_failed_hint": "Could not load the financial report — this page requires system admin privileges"
   },
   "support": {
     "title": "Support & Complaints",
@@ -284,7 +365,21 @@
     "moderation_tools": "Moderation Tools",
     "hide_comment": "Hide Comment",
     "security_review": "Security Review",
-    "driver_history_note": "Based on driver history, this is the first financial complaint against them in 6 months."
+    "driver_history_note": "Based on driver history, this is the first financial complaint against them in 6 months.",
+    "in_review": "In Review",
+    "closed": "Closed",
+    "escalated": "Escalated",
+    "mark_resolved": "Resolve",
+    "resolution_notes": "Resolution log",
+    "assigned_to": "Assigned to",
+    "reply_min_hint": "Reply must be at least 10 characters",
+    "reply_success": "Reply sent to {{user}}",
+    "reply_failed": "Could not send reply",
+    "resolve_success": "Complaint {{id}} resolved",
+    "resolve_failed": "Could not resolve complaint",
+    "escalate_success": "Complaint {{id}} escalated to admin",
+    "escalate_failed": "Could not escalate complaint",
+    "escalate_reason_default": "Escalated by support agent for admin review"
   },
   "settings": {
     "title": "System Settings",
@@ -343,7 +438,10 @@
     "roles": {
       "ops_manager": "Operations Manager",
       "finance": "Financial Accountant",
-      "support": "Technical Support"
+      "support": "Technical Support",
+      "system_admin": "System Admin",
+      "admin": "Admin",
+      "support_agent": "Support Agent"
     },
     "status": {
       "active": "Active",
@@ -368,7 +466,26 @@
     "perm_edit_configs": "Edit Global Configurations",
     "save_edits": "Save Changes",
     "cancel": "Cancel",
-    "pagination_info": "Showing {{count}} of {{total}} employees"
+    "pagination_info": "Showing {{count}} of {{total}} employees",
+    "inactive_staff": "Inactive accounts",
+    "create_success": "Employee account created for {{name}}",
+    "create_failed": "Could not create employee account",
+    "activate": "Activate account",
+    "deactivate": "Deactivate account",
+    "activate_success": "{{name}} activated",
+    "deactivate_success": "{{name}} deactivated",
+    "toggle_failed": "Could not update employee status",
+    "reset_password_title": "Reset password",
+    "reset_password_action": "Reset",
+    "reset_password_success": "Password updated for {{name}}",
+    "reset_password_failed": "Could not update password",
+    "form_first_name": "First name",
+    "form_last_name": "Last name",
+    "form_username": "Username",
+    "form_email": "Email (optional)",
+    "form_password": "Password (min 8 characters)",
+    "form_new_password": "New password (min 8 characters)",
+    "form_hint": "Username: letters, numbers, dashes only. Password: at least 8 characters"
   },
   "footer": {
     "copyright": "© 2024 Atareeqak. All rights reserved."

@@ -1,117 +1,110 @@
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMockAction } from '../../shared/useMockAction';
+import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
 import { useReports } from '../hooks/useReports';
+import type { WalletRequestRow } from '../hooks/useReports';
 import { OverviewCards } from '../components/OverviewCards';
 import { ManagementSidebar } from '../components/ManagementSidebar';
 import { TransactionTable } from '../components/TransactionTable';
 
 const Reports: React.FC = () => {
-  const { i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar';
-  const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
+  const { t } = useTranslation();
+  const { runAction, isBusy, feedback, clearFeedback } = useApiAction();
 
   const {
-    commissionRate,
-    setCommissionRate,
+    report,
+    filteredWallets,
+    requests,
+    statusFilter,
+    setStatusFilter,
     walletQuery,
     setWalletQuery,
-    filteredTransactions,
-    toggleTransactionStatus,
+    isLoading,
+    error,
+    approveRequest,
+    rejectRequest,
+    chargeWalletByPhone,
+    exportPdf,
   } = useReports();
 
-  const handleUpdateCommission = useCallback(async () => {
-    await runAction({
-      key: 'update-commission',
-      successMessage: `Commission set to ${commissionRate || '0'}%.`,
-      errorMessage: 'Failed to update commission rate.',
-    });
-  }, [commissionRate, runAction]);
-
-  const handleSearchWallet = useCallback(async () => {
-    await runAction({
-      key: 'wallet-search',
-      successMessage: walletQuery.trim()
-        ? `Search done for "${walletQuery}".`
-        : 'Wallet search reset.',
-      errorMessage: 'Wallet search failed.',
-    });
-  }, [walletQuery, runAction]);
-
-  const handleManualCredit = useCallback(async () => {
-    await runAction({
-      key: 'manual-credit',
-      successMessage: 'Manual credit form prepared for API submit.',
-      errorMessage: 'Could not open manual credit form.',
-    });
-  }, [runAction]);
-
-  const handleWithdrawBalance = useCallback(async () => {
-    await runAction({
-      key: 'withdraw-balance',
-      successMessage: 'Withdrawal request draft generated.',
-      errorMessage: 'Failed to prepare withdrawal request.',
-    });
-  }, [runAction]);
-
-  const handleToggleStatus = useCallback(
-    async (txnId: string) => {
+  const handleManualCredit = useCallback(
+    async (phoneNumber: string, amount: number) => {
       await runAction({
-        key: `txn-${txnId}`,
-        successMessage: `${txnId} status updated.`,
-        errorMessage: 'Could not update transaction status.',
-        onSuccess: () => toggleTransactionStatus(txnId),
+        key: 'manual-credit',
+        action: () => chargeWalletByPhone(phoneNumber, amount),
+        successMessage: t('reports.credit_success', { amount, phone: phoneNumber }),
+        errorMessage: t('reports.credit_failed'),
       });
     },
-    [runAction, toggleTransactionStatus]
+    [chargeWalletByPhone, runAction, t]
   );
 
-  const handleFilter = useCallback(async () => {
-    await runAction({
-      key: 'report-filter',
-      successMessage: 'Report filters applied.',
-      errorMessage: 'Could not apply report filter.',
-    });
-  }, [runAction]);
+  const handleApprove = useCallback(
+    async (request: WalletRequestRow) => {
+      await runAction({
+        key: `request-${request.id}`,
+        action: () => approveRequest(request),
+        successMessage: t('reports.approve_success', { id: request.displayId }),
+        errorMessage: t('reports.request_action_failed'),
+      });
+    },
+    [approveRequest, runAction, t]
+  );
+
+  const handleReject = useCallback(
+    async (request: WalletRequestRow) => {
+      await runAction({
+        key: `request-${request.id}`,
+        action: () => rejectRequest(request),
+        successMessage: t('reports.reject_success', { id: request.displayId }),
+        errorMessage: t('reports.request_action_failed'),
+      });
+    },
+    [rejectRequest, runAction, t]
+  );
 
   const handleExport = useCallback(async () => {
     await runAction({
       key: 'export-pdf',
-      successMessage: 'PDF export job started.',
-      errorMessage: 'Could not export report.',
+      action: () => exportPdf(),
+      successMessage: t('reports.export_success'),
+      errorMessage: t('reports.export_failed'),
     });
-  }, [runAction]);
+  }, [exportPdf, runAction, t]);
 
   return (
     <div className="space-y-10">
       <ActionBanner feedback={feedback} onDismiss={clearFeedback} />
 
+      {error && (
+        <div className="bg-error-container text-on-error-container px-6 py-4 rounded-2xl">
+          {t('reports.load_failed_hint')}
+        </div>
+      )}
+
       {/* Overview Bento Grid */}
-      <OverviewCards />
+      <OverviewCards report={report} isLoading={isLoading} />
 
       {/* Secondary Actions Section (Asymmetric Layout) */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         <ManagementSidebar
-          commissionRate={commissionRate}
-          setCommissionRate={setCommissionRate}
           walletQuery={walletQuery}
           setWalletQuery={setWalletQuery}
-          onUpdateCommission={handleUpdateCommission}
-          onSearchWallet={handleSearchWallet}
+          filteredWallets={filteredWallets}
           onManualCredit={handleManualCredit}
-          onWithdrawBalance={handleWithdrawBalance}
           isBusy={isBusy}
-          isRtl={isRtl}
         />
 
         <TransactionTable
-          transactions={filteredTransactions}
-          onToggleStatus={handleToggleStatus}
-          onFilter={handleFilter}
+          requests={requests}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+          onApprove={handleApprove}
+          onReject={handleReject}
           onExport={handleExport}
           isBusy={isBusy}
-          isRtl={isRtl}
+          isLoading={isLoading}
         />
       </section>
     </div>

@@ -1,0 +1,4722 @@
+{
+  "info": {
+    "name": "SyRide — All APIs (Merged)",
+    "description": "Merged from 4 collections: Admin Dashboard API, Admin APIs, Support Agent Staff APIs, System-Admin APIs. 16 duplicated requests removed (staff auth x6, wallet x7, ban/unban x3). Sections: 1 Authentication, 2 Admin Dashboard (/admin, bearer {{access_token}}), 3 Support Agent (/staff), 4 Admin (/staff), 5 System Admin — all /staff sections use bearer {{staff_token}}.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Auth — Admin Dashboard (/admin)",
+          "item": [
+            {
+              "name": "Login",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const res = pm.response.json();",
+                      "if (res.status === 'success') {",
+                      "  pm.collectionVariables.set('access_token', res.tokens.access_token);",
+                      "  pm.collectionVariables.set('refresh_token', res.tokens.refresh_token);",
+                      "  console.log('Tokens saved to collection variables.');",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "login"
+                  ]
+                },
+                "description": "Authenticate as an admin. On success, access_token and refresh_token are saved automatically to collection variables.\n\nAccepts username OR email + password.\n\nReturns:\n- tokens.access_token\n- tokens.refresh_token\n- admin.type (system_admin | sycash)\n- admin.email, name, phone"
+              },
+              "response": [
+                {
+                  "name": "200 – Success",
+                  "originalRequest": {
+                    "auth": {
+                      "type": "noauth"
+                    },
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin\"\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/admin/login",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "login"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"success\",\n  \"message\": \"Login successful\",\n  \"admin\": {\n    \"type\": \"system_admin\",\n    \"email\": \"admin@syride.com\",\n    \"name\": \"System Admin\",\n    \"phone\": \"+963999999999\"\n  },\n  \"tokens\": {\n    \"access_token\": \"<jwt_access_token>\",\n    \"refresh_token\": \"<jwt_refresh_token>\",\n    \"token_type\": \"Bearer\",\n    \"expires_in\": 3600\n  }\n}"
+                },
+                {
+                  "name": "401 – Invalid Credentials",
+                  "originalRequest": {
+                    "auth": {
+                      "type": "noauth"
+                    },
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"username\": \"wrong\",\n  \"password\": \"wrong\"\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/admin/login",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "login"
+                      ]
+                    }
+                  },
+                  "status": "Unauthorized",
+                  "code": 401,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"code\": \"INVALID_CREDENTIALS\",\n  \"message\": \"Invalid admin credentials\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Refresh Token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const res = pm.response.json();",
+                      "if (res.status === 'success') {",
+                      "  pm.collectionVariables.set('access_token', res.tokens.access_token);",
+                      "  if (res.tokens.refresh_token) {",
+                      "    pm.collectionVariables.set('refresh_token', res.tokens.refresh_token);",
+                      "  }",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/refresh",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "refresh"
+                  ]
+                },
+                "description": "Exchange a refresh token for a new access token. New access_token is saved automatically."
+              },
+              "response": [
+                {
+                  "name": "200 – New Tokens",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/admin/refresh",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "refresh"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"success\",\n  \"tokens\": {\n    \"access_token\": \"<new_jwt_access_token>\",\n    \"refresh_token\": \"<new_jwt_refresh_token>\",\n    \"token_type\": \"Bearer\",\n    \"expires_in\": 3600\n  }\n}"
+                },
+                {
+                  "name": "401 – Invalid Refresh Token",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"refresh_token\": \"bad_token\"\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/admin/refresh",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "refresh"
+                      ]
+                    }
+                  },
+                  "status": "Unauthorized",
+                  "code": 401,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"code\": \"REFRESH_TOKEN_INVALID\",\n  \"message\": \"Invalid or expired refresh token\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Logout",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/logout",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "logout"
+                  ]
+                },
+                "description": "Revokes all refresh tokens for the authenticated admin. Requires a valid access token."
+              },
+              "response": [
+                {
+                  "name": "200 – Logged Out",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/admin/logout",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "logout"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"success\",\n  \"message\": \"Logged out successfully\"\n}"
+                }
+              ]
+            }
+          ],
+          "description": "Admin-dashboard authentication. Login saves {{access_token}} / {{refresh_token}} automatically."
+        },
+        {
+          "name": "Auth — Staff / Admin / System-Admin (/staff)",
+          "item": [
+            {
+              "name": "Staff Login",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const res = pm.response.json();",
+                      "if (res.status === 'success' && res.tokens) {",
+                      "    pm.collectionVariables.set('staff_token', res.tokens.access_token);",
+                      "    pm.collectionVariables.set('staff_refresh_token', res.tokens.refresh_token);",
+                      "    console.log('✅ Staff token saved');",
+                      "} else {",
+                      "    console.error('❌ Login failed:', res.message);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"identifier\": \"your_username_or_email\",\n  \"password\": \"your_password\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/staff/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Staff Refresh Token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const res = pm.response.json();",
+                      "if (res.status === 'success' && res.tokens) {",
+                      "    pm.collectionVariables.set('staff_token', res.tokens.access_token);",
+                      "    pm.collectionVariables.set('staff_refresh_token', res.tokens.refresh_token);",
+                      "    console.log('✅ Token refreshed');",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"refresh_token\": \"{{staff_refresh_token}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/staff/refresh",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "refresh"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Staff Logout",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/logout",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "logout"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Staff Me",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/me",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "me"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ],
+          "description": "Shared authentication for support agents, admins, and system admins (all roles log in via /staff/login with their own credentials). Login/refresh save {{staff_token}} / {{staff_refresh_token}} automatically. Duplicated auth requests from the \"Admin APIs\" and \"System-Admin APIs\" collections were removed in favor of these."
+        }
+      ]
+    },
+    {
+      "name": "2. Admin Dashboard (/admin)",
+      "description": "Requires {{access_token}} from Auth — Admin Dashboard.",
+      "item": [
+        {
+          "name": "Dashboard — Overview (BFF)",
+          "item": [
+            {
+              "name": "Full Dashboard (all widgets)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/dashboard",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "dashboard"
+                  ]
+                },
+                "description": "BFF mega-payload. Returns all four widget datasets in a single round-trip:\n- stats (KPI cards)\n- growth_chart (bar chart, last 6 months)\n- city_distribution (horizontal bars)\n- recent_activities (activity table)"
+              },
+              "response": [
+                {
+                  "name": "200 – Full Dashboard Payload",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/admin/dashboard",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "dashboard"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"stats\": {\n      \"total_users\": 1250,\n      \"active_trips\": 47,\n      \"completed_trips\": 3840,\n      \"total_revenue\": { \"raw\": 18500000, \"formatted\": \"185,000.00 SYP\" },\n      \"pending_complaints\": 0,\n      \"verification_requests\": 12\n    },\n    \"growth_chart\": {\n      \"period\": \"last_6_months\",\n      \"data\": [\n        { \"month\": \"Nov\", \"label\": \"Nov 2024\", \"completed_trips\": 580, \"new_users\": 120 },\n        { \"month\": \"Dec\", \"label\": \"Dec 2024\", \"completed_trips\": 640, \"new_users\": 145 }\n      ]\n    },\n    \"city_distribution\": [\n      { \"city\": \"دمشق\", \"city_en\": \"Damascus\", \"count\": 450, \"percentage\": 45 },\n      { \"city\": \"حلب\",  \"city_en\": \"Aleppo\",   \"count\": 210, \"percentage\": 21 }\n    ],\n    \"recent_activities\": [\n      {\n        \"booking_id\": 101,\n        \"user\":   { \"name\": \"Ahmad Khalil\", \"number\": \"XXX-XXX-1234\" },\n        \"driver\": \"Samer Ali\",\n        \"route\":  \"دمشق ← حلب\",\n        \"date\":   { \"raw\": \"2025-04-25T10:30:00+03:00\", \"human\": \"Today, 10:30\" },\n        \"status\": \"completed\",\n        \"value\":  \"5,000.00 SYP\"\n      }\n    ]\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Dashboard – Stats Only (KPI Cards)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/dashboard/stats",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "dashboard",
+                    "stats"
+                  ]
+                },
+                "description": "Widget refresh: returns only the five KPI stat cards without fetching other widget data."
+              },
+              "response": [
+                {
+                  "name": "200 – Stats",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/admin/dashboard/stats",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "dashboard",
+                        "stats"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"total_users\": 1250,\n    \"active_trips\": 47,\n    \"completed_trips\": 3840,\n    \"pending_complaints\": 0,\n    \"verification_requests\": 12\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "growth-chart",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/dashboard/growth?months=6",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "dashboard",
+                    "growth"
+                  ],
+                  "query": [
+                    {
+                      "key": "months",
+                      "value": "6",
+                      "description": "1–12"
+                    }
+                  ]
+                },
+                "description": "Growth chart data for the last N months.\n\nQuery params:\n  months = 1–12 (default 6)"
+              },
+              "response": []
+            },
+            {
+              "name": "city-distribution",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/dashboard/cities",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "dashboard",
+                    "cities"
+                  ]
+                },
+                "description": "Breakdown of users and trips by Syrian city."
+              },
+              "response": []
+            },
+            {
+              "name": "recent-activities",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/dashboard/recent?limit=10",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "dashboard",
+                    "recent"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10",
+                      "description": "1–50"
+                    }
+                  ]
+                },
+                "description": "Most recent booking/trip activity feed.\n\nQuery params:\n  limit = 1–50 (default 10)"
+              },
+              "response": [
+                {
+                  "name": "200 – Recent Activities",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/admin/dashboard/recent?limit=10",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "dashboard",
+                        "recent"
+                      ],
+                      "query": [
+                        {
+                          "key": "limit",
+                          "value": "10"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"success\",\n  \"data\": [\n    {\n      \"booking_id\": 101,\n      \"user\":   { \"name\": \"Ahmad Khalil\", \"number\": \"XXX-XXX-1234\" },\n      \"driver\": \"Samer Ali\",\n      \"route\":  \"دمشق ← حلب\",\n      \"date\":   { \"raw\": \"2025-04-25T10:30:00+03:00\", \"human\": \"Today, 10:30\" },\n      \"status\": \"completed\",\n      \"value\":  \"5,000.00 SYP\"\n    }\n  ]\n}"
+                }
+              ]
+            },
+            {
+              "name": "admin-change-photo",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "photo",
+                      "type": "file",
+                      "value": ""
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/photo",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "photo"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "financial-report",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/report?start_date=2025-01-01&end_date=2025-12-31",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "report"
+                  ],
+                  "query": [
+                    {
+                      "key": "start_date",
+                      "value": "2025-01-01",
+                      "description": "Y-m-d (optional)"
+                    },
+                    {
+                      "key": "end_date",
+                      "value": "2025-12-31",
+                      "description": "Y-m-d (optional)"
+                    }
+                  ]
+                },
+                "description": "Generates a financial report for the given date range.\nOmit both dates to get all-time data.\n\nQuery params:\n  start_date = Y-m-d (optional)\n  end_date   = Y-m-d (optional)"
+              },
+              "response": []
+            },
+            {
+              "name": "export-pdf",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/pdf"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/export/pdf?start_date=2025-01-01&end_date=2025-12-31&sections[]=stats&sections[]=financial&sections[]=growth&sections[]=cities&sections[]=recent",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "export",
+                    "pdf"
+                  ],
+                  "query": [
+                    {
+                      "key": "start_date",
+                      "value": "2025-01-01"
+                    },
+                    {
+                      "key": "end_date",
+                      "value": "2025-12-31"
+                    },
+                    {
+                      "key": "sections[]",
+                      "value": "stats"
+                    },
+                    {
+                      "key": "sections[]",
+                      "value": "financial"
+                    },
+                    {
+                      "key": "sections[]",
+                      "value": "growth"
+                    },
+                    {
+                      "key": "sections[]",
+                      "value": "cities"
+                    },
+                    {
+                      "key": "sections[]",
+                      "value": "recent"
+                    }
+                  ]
+                },
+                "description": "Streams a PDF report inline.\nIn Postman use 'Send and Download' to save the file.\n\nQuery params:\n  start_date  = Y-m-d (optional)\n  end_date    = Y-m-d (optional)\n  sections[]  = stats | financial | growth | cities | recent\n                omit to include ALL sections"
+              },
+              "response": []
+            }
+          ],
+          "description": "Dashboard widget endpoints. All require Bearer access token."
+        },
+        {
+          "name": "Wallets & Wallet Requests",
+          "item": [
+            {
+              "name": "Get My Wallet",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/wallet",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "wallet"
+                  ]
+                },
+                "description": "Returns the authenticated admin's own wallet details (balance, wallet number, phone). Works for both system_admin and sycash admins."
+              },
+              "response": [
+                {
+                  "name": "200 – My Wallet",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/admin/wallet",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "wallet"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"success\",\n  \"wallet\": {\n    \"id\": 1,\n    \"wallet_number\": \"1234567890123456\",\n    \"phone_number\": \"+963999999999\",\n    \"balance\": \"500,000.00 SYP\",\n    \"admin_type\": \"system_admin\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Get All Wallets (Overview)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/wallets",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "wallets"
+                  ]
+                },
+                "description": "Returns both admin wallets (system_admin + sycash) and all user wallets in the system."
+              },
+              "response": [
+                {
+                  "name": "200 – All Wallets",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/admin/wallets",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "wallets"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"success\",\n  \"admin_wallets\": [\n    {\n      \"id\": 1,\n      \"wallet_number\": \"PRI-0000000001\",\n      \"phone_number\": \"+963999999999\",\n      \"balance\": \"500,000.00 SYP\",\n      \"admin_type\": \"system_admin\"\n    },\n    {\n      \"id\": 2,\n      \"wallet_number\": \"SYC-0000000001\",\n      \"phone_number\": \"+963988888888\",\n      \"balance\": \"75,000.00 SYP\",\n      \"admin_type\": \"sycash\"\n    }\n  ],\n  \"all_wallets\": [\n    {\n      \"id\": 3,\n      \"wallet_number\": \"9876543210987654\",\n      \"phone_number\": \"0912345678\",\n      \"balance\": \"10,000.00 SYP\",\n      \"owner\": \"Ahmad Khalil\"\n    }\n  ]\n}"
+                }
+              ]
+            },
+            {
+              "name": "Charge User Wallet [Primary Only]",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"phone_number\": \"0994660980\",\n  \"amount\": 500000\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/wallet/charge",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "wallet",
+                    "charge"
+                  ]
+                },
+                "description": "Primary admin only. Credits a user wallet by phone number.\n\nBody:\n  phone_number  string   required, 10–15 chars\n  amount        numeric  required, 1–1,000,000"
+              },
+              "response": [
+                {
+                  "name": "200 – Wallet Charged",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"phone_number\": \"0994660980\",\n  \"amount\": 500000\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/admin/wallet/charge",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "wallet",
+                        "charge"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"success\",\n  \"message\": \"Wallet charged successfully\",\n  \"wallet\": {\n    \"phone_number\": \"0994660980\",\n    \"previous_balance\": \"10,000.00 SYP\",\n    \"new_balance\": \"510,000.00 SYP\"\n  },\n  \"transaction_id\": \"PRIMARY_1714040000_Ab3xYz\"\n}"
+                },
+                {
+                  "name": "404 – Wallet Not Found",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"phone_number\": \"0000000000\",\n  \"amount\": 500000\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/admin/wallet/charge",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "wallet",
+                        "charge"
+                      ]
+                    }
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"code\": \"WALLET_NOT_FOUND\",\n  \"message\": \"No wallet found for this phone number\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Get Wallet Transactions",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/wallet/{{wallet_id}}/transactions",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "wallet",
+                    "{{wallet_id}}",
+                    "transactions"
+                  ]
+                },
+                "description": "Returns paginated transaction history for a specific wallet by its database ID.\n\nPath param:\n  wallet_id — the wallet's integer ID (get from Get All Wallets)"
+              },
+              "response": [
+                {
+                  "name": "200 – Wallet Transactions",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/admin/wallet/4/transactions",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "wallet",
+                        "4",
+                        "transactions"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"success\",\n  \"wallet\": {\n    \"id\": 4,\n    \"wallet_number\": \"9876543210987654\",\n    \"phone_number\": \"0912345678\",\n    \"balance\": 510000.00\n  },\n  \"transactions\": {\n    \"current_page\": 1,\n    \"data\": [\n      {\n        \"id\": 55,\n        \"type\": \"admin_charge\",\n        \"amount\": 500000.00,\n        \"previous_balance\": 10000.00,\n        \"new_balance\": 510000.00,\n        \"description\": \"Balance topped up by admin\",\n        \"transaction_id\": \"ADM-2-1714040000\",\n        \"status\": \"completed\",\n        \"created_at\": \"2025-04-25T10:30:00.000000Z\"\n      }\n    ],\n    \"per_page\": 10,\n    \"total\": 1\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "wallet-requests-list",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/wallet/requests?status=pending&type=charge&per_page=15&page=1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "wallet",
+                    "requests"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "pending",
+                      "description": "pending | approved | rejected"
+                    },
+                    {
+                      "key": "type",
+                      "value": "charge",
+                      "description": "charge | withdraw — omit for all"
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "15"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    }
+                  ]
+                },
+                "description": "Lists user-submitted charge or withdraw requests with tab badge counts.\n\nQuery params:\n  status   = pending | approved | rejected (default: pending)\n  type     = charge | withdraw (omit for all)\n  per_page = 1–50 (default 15)\n  page     = int"
+              },
+              "response": []
+            },
+            {
+              "name": "approve-wallet-request",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"admin_notes\": \"Transfer confirmed via bank receipt #12345.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/wallet/requests/{{request_id}}/approve",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "wallet",
+                    "requests",
+                    "{{request_id}}",
+                    "approve"
+                  ]
+                },
+                "description": "Approve a pending charge or withdraw request.\nCharge → adds amount to wallet. Withdraw → deducts amount (re-checks balance).\nAtomic DB transaction. User is notified.\n\nBody:\n  admin_notes  string  optional"
+              },
+              "response": []
+            },
+            {
+              "name": "reject-wallet-request",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"admin_notes\": \"Receipt was unclear. Please resubmit with a clearer image.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/wallet/requests/{{request_id}}/reject",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "wallet",
+                    "requests",
+                    "{{request_id}}",
+                    "reject"
+                  ]
+                },
+                "description": "Reject a pending request — no balance change occurs.\nUser is notified with admin_notes as the reason.\n\nBody:\n  admin_notes  string  optional"
+              },
+              "response": []
+            }
+          ],
+          "description": "Canonical wallet endpoints. The unstructured wallet requests from the \"Admin APIs\" collection (Get All Wallets, Charge Wallet, Get Wallet Transactions, show-wallet-requests, check-user-status, approve/decline wallet request) were duplicates of these and have been removed."
+        },
+        {
+          "name": "Verifications (/admin)",
+          "item": [
+            {
+              "name": "Pending Verifications",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/verifications/pending",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "verifications",
+                    "pending"
+                  ]
+                },
+                "description": "All users with verification_status = 'pending'.\nReturns documents, submitted_at, and detected type (driver vs passenger)."
+              },
+              "response": [
+                {
+                  "name": "200 – Pending List",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/admin/verifications/pending",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "verifications",
+                        "pending"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"success\",\n  \"data\": [\n    {\n      \"user_id\": 42,\n      \"name\": \"Ahmad Khalil\",\n      \"email\": \"ahmad@example.com\",\n      \"type\": \"driver\",\n      \"documents\": [\n        { \"type\": \"face_id\",       \"url\": \"http://localhost/.../face_id.jpg\" },\n        { \"type\": \"license\",       \"url\": \"http://localhost/.../license.jpg\" },\n        { \"type\": \"mechanic_card\", \"url\": \"http://localhost/.../mechanic_card.jpg\" }\n      ],\n      \"submitted_at\": \"2025-04-24T08:00:00+03:00\"\n    }\n  ]\n}"
+                }
+              ]
+            },
+            {
+              "name": "Approve Verification",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/verifications/{{user_id}}/approve",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "verifications",
+                    "{{user_id}}",
+                    "approve"
+                  ]
+                },
+                "description": "Primary admin only. Approves a pending verification request.\n\nAuto-detects type:\n  license or mechanic_card docs → verifyDriver()\n  otherwise                    → verifyPassenger()\n\nBroadcasts UserVerified event. No request body required."
+              },
+              "response": [
+                {
+                  "name": "200 – Approved",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/admin/verifications/42/approve",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "verifications",
+                        "42",
+                        "approve"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"success\",\n  \"message\": \"Driver verification approved\",\n  \"user\": {\n    \"id\": 42,\n    \"verification_status\": \"approved\"\n  }\n}"
+                },
+                {
+                  "name": "422 – Not in Pending State",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/admin/verifications/42/approve",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "verifications",
+                        "42",
+                        "approve"
+                      ]
+                    }
+                  },
+                  "status": "Unprocessable Entity",
+                  "code": 422,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Cannot approve driver: not in pending state\"\n}"
+                },
+                {
+                  "name": "404 – User Not Found",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/admin/verifications/999/approve",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "verifications",
+                        "999",
+                        "approve"
+                      ]
+                    }
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"User not found.\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Reject Verification",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"ID document is blurry and unreadable. Please upload a clearer photo.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/verifications/{{user_id}}/reject",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "verifications",
+                    "{{user_id}}",
+                    "reject"
+                  ]
+                },
+                "description": "Primary admin only. Rejects a verification request.\n\nSets verification_status = 'rejected'. User is notified.\n\nBody:\n  reason  string  optional, max 500 chars"
+              },
+              "response": [
+                {
+                  "name": "200 – Rejected",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"reason\": \"ID document is blurry.\"\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/admin/verifications/42/reject",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "verifications",
+                        "42",
+                        "reject"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"success\",\n  \"message\": \"Verification rejected. User has been notified.\",\n  \"data\": {\n    \"user_id\": 42,\n    \"verification_status\": \"rejected\"\n  }\n}"
+                },
+                {
+                  "name": "404 – User Not Found",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/admin/verifications/999/reject",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "verifications",
+                        "999",
+                        "reject"
+                      ]
+                    }
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"User not found.\"\n}"
+                }
+              ]
+            }
+          ],
+          "description": "User verification management. Restricted to the primary admin."
+        },
+        {
+          "name": "Trips & Routes",
+          "item": [
+            {
+              "name": "get-trips-table",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/trips?filter=all&per_page=15&page=1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "trips"
+                  ],
+                  "query": [
+                    {
+                      "key": "filter",
+                      "value": "all",
+                      "description": "all | active | scheduled | completed | cancelled | awaiting"
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "15",
+                      "description": "1–50"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    }
+                  ]
+                },
+                "description": "Paginated trip table with status filtering.\n\nQuery params:\n  filter   = all | active | scheduled | completed | cancelled | awaiting\n  per_page = 1–50 (default 15)\n  page     = int\n\nResponse includes counts{} per status."
+              },
+              "response": []
+            },
+            {
+              "name": "get-live-trips",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/trips/live",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "trips",
+                    "live"
+                  ]
+                },
+                "description": "Rides currently on the road (status=active AND departure_time <= now).\nReturns full route geometry + confirmed passenger list."
+              },
+              "response": []
+            },
+            {
+              "name": "ROUTE-MONITORING",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/routes/popular?limit=10",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "routes",
+                    "popular"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10",
+                      "description": "1–50"
+                    }
+                  ]
+                },
+                "description": "Popular routes sorted descending by trip count.\n\nQuery params:\n  limit = 1–50 (default 10)"
+              },
+              "response": []
+            },
+            {
+              "name": "top-rated-drivers",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/drivers/top?limit=10",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "drivers",
+                    "top"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10",
+                      "description": "1–50"
+                    }
+                  ]
+                },
+                "description": "Verified drivers sorted by average rating (highest first).\nDrivers with no ratings appear last.\n\nQuery params:\n  limit = 1–50 (default 10)"
+              },
+              "response": []
+            }
+          ],
+          "description": "Trips management page — table, live monitoring, route analytics, top drivers."
+        },
+        {
+          "name": "Drivers",
+          "item": [
+            {
+              "name": "Full Dashboard",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/drivers/dashboard",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "drivers",
+                    "dashboard"
+                  ]
+                },
+                "description": "BFF call returning everything the driver management page needs:\n  admin_photo, stats cards, recent_activity feed.\n\nNote: driver table is excluded — it is paginated, fetch with get-drivers-table."
+              },
+              "response": []
+            },
+            {
+              "name": "Stats Cards Only",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/drivers/stats",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "drivers",
+                    "stats"
+                  ]
+                },
+                "description": "Stat cards for partial UI refresh:\n  total_drivers, active_drivers, pending_drivers, avg_rating"
+              },
+              "response": []
+            },
+            {
+              "name": "recent activity",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/drivers/activity?limit=10",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "drivers",
+                    "activity"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10",
+                      "description": "1–50"
+                    }
+                  ]
+                },
+                "description": "Recent driver activity events (verifications, profile updates).\n\nQuery params:\n  limit = 1–50 (default 10)"
+              },
+              "response": []
+            },
+            {
+              "name": "single driver profile",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/drivers/{{driver_id}}/profile",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "drivers",
+                    "{{driver_id}}",
+                    "profile"
+                  ]
+                },
+                "description": "Full profile for a single driver:\n  personal info, vehicle details, documents, rating, recent rides.\n\nSet collection variable driver_id before calling."
+              },
+              "response": []
+            },
+            {
+              "name": "driver-full-dashboard",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/drivers/{{driver_id}}/dashboard",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "drivers",
+                    "{{driver_id}}",
+                    "dashboard"
+                  ]
+                },
+                "description": "Rich detail page for a driver:\n  earnings, cancel rate, document status, ride history.\n\nSet collection variable driver_id before calling."
+              },
+              "response": []
+            },
+            {
+              "name": "verification-efficiency",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/drivers/verification-efficiency?period=week",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "drivers",
+                    "verification-efficiency"
+                  ],
+                  "query": [
+                    {
+                      "key": "period",
+                      "value": "week",
+                      "description": "day | week | month"
+                    }
+                  ]
+                },
+                "description": "Efficiency = (processed / incoming) × 100 for the chosen period vs the prior period.\n\nQuery params:\n  period = day | week | month (default: week)"
+              },
+              "response": []
+            },
+            {
+              "name": "drivers table",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/drivers?filter=all&per_page=10&page=1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "drivers"
+                  ],
+                  "query": [
+                    {
+                      "key": "filter",
+                      "value": "all",
+                      "description": "all | verified | pending | suspended"
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "10",
+                      "description": "1–50"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "description": "Name or email search",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Paginated driver table.\n\nQuery params:\n  filter   = all | verified | pending | suspended (default: all)\n  per_page = 1–50 (default 10)\n  page     = int\n  search   = string — name or email (optional)"
+              },
+              "response": []
+            }
+          ],
+          "description": "Driver management page — dashboard, stats, table, activity feed, profiles, verification efficiency."
+        },
+        {
+          "name": "Users & Passengers",
+          "item": [
+            {
+              "name": "user-table",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/users?type=all&status=all&date=all&per_page=10&page=1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "users"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": "all",
+                      "description": "all | driver | passenger"
+                    },
+                    {
+                      "key": "status",
+                      "value": "all",
+                      "description": "all | verified | pending | suspended"
+                    },
+                    {
+                      "key": "date",
+                      "value": "all",
+                      "description": "all | last_30_days | last_3_months | last_6_months | last_12_months"
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "10",
+                      "description": "1–50"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "description": "Name or email search",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Single merged endpoint: admin_photo + stats cards + paginated user table.\n\nQuery params:\n  type     = all | driver | passenger\n  status   = all | verified | pending | suspended\n  date     = all | last_30_days | last_3_months | last_6_months | last_12_months\n  per_page = 1–50 (default 10)\n  page     = int\n  search   = string (optional)"
+              },
+              "response": []
+            },
+            {
+              "name": "permanent-ban",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Repeated harassment and fraudulent activity confirmed by support team.\",\n  \"type\": \"permanent\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/users/{{user_id}}/ban",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "users",
+                    "{{user_id}}",
+                    "ban"
+                  ]
+                },
+                "description": "Permanently ban a user. Revokes all active tokens immediately.\nAdmin accounts cannot be banned.\n\nBody:\n  reason  string  required, min 10 chars\n  type    string  required: permanent"
+              },
+              "response": []
+            },
+            {
+              "name": "temporary-ban",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Violation of community guidelines — first offence. 7-day cooling period.\",\n  \"type\": \"temporary\",\n  \"expires_at\": \"2025-12-31 23:59:59\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/users/{{user_id}}/ban",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "users",
+                    "{{user_id}}",
+                    "ban"
+                  ]
+                },
+                "description": "Temporarily ban a user until expires_at.\nBan is auto-lifted on the next login attempt after expiry.\n\nBody:\n  reason      string  required, min 10 chars\n  type        string  required: temporary\n  expires_at  string  required, future datetime"
+              },
+              "response": []
+            },
+            {
+              "name": "unban-user",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"admin_notes\": \"Appeal reviewed and accepted.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/users/{{user_id}}/unban",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "users",
+                    "{{user_id}}",
+                    "unban"
+                  ]
+                },
+                "description": "Lift a ban. User status is set to 0 (logged out) — must log in again.\nUser is notified with admin_notes.\n\nBody:\n  admin_notes  string  optional"
+              },
+              "response": []
+            },
+            {
+              "name": "user-status",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/users/{{user_id}}/status",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "users",
+                    "{{user_id}}",
+                    "status"
+                  ]
+                },
+                "description": "Current ban/active status for a user.\n  account_status = active | logged_out | banned\n  ban block includes reason, type, expires_at, banned_by"
+              },
+              "response": []
+            },
+            {
+              "name": "Dash-Page-4-profile details",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/passengers/{{user_id}}/full-profile",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "passengers",
+                    "{{user_id}}",
+                    "full-profile"
+                  ]
+                },
+                "description": "BFF call returning everything for the passenger profile page:\n  user info, stats, monthly_trips chart, recent_trips, complaints, wallet_charges."
+              },
+              "response": []
+            },
+            {
+              "name": "Monthly Trips Chart",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/passengers/{{user_id}}/monthly-trips?months=6",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "passengers",
+                    "{{user_id}}",
+                    "monthly-trips"
+                  ],
+                  "query": [
+                    {
+                      "key": "months",
+                      "value": "6",
+                      "description": "1–12"
+                    }
+                  ]
+                },
+                "description": "Monthly trip counts + total cost per month for the chart widget.\n\nQuery params:\n  months = 1–12 (default 6)"
+              },
+              "response": []
+            },
+            {
+              "name": "Stats Only",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/passengers/{{user_id}}/stats",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "passengers",
+                    "{{user_id}}",
+                    "stats"
+                  ]
+                },
+                "description": "Partial refresh — stat cards only:\n  total_rides, total_spending, avg_rating, wallet_balance"
+              },
+              "response": []
+            },
+            {
+              "name": "Recent Trips",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/passengers/{{user_id}}/recent-trips?limit=10",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "passengers",
+                    "{{user_id}}",
+                    "recent-trips"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10",
+                      "description": "1–50"
+                    }
+                  ]
+                },
+                "description": "Most recent bookings with route, driver, seats, total cost.\n\nQuery params:\n  limit = 1–50 (default 10)"
+              },
+              "response": []
+            },
+            {
+              "name": "get complaints",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/passengers/{{user_id}}/complaints?status=all&per_page=15&page=1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "passengers",
+                    "{{user_id}}",
+                    "complaints"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "all",
+                      "description": "all | pending | in_review | resolved | closed | escalated"
+                    },
+                    {
+                      "key": "type",
+                      "value": "all",
+                      "description": "all | trip_safety | driver_behavior | passenger_behavior | ride_cancellation | financial_issue | account_issue | technical_issue | other",
+                      "disabled": true
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "15"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    }
+                  ]
+                },
+                "description": "Paginated complaint list for this passenger.\n\nQuery params:\n  status   = all | pending | in_review | resolved | closed | escalated\n  type     = all | trip_safety | driver_behavior | ... (optional)\n  per_page = 1–50\n  page     = int"
+              },
+              "response": []
+            },
+            {
+              "name": "wallet charge log",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/passengers/{{user_id}}/wallet-charges?per_page=15&page=1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "passengers",
+                    "{{user_id}}",
+                    "wallet-charges"
+                  ],
+                  "query": [
+                    {
+                      "key": "per_page",
+                      "value": "15"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    }
+                  ]
+                },
+                "description": "History of admin_charge transactions for this passenger's wallet.\nIncludes who processed each charge."
+              },
+              "response": []
+            },
+            {
+              "name": "charge-wallet",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 10000,\n  \"admin_notes\": \"Manual top-up following support ticket #4892.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/passengers/{{user_id}}/charge-wallet",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "passengers",
+                    "{{user_id}}",
+                    "charge-wallet"
+                  ]
+                },
+                "description": "Directly add balance to a specific passenger's wallet.\nCreates an admin_charge transaction. User is notified.\n\nBody:\n  amount       number  required, min 1\n  admin_notes  string  optional"
+              },
+              "response": []
+            }
+          ],
+          "description": "Ban/unban duplicates from the \"Admin APIs\" collection were removed; these versions use {{user_id}} and include request bodies."
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{access_token}}",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "3. Support Agent (/staff)",
+      "description": "Requires {{staff_token}}.",
+      "item": [
+        {
+          "name": "UC-ADM-03 — Review Moderation",
+          "item": [
+            {
+              "name": "List All Reviews",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/reviews?per_page=15&page=1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "reviews"
+                  ],
+                  "query": [
+                    {
+                      "key": "per_page",
+                      "value": "15"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "user_id",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "date",
+                      "value": "last_7_days",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Filter by User",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/reviews?user_id=1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "reviews"
+                  ],
+                  "query": [
+                    {
+                      "key": "user_id",
+                      "value": "1"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Search Reviews",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/reviews?search=rude&date=last_30_days",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "reviews"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "rude"
+                    },
+                    {
+                      "key": "date",
+                      "value": "last_30_days"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Review (Policy Violation)",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/reviews/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "reviews",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "UC-ADM-05 — Browse Users",
+          "item": [
+            {
+              "name": "List Users",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/users?per_page=10&page=1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "users"
+                  ],
+                  "query": [
+                    {
+                      "key": "per_page",
+                      "value": "10"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "type",
+                      "value": "all",
+                      "disabled": true
+                    },
+                    {
+                      "key": "status",
+                      "value": "all",
+                      "disabled": true
+                    },
+                    {
+                      "key": "date",
+                      "value": "all",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Users — Drivers only",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/users?type=driver&status=verified",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "users"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": "driver"
+                    },
+                    {
+                      "key": "status",
+                      "value": "verified"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Users — Pending Verification",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/users?status=pending",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "users"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "pending"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Search Users",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/users?search=ahmed",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "users"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "ahmed"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "View User Profile Detail",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/users/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "users",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "UC-ADM-05 — Browse Trips",
+          "item": [
+            {
+              "name": "List Trips (all)",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/trips?per_page=15&page=1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "trips"
+                  ],
+                  "query": [
+                    {
+                      "key": "per_page",
+                      "value": "15"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "filter",
+                      "value": "all",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Trips — Scheduled",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/trips?filter=scheduled",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "trips"
+                  ],
+                  "query": [
+                    {
+                      "key": "filter",
+                      "value": "scheduled"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Trips — Completed",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/trips?filter=completed",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "trips"
+                  ],
+                  "query": [
+                    {
+                      "key": "filter",
+                      "value": "completed"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Trips — Cancelled",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/trips?filter=cancelled",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "trips"
+                  ],
+                  "query": [
+                    {
+                      "key": "filter",
+                      "value": "cancelled"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "UC-ADM-05 — Browse Bookings",
+          "item": [
+            {
+              "name": "List Bookings (all)",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/bookings?per_page=15&page=1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "bookings"
+                  ],
+                  "query": [
+                    {
+                      "key": "per_page",
+                      "value": "15"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "status",
+                      "value": "all",
+                      "disabled": true
+                    },
+                    {
+                      "key": "user_id",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "ride_id",
+                      "value": "",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Bookings — By Status",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/bookings?status=confirmed",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "bookings"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "confirmed"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "UC-ADM-06 — Complaints",
+          "item": [
+            {
+              "name": "List All Complaints",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/complaints?per_page=15&page=1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "complaints"
+                  ],
+                  "query": [
+                    {
+                      "key": "per_page",
+                      "value": "15"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "status",
+                      "value": "pending",
+                      "disabled": true
+                    },
+                    {
+                      "key": "type",
+                      "value": "trip_safety",
+                      "disabled": true
+                    },
+                    {
+                      "key": "date",
+                      "value": "last_7_days",
+                      "disabled": true
+                    },
+                    {
+                      "key": "user_id",
+                      "value": "1",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "GET /staff/complaints\nFilters: status, type, date, user_id, per_page, page\nStatus values: pending | in_review | resolved | closed\nType values: trip_safety | driver_behavior | passenger_behavior | ride_cancellation | financial_issue | account_issue | technical_issue | other\nDate values: last_7_days | last_30_days"
+              },
+              "response": []
+            },
+            {
+              "name": "View Complaint",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const res = pm.response.json();",
+                      "if (res.status === 'success' && res.data) {",
+                      "    pm.collectionVariables.set('complaint_id', res.data.id);",
+                      "    console.log('✅ Complaint ID saved:', res.data.id, '| Status:', res.data.status);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/complaints/{{complaint_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "complaints",
+                    "{{complaint_id}}"
+                  ]
+                },
+                "description": "GET /staff/complaints/{id}\nOpening a PENDING complaint automatically moves it to IN_REVIEW and assigns it to the authenticated agent."
+              },
+              "response": []
+            },
+            {
+              "name": "Open Complaint (pending → in_review)",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/staff/complaints/{{complaint_id}}/open",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "complaints",
+                    "{{complaint_id}}",
+                    "open"
+                  ]
+                },
+                "description": "PATCH /staff/complaints/{id}/open\nManually moves a complaint to in_review status and assigns to the current agent."
+              },
+              "response": []
+            },
+            {
+              "name": "Resolve Complaint",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"resolution_notes\": \"We have reviewed this complaint thoroughly. The reported user has been warned and appropriate action has been taken.\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/staff/complaints/{{complaint_id}}/resolve",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "complaints",
+                    "{{complaint_id}}",
+                    "resolve"
+                  ]
+                },
+                "description": "PATCH /staff/complaints/{id}/resolve\nMarks complaint as resolved and notifies the user.\nresolution_notes is required (min 10 chars)."
+              },
+              "response": []
+            },
+            {
+              "name": "Close Complaint",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"resolution_notes\": \"This complaint has been closed after review. No further action is required.\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/staff/complaints/{{complaint_id}}/close",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "complaints",
+                    "{{complaint_id}}",
+                    "close"
+                  ]
+                },
+                "description": "PATCH /staff/complaints/{id}/close\nPermanently closes the complaint. resolution_notes required."
+              },
+              "response": []
+            },
+            {
+              "name": "Add Note to Complaint",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"note\": \"Contacted the driver for clarification. Awaiting their response before proceeding.\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/staff/complaints/{{complaint_id}}/notes",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "complaints",
+                    "{{complaint_id}}",
+                    "notes"
+                  ]
+                },
+                "description": "POST /staff/complaints/{id}/notes\nAdds an internal staff note to the complaint without changing its status."
+              },
+              "response": []
+            },
+            {
+              "name": "Respond to Complaint (legacy)",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"resolution_notes\": \"We have reviewed your complaint and taken appropriate action.\",\n  \"status\": \"resolved\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/staff/complaints/{{complaint_id}}/respond",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "complaints",
+                    "{{complaint_id}}",
+                    "respond"
+                  ]
+                },
+                "description": "PATCH /staff/complaints/{id}/respond\nLegacy single endpoint. status values: in_review | resolved | closed"
+              },
+              "response": []
+            },
+            {
+              "name": "List Complaints — Pending only",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/complaints?status=pending",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "complaints"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "pending"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Complaints — In Review",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/complaints?status=in_review",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "complaints"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "in_review"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Complaints — Resolved",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/complaints?status=resolved",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "complaints"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "resolved"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Complaints — Closed",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/complaints?status=closed",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "complaints"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "closed"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Complaints — By Type (Trip Safety)",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/complaints?type=trip_safety",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "complaints"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": "trip_safety"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Complaints — By Type (Financial Issue)",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/complaints?type=financial_issue",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "complaints"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": "financial_issue"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Complaints — Last 7 Days",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/complaints?date=last_7_days",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "complaints"
+                  ],
+                  "query": [
+                    {
+                      "key": "date",
+                      "value": "last_7_days"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Complaints — By User",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/complaints?user_id=1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "complaints"
+                  ],
+                  "query": [
+                    {
+                      "key": "user_id",
+                      "value": "1"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "UC-ADM-07 — Cancel Trip / Cancel Booking",
+          "item": [
+            {
+              "name": "Cancel Trip (by ride ID)",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Ride cancelled by support agent due to a reported safety issue from a passenger complaint.\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/staff/trips/{{ride_id}}/cancel",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "trips",
+                    "{{ride_id}}",
+                    "cancel"
+                  ]
+                },
+                "description": "POST /staff/trips/{rideId}/cancel\n\nCancels an entire ride and all its active bookings.\nNotifies all affected passengers.\n\nAllowed ride statuses: active | full | awaiting_confirmation\nreason: required, min 10 chars\n\nResponse includes how many bookings were cancelled."
+              },
+              "response": []
+            },
+            {
+              "name": "Cancel Booking (by booking ID)",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Booking cancelled by support agent after passenger confirmed they can no longer attend.\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/staff/bookings/{{booking_id}}/cancel",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "bookings",
+                    "{{booking_id}}",
+                    "cancel"
+                  ]
+                },
+                "description": "POST /staff/bookings/{bookingId}/cancel\n\nCancels a single booking and restores the seats back to the ride.\nNotifies the passenger.\nIf the ride was 'full', it is reverted to 'active'.\n\nAllowed booking statuses: pending | confirmed\nreason: required, min 10 chars"
+              },
+              "response": []
+            },
+            {
+              "name": "Cancel Trip — Safety Reason",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Trip cancelled due to a verified safety complaint. Driver account is under review.\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/staff/trips/{{ride_id}}/cancel",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "trips",
+                    "{{ride_id}}",
+                    "cancel"
+                  ]
+                },
+                "description": "Example: cancelling a trip due to a safety complaint."
+              },
+              "response": []
+            },
+            {
+              "name": "Cancel Trip — Financial Dispute",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Trip cancelled due to an ongoing financial dispute reported by multiple passengers.\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/staff/trips/{{ride_id}}/cancel",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "trips",
+                    "{{ride_id}}",
+                    "cancel"
+                  ]
+                },
+                "description": "Example: cancelling a trip due to a financial dispute."
+              },
+              "response": []
+            },
+            {
+              "name": "Cancel Booking — Passenger Request",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Passenger contacted support requesting cancellation as they are unable to reach the driver.\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/staff/bookings/{{booking_id}}/cancel",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "bookings",
+                    "{{booking_id}}",
+                    "cancel"
+                  ]
+                },
+                "description": "Example: cancelling a booking at the passenger's request via support."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "UC-ADM-08 — Escalate Complaint to Admin",
+          "item": [
+            {
+              "name": "Escalate Complaint",
+              "request": {
+                "auth": {
+                  "type": "inherit"
+                },
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"This complaint involves a serious safety allegation that requires admin-level review and cannot be resolved at the support agent level.\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/staff/complaints/{{complaint_id}}/escalate",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "complaints",
+                    "{{complaint_id}}",
+                    "escalate"
+                  ]
+                },
+                "description": "PATCH /staff/complaints/{id}/escalate\n\nEscalates a complaint to the system admin.\nCurrently routes to the system_admin role (since a dedicated Admin role is not yet implemented).\nWhen the Admin role is ready, this will route to the assigned admin instead.\n\nOnly works on open complaints: pending | in_review\nreason: required, min 10 chars\n\nThe complaint's resolution_notes will be appended with the escalation reason and agent name."
+              },
+              "response": []
+            }
+          ]
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{staff_token}}",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "4. Admin (/staff)",
+      "description": "Admin-role endpoints on the staff API. Requires {{staff_token}} from an admin or system-admin login.",
+      "item": [
+        {
+          "name": "Escalated Complaints [Admin + System Admin]",
+          "item": [
+            {
+              "name": "GET List Escalated Complaints",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/staff/escalated-complaints?per_page=15&page=1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "escalated-complaints"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "escalated",
+                      "disabled": true
+                    },
+                    {
+                      "key": "type",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "date",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "15"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "PATCH Resolve Escalated Complaint",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"resolution_notes\": \"After investigating the wallet transactions, we confirmed the financial discrepancy. A full refund of 5,000 SYP has been processed to the passenger's wallet.\",\n  \"status\": \"resolved\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/staff/escalated-complaints/1/resolve",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "escalated-complaints",
+                    "1",
+                    "resolve"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ],
+          "description": "Admin workflow after agent escalates:\n1. GET escalated-complaints → see what needs attention\n2. PATCH escalated-complaints/{id}/resolve → close it out"
+        },
+        {
+          "name": "Verifications (/staff) [Admin + System Admin] — UC-ADM-10 & 11",
+          "item": [
+            {
+              "name": "GET Pending Verifications — UC-ADM-10",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/staff/verifications/pending",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "verifications",
+                    "pending"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "POST Approve Verification — UC-ADM-11",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/staff/verifications/1/approve",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "verifications",
+                    "1",
+                    "approve"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "POST Reject Verification — UC-ADM-11",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"الوثائق المقدمة غير واضحة أو منتهية الصلاحية. يرجى إعادة رفع صور واضحة.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/staff/verifications/1/reject",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "verifications",
+                    "1",
+                    "reject"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ],
+          "description": "UC-ADM-10: Review pending verification requests\nUC-ADM-11: Approve or reject"
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{staff_token}}",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "5. System Admin — Employee Management",
+      "description": "Requires {{staff_token}} from a system-admin login. (Original collection used {{staff_token}} in folder auth while its login script saved staff_token — a mismatch; both are unified to {{staff_token}} here.)",
+      "item": [
+        {
+          "name": "Employee Management",
+          "item": [
+            {
+              "name": "List Employees",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/employees",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees"
+                  ]
+                },
+                "description": "Returns all employees the authenticated system_admin can see.\n\nSystem Admin sees: all admins + all support agents.\nAdmin sees: only support agents they manage.\n\nEach record includes: id, username, first_name, last_name, email, role, is_active, created_by, last_login_at."
+              },
+              "response": [
+                {
+                  "name": "200 – Employee List",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/employees",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "employees"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"success\",\n  \"data\": [\n    {\n      \"id\": 2,\n      \"username\": \"admin_user\",\n      \"first_name\": \"Omar\",\n      \"last_name\": \"Hassan\",\n      \"email\": \"omar@syride.com\",\n      \"role\": \"admin\",\n      \"is_active\": true,\n      \"created_by\": { \"id\": 1, \"username\": \"system_admin\", \"first_name\": \"System\", \"last_name\": \"Admin\" },\n      \"last_login_at\": \"2025-04-25T09:00:00+03:00\"\n    },\n    {\n      \"id\": 3,\n      \"username\": \"support_01\",\n      \"first_name\": \"Layla\",\n      \"last_name\": \"Nour\",\n      \"email\": \"layla@syride.com\",\n      \"role\": \"support_agent\",\n      \"is_active\": true,\n      \"created_by\": { \"id\": 2, \"username\": \"admin_user\", \"first_name\": \"Omar\", \"last_name\": \"Hassan\" },\n      \"last_login_at\": null\n    }\n  ]\n}"
+                },
+                {
+                  "name": "401 – No Token",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/employees",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "employees"
+                      ]
+                    }
+                  },
+                  "status": "Unauthorized",
+                  "code": 401,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"code\": \"TOKEN_MISSING\",\n  \"message\": \"Staff access token is required.\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Create Employee",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"new_admin\",\n  \"email\": \"newadmin@syride.com\",\n  \"password\": \"SecurePass123\",\n  \"first_name\": \"Ahmad\",\n  \"last_name\": \"Khalil\",\n  \"role\": \"admin\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/employees",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees"
+                  ]
+                },
+                "description": "Create a new staff employee.\n\nSystem Admin can create: admin | support_agent\nAdmin can create: support_agent only\n\nBody fields:\n  username   string  required, 3–50 chars, alphanumeric + dash/underscore\n  email      string  optional, unique\n  password   string  required, min 8 chars\n  first_name string  required\n  last_name  string  required\n  role       string  required — must be a role the requester is allowed to assign\n\nAllowed roles for system_admin: admin, support_agent\nAllowed roles for admin: support_agent"
+              },
+              "response": [
+                {
+                  "name": "201 – Employee Created",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"username\": \"new_admin\",\n  \"email\": \"newadmin@syride.com\",\n  \"password\": \"SecurePass123\",\n  \"first_name\": \"Ahmad\",\n  \"last_name\": \"Khalil\",\n  \"role\": \"admin\"\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/employees",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "employees"
+                      ]
+                    }
+                  },
+                  "status": "Created",
+                  "code": 201,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"success\",\n  \"message\": \"Employee created successfully.\",\n  \"employee\": {\n    \"id\": 4,\n    \"username\": \"new_admin\",\n    \"first_name\": \"Ahmad\",\n    \"last_name\": \"Khalil\",\n    \"email\": \"newadmin@syride.com\",\n    \"role\": \"admin\",\n    \"is_active\": true,\n    \"created_by\": { \"id\": 1, \"username\": \"system_admin\" }\n  }\n}"
+                },
+                {
+                  "name": "403 – Role Not Permitted",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"username\": \"bad_role\",\n  \"password\": \"SecurePass123\",\n  \"first_name\": \"Test\",\n  \"last_name\": \"User\",\n  \"role\": \"system_admin\"\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/employees",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "employees"
+                      ]
+                    }
+                  },
+                  "status": "Forbidden",
+                  "code": 403,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"You are not permitted to assign this role.\"\n}"
+                },
+                {
+                  "name": "409 – Username Already Taken",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"username\": \"system_admin\",\n  \"password\": \"SecurePass123\",\n  \"first_name\": \"Duplicate\",\n  \"last_name\": \"User\",\n  \"role\": \"admin\"\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/employees",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "employees"
+                      ]
+                    }
+                  },
+                  "status": "Conflict",
+                  "code": 409,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Username is already taken.\"\n}"
+                },
+                {
+                  "name": "422 – Validation Error",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"username\": \"ab\",\n  \"password\": \"short\"\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/employees",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "employees"
+                      ]
+                    }
+                  },
+                  "status": "Unprocessable Entity",
+                  "code": 422,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"errors\": {\n    \"username\": [\"The username must be at least 3 characters.\"],\n    \"password\": [\"The password must be at least 8 characters.\"],\n    \"first_name\": [\"The first name field is required.\"],\n    \"last_name\": [\"The last name field is required.\"],\n    \"role\": [\"The role field is required.\"]\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Get Employee",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/employees/{{employee_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees",
+                    "{{employee_id}}"
+                  ]
+                },
+                "description": "Fetch a single employee by ID.\n\nSystem Admin can view any employee.\nAdmin can only view employees they manage (roles below their level).\n\nSet collection variable `employee_id` before calling."
+              },
+              "response": [
+                {
+                  "name": "200 – Employee Detail",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/employees/2",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "employees",
+                        "2"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"id\": 2,\n    \"username\": \"admin_user\",\n    \"first_name\": \"Omar\",\n    \"last_name\": \"Hassan\",\n    \"email\": \"omar@syride.com\",\n    \"role\": \"admin\",\n    \"is_active\": true,\n    \"created_by\": { \"id\": 1, \"username\": \"system_admin\", \"first_name\": \"System\", \"last_name\": \"Admin\" },\n    \"last_login_at\": \"2025-04-25T09:00:00+03:00\"\n  }\n}"
+                },
+                {
+                  "name": "403 – Cannot View This Employee",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/employees/1",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "employees",
+                        "1"
+                      ]
+                    }
+                  },
+                  "status": "Forbidden",
+                  "code": 403,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"You do not have permission to manage this employee.\"\n}"
+                },
+                {
+                  "name": "404 – Employee Not Found",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/employees/999",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "employees",
+                        "999"
+                      ]
+                    }
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Employee not found.\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Update Employee",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"first_name\": \"Ahmad\",\n  \"last_name\": \"Al-Sayed\",\n  \"email\": \"ahmad.updated@syride.com\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/employees/{{employee_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees",
+                    "{{employee_id}}"
+                  ]
+                },
+                "description": "Update an employee's profile fields.\nOnly the fields provided will be updated (PATCH-like behaviour).\n\nUpdatable fields:\n  first_name  string  optional\n  last_name   string  optional\n  email       string  optional, must be unique\n\nNote: username and role cannot be changed after creation.\nTo change a password use the Reset Password endpoint instead.\n\nSet collection variable `employee_id` before calling."
+              },
+              "response": [
+                {
+                  "name": "200 – Employee Updated",
+                  "originalRequest": {
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"first_name\": \"Ahmad\",\n  \"last_name\": \"Al-Sayed\",\n  \"email\": \"ahmad.updated@syride.com\"\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/employees/2",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "employees",
+                        "2"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"success\",\n  \"message\": \"Employee updated successfully.\",\n  \"employee\": {\n    \"id\": 2,\n    \"username\": \"admin_user\",\n    \"first_name\": \"Ahmad\",\n    \"last_name\": \"Al-Sayed\",\n    \"email\": \"ahmad.updated@syride.com\",\n    \"role\": \"admin\",\n    \"is_active\": true\n  }\n}"
+                },
+                {
+                  "name": "409 – Email Already Taken",
+                  "originalRequest": {
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"email\": \"already.used@syride.com\"\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/employees/2",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "employees",
+                        "2"
+                      ]
+                    }
+                  },
+                  "status": "Conflict",
+                  "code": 409,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Email is already in use by another employee.\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Toggle Active Status",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/employees/{{employee_id}}/toggle-active",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees",
+                    "{{employee_id}}",
+                    "toggle-active"
+                  ]
+                },
+                "description": "Toggle an employee's active status (active ↔ deactivated).\nNo request body required.\n\nDeactivated employees:\n  - Cannot log in\n  - All existing tokens are invalidated immediately\n\nAn employee cannot deactivate themselves.\nSystem Admin cannot be deactivated.\n\nSet collection variable `employee_id` before calling."
+              },
+              "response": [
+                {
+                  "name": "200 – Deactivated",
+                  "originalRequest": {
+                    "method": "PATCH",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/employees/3/toggle-active",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "employees",
+                        "3",
+                        "toggle-active"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"success\",\n  \"message\": \"Employee deactivated successfully.\",\n  \"employee\": {\n    \"id\": 3,\n    \"username\": \"support_01\",\n    \"role\": \"support_agent\",\n    \"is_active\": false\n  }\n}"
+                },
+                {
+                  "name": "200 – Re-activated",
+                  "originalRequest": {
+                    "method": "PATCH",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/employees/3/toggle-active",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "employees",
+                        "3",
+                        "toggle-active"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"success\",\n  \"message\": \"Employee activated successfully.\",\n  \"employee\": {\n    \"id\": 3,\n    \"username\": \"support_01\",\n    \"role\": \"support_agent\",\n    \"is_active\": true\n  }\n}"
+                },
+                {
+                  "name": "403 – Cannot Deactivate Self or Higher Role",
+                  "originalRequest": {
+                    "method": "PATCH",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/employees/1/toggle-active",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "employees",
+                        "1",
+                        "toggle-active"
+                      ]
+                    }
+                  },
+                  "status": "Forbidden",
+                  "code": 403,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"You do not have permission to manage this employee.\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Reset Password",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"new_password\": \"NewSecurePass456\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/employees/{{employee_id}}/reset-password",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees",
+                    "{{employee_id}}",
+                    "reset-password"
+                  ]
+                },
+                "description": "Forcefully reset an employee's password.\n\nAll active sessions for that employee are invalidated immediately after the reset — they must log in again with the new password.\n\nBody:\n  new_password  string  required, min 8 characters\n\nSet collection variable `employee_id` before calling."
+              },
+              "response": [
+                {
+                  "name": "200 – Password Reset",
+                  "originalRequest": {
+                    "method": "PATCH",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"new_password\": \"NewSecurePass456\"\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/employees/3/reset-password",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "employees",
+                        "3",
+                        "reset-password"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"success\",\n  \"message\": \"Password reset successfully. All sessions for this employee have been invalidated.\"\n}"
+                },
+                {
+                  "name": "422 – Password Too Short",
+                  "originalRequest": {
+                    "method": "PATCH",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"new_password\": \"short\"\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/employees/3/reset-password",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "employees",
+                        "3",
+                        "reset-password"
+                      ]
+                    }
+                  },
+                  "status": "Unprocessable Entity",
+                  "code": 422,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"errors\": {\n    \"new_password\": [\"The new password must be at least 8 characters.\"]\n  }\n}"
+                },
+                {
+                  "name": "403 – Cannot Reset Own or Higher Password",
+                  "originalRequest": {
+                    "method": "PATCH",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"new_password\": \"AttemptedReset123\"\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/employees/1/reset-password",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "employees",
+                        "1",
+                        "reset-password"
+                      ]
+                    }
+                  },
+                  "status": "Forbidden",
+                  "code": 403,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"You do not have permission to manage this employee.\"\n}"
+                }
+              ]
+            }
+          ],
+          "description": "Full CRUD for staff employees.\n\nMiddleware: staff:system_admin\nAll routes require a valid System Admin Bearer token.\n\nRole hierarchy enforced server-side:\n  system_admin  → can create/manage admin + support_agent\n  admin         → can create/manage support_agent only\n  support_agent → cannot manage anyone"
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{staff_token}}",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost/4th_year_project/public/api"
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "refresh_token",
+      "value": ""
+    },
+    {
+      "key": "staff_token",
+      "value": ""
+    },
+    {
+      "key": "staff_refresh_token",
+      "value": ""
+    },
+    {
+      "key": "user_id",
+      "value": "1"
+    },
+    {
+      "key": "driver_id",
+      "value": "1"
+    },
+    {
+      "key": "wallet_id",
+      "value": "1"
+    },
+    {
+      "key": "request_id",
+      "value": "1"
+    },
+    {
+      "key": "complaint_id",
+      "value": "1"
+    },
+    {
+      "key": "ride_id",
+      "value": "1"
+    },
+    {
+      "key": "booking_id",
+      "value": "1"
+    },
+    {
+      "key": "employee_id",
+      "value": "1"
+    }
+  ]
+}

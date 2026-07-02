@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useMockAction } from '../../shared/useMockAction';
+import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
 import { dashboardApi } from '../api/dashboardApi';
+import { reportsApi } from '../../reports/api/reportsApi';
 import type { DashboardStats, GrowthChartData, CityDistribution, RecentActivity } from '../../../types/index';
 
 const Dashboard: React.FC = () => {
   const { t } = useTranslation();
-  const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
+  const navigate = useNavigate();
+  const { runAction, isBusy, feedback, clearFeedback } = useApiAction();
   const [periodLabel, setPeriodLabel] = useState(t('dashboard.last_6_months'));
 
   // State for API data
@@ -102,33 +105,35 @@ const Dashboard: React.FC = () => {
         <div className="flex flex-wrap gap-3">
           <button
             onClick={async () => {
-              await runAction({ key: 'dashboard-export', successMessage: 'Dashboard export queued.', errorMessage: 'Could not export dashboard data.' });
+              await runAction({
+                key: 'dashboard-export',
+                action: async () => {
+                  const blob = await reportsApi.exportReportToPdf();
+                  const url = window.URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = `dashboard-report-${new Date().toISOString().slice(0, 10)}.pdf`;
+                  document.body.appendChild(link);
+                  link.click();
+                  link.remove();
+                  window.URL.revokeObjectURL(url);
+                },
+                successMessage: t('dashboard.export_success'),
+                errorMessage: t('dashboard.export_failed'),
+              });
             }}
             disabled={isBusy('dashboard-export')}
             className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-100 text-slate-700 rounded-[1.25rem] font-black text-sm shadow-sm hover:bg-slate-50 transition-all disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-lg">export_notes</span>
-            {t('dashboard.export_data')}
+            {isBusy('dashboard-export') ? t('common.loading') : t('dashboard.export_data')}
           </button>
           <button
-            onClick={async () => {
-              await runAction({ key: 'dashboard-add-employee', successMessage: 'Employee onboarding flow opened.', errorMessage: 'Could not open onboarding flow.' });
-            }}
-            disabled={isBusy('dashboard-add-employee')}
-            className="flex items-center gap-2 px-6 py-3 bg-[#000666] text-white rounded-[1.25rem] font-black text-sm shadow-lg shadow-indigo-900/20 hover:opacity-90 transition-all disabled:opacity-50"
+            onClick={() => navigate('/staff')}
+            className="flex items-center gap-2 px-6 py-3 bg-[#000666] text-white rounded-[1.25rem] font-black text-sm shadow-lg shadow-indigo-900/20 hover:opacity-90 transition-all"
           >
             <span className="material-symbols-outlined text-lg">person_add</span>
             {t('dashboard.add_employee')}
-          </button>
-          <button
-            onClick={async () => {
-              await runAction({ key: 'dashboard-alert', successMessage: 'Alert draft prepared for broadcast API.', errorMessage: 'Could not prepare alert.' });
-            }}
-            disabled={isBusy('dashboard-alert')}
-            className="flex items-center gap-2 px-6 py-3 bg-[#006a6a] text-white rounded-[1.25rem] font-black text-sm shadow-lg shadow-teal-900/20 hover:opacity-90 transition-all disabled:opacity-50"
-          >
-            <span className="material-symbols-outlined text-lg">campaign</span>
-            {t('dashboard.send_alert')}
           </button>
         </div>
       </div>
@@ -272,11 +277,8 @@ const Dashboard: React.FC = () => {
               <div className="flex items-center justify-between mb-12">
                 <h3 className="text-2xl font-black text-[#000666]">{t('dashboard.recent_activities')}</h3>
                 <button
-                  onClick={async () => {
-                    await runAction({ key: 'dashboard-view-all', successMessage: 'Recent activities list expanded.', errorMessage: 'Could not open full activities list.' });
-                  }}
-                  disabled={isBusy('dashboard-view-all')}
-                  className="text-teal-600 text-sm font-black hover:underline underline-offset-8 transition-all disabled:opacity-50"
+                  onClick={() => navigate('/trips')}
+                  className="text-teal-600 text-sm font-black hover:underline underline-offset-8 transition-all"
                 >{t('dashboard.view_all')}</button>
               </div>
 

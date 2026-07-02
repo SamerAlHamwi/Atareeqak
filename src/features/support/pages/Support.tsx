@@ -1,19 +1,29 @@
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMockAction } from '../../shared/useMockAction';
+import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
 import { useSupport } from '../hooks/useSupport';
 import type { StatusFilter } from '../hooks/useSupport';
 import { SupportStats } from '../components/SupportStats';
 import { ComplaintDetails } from '../components/ComplaintDetails';
 
+const statusBadgeClasses: Record<string, string> = {
+  pending: 'bg-amber-100 text-amber-700',
+  in_review: 'bg-blue-100 text-blue-700',
+  resolved: 'bg-teal-100 text-teal-700',
+  closed: 'bg-slate-200 text-slate-600',
+  escalated: 'bg-red-100 text-red-700',
+};
+
 const Support: React.FC = () => {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'ar';
-  const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
+  const { runAction, isBusy, feedback, clearFeedback } = useApiAction();
 
   const {
+    counts,
     isLoading,
+    error,
     selectedComplaint,
     setSelectedComplaint,
     statusFilter,
@@ -21,71 +31,57 @@ const Support: React.FC = () => {
     replyText,
     setReplyText,
     visibleComplaints,
-    markComplaintAsProcessing,
+    respondToComplaint,
+    escalateComplaint,
   } = useSupport();
-
-  const handleAdvancedFilter = useCallback(async () => {
-    await runAction({
-      key: 'advanced-filter',
-      successMessage: 'Advanced filters loaded. API endpoint can be attached next.',
-      errorMessage: 'Could not load advanced filters.',
-    });
-  }, [runAction]);
 
   const handleSendReply = useCallback(async () => {
     if (!selectedComplaint) return;
     await runAction({
       key: `reply-${selectedComplaint.id}`,
-      successMessage: `Reply sent to ${selectedComplaint.user}.`,
-      errorMessage: 'Reply could not be sent.',
-      onSuccess: () => {
-        markComplaintAsProcessing(selectedComplaint.id);
-        setReplyText('');
-      },
+      action: () => respondToComplaint(selectedComplaint, replyText.trim(), 'in_review'),
+      successMessage: t('support.reply_success', { user: selectedComplaint.user }),
+      errorMessage: t('support.reply_failed'),
+      onSuccess: () => setReplyText(''),
     });
-  }, [selectedComplaint, markComplaintAsProcessing, setReplyText, runAction]);
+  }, [selectedComplaint, replyText, respondToComplaint, setReplyText, runAction, t]);
+
+  const handleResolve = useCallback(async () => {
+    if (!selectedComplaint) return;
+    await runAction({
+      key: `resolve-${selectedComplaint.id}`,
+      action: () => respondToComplaint(selectedComplaint, replyText.trim(), 'resolved'),
+      successMessage: t('support.resolve_success', { id: selectedComplaint.id }),
+      errorMessage: t('support.resolve_failed'),
+      onSuccess: () => setReplyText(''),
+    });
+  }, [selectedComplaint, replyText, respondToComplaint, setReplyText, runAction, t]);
 
   const handleEscalate = useCallback(async () => {
     if (!selectedComplaint) return;
+    const reason =
+      replyText.trim().length >= 10 ? replyText.trim() : t('support.escalate_reason_default');
     await runAction({
       key: `escalate-${selectedComplaint.id}`,
-      successMessage: `${selectedComplaint.id} escalated to security team.`,
-      errorMessage: 'Escalation failed.',
+      action: () => escalateComplaint(selectedComplaint, reason),
+      successMessage: t('support.escalate_success', { id: selectedComplaint.id }),
+      errorMessage: t('support.escalate_failed'),
+      onSuccess: () => setReplyText(''),
     });
-  }, [selectedComplaint, runAction]);
-
-  const handleHideComment = useCallback(async () => {
-    if (!selectedComplaint) return;
-    await runAction({
-      key: `hide-${selectedComplaint.id}`,
-      successMessage: 'Comment hidden successfully.',
-      errorMessage: 'Could not hide comment.',
-    });
-  }, [selectedComplaint, runAction]);
-
-  const handleSecurityReview = useCallback(async () => {
-    if (!selectedComplaint) return;
-    await runAction({
-      key: `review-${selectedComplaint.id}`,
-      successMessage: 'Security review requested.',
-      errorMessage: 'Could not request security review.',
-    });
-  }, [selectedComplaint, runAction]);
-
-  const handleNewNote = useCallback(async () => {
-    await runAction({
-      key: 'new-complaint-note',
-      successMessage: 'Quick complaint note opened.',
-      errorMessage: 'Could not open quick note.',
-    });
-  }, [runAction]);
+  }, [selectedComplaint, replyText, escalateComplaint, setReplyText, runAction, t]);
 
   return (
     <div className="space-y-10">
       <ActionBanner feedback={feedback} onDismiss={clearFeedback} />
 
+      {error && (
+        <div className="bg-error-container text-on-error-container px-6 py-4 rounded-2xl">
+          {t('common.load_failed')}
+        </div>
+      )}
+
       {/* Summary Stats */}
-      <SupportStats />
+      <SupportStats counts={counts} isLoading={isLoading} />
 
       {/* Main Workspace Layout */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -101,25 +97,11 @@ const Support: React.FC = () => {
               >
                 <option value="all">{t('support.all_statuses')}</option>
                 <option value="pending">{t('support.pending')}</option>
-                <option value="processing">{t('support.processing')}</option>
+                <option value="in_review">{t('support.in_review')}</option>
                 <option value="resolved">{t('support.resolved')}</option>
-              </select>
-              <select className="bg-surface border-none text-xs rounded-full px-4 py-2 ring-1 ring-outline-variant/30 focus:ring-secondary cursor-pointer">
-                <option>{t('support.all_categories')}</option>
-                <option>{t('support.category_harassment')}</option>
-                <option>{t('support.category_technical')}</option>
-                <option>{t('support.category_pricing')}</option>
-                <option>{t('support.category_driver_behavior')}</option>
+                <option value="closed">{t('support.closed')}</option>
               </select>
             </div>
-            <button
-              onClick={handleAdvancedFilter}
-              disabled={isBusy('advanced-filter')}
-              className="flex items-center gap-2 text-xs font-bold text-secondary px-4 py-2 hover:bg-secondary/5 rounded-full transition-all disabled:opacity-50"
-            >
-              <span className="material-symbols-outlined text-sm">filter_list</span>
-              {t('support.advanced_filter')}
-            </button>
           </div>
 
           <div className="overflow-x-auto">
@@ -138,7 +120,13 @@ const Support: React.FC = () => {
                 {isLoading ? (
                   <tr>
                     <td colSpan={6} className="py-12 text-center text-on-surface-variant">
-                      {t('common.loading', 'Loading...')}
+                      {t('common.loading')}
+                    </td>
+                  </tr>
+                ) : visibleComplaints.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-12 text-center text-on-surface-variant">
+                      {t('common.no_data')}
                     </td>
                   </tr>
                 ) : (
@@ -165,7 +153,7 @@ const Support: React.FC = () => {
                           <div>
                             <p className="text-xs font-bold text-start">{cmp.user}</p>
                             <p className="text-[10px] text-on-surface-variant italic text-start">
-                              {t(`users.${cmp.userType}`)}
+                              {cmp.userEmail}
                             </p>
                           </div>
                         </div>
@@ -179,11 +167,7 @@ const Support: React.FC = () => {
                       <td className="py-4 text-start">
                         <span
                           className={`text-[10px] px-3 py-1 rounded-full font-bold ${
-                            cmp.status === 'pending'
-                              ? 'bg-amber-100 text-amber-700'
-                              : cmp.status === 'processing'
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-teal-100 text-teal-700'
+                            statusBadgeClasses[cmp.status] ?? 'bg-slate-100 text-slate-600'
                           }`}
                         >
                           {t(`support.${cmp.status}`)}
@@ -208,11 +192,6 @@ const Support: React.FC = () => {
               </tbody>
             </table>
           </div>
-          <div className="p-6 bg-surface-container-lowest text-center border-t border-outline-variant/10">
-            <button className="text-xs font-bold text-on-surface-variant hover:text-primary transition-all underline underline-offset-4">
-              {t('support.view_more')}
-            </button>
-          </div>
         </div>
 
         {/* Complaint Details View */}
@@ -221,21 +200,11 @@ const Support: React.FC = () => {
           replyText={replyText}
           setReplyText={setReplyText}
           onSendReply={handleSendReply}
+          onResolve={handleResolve}
           onEscalate={handleEscalate}
-          onHideComment={handleHideComment}
-          onSecurityReview={handleSecurityReview}
           isBusy={isBusy}
         />
       </section>
-
-      {/* Floating Action Button */}
-      <button
-        onClick={handleNewNote}
-        disabled={isBusy('new-complaint-note')}
-        className="fixed bottom-8 ltr:right-8 rtl:left-8 bg-secondary text-white p-4 rounded-full shadow-xl shadow-secondary/40 hover:scale-110 transition-transform z-50 flex items-center justify-center active:scale-95 disabled:opacity-50"
-      >
-        <span className="material-symbols-outlined">add_comment</span>
-      </button>
     </div>
   );
 };

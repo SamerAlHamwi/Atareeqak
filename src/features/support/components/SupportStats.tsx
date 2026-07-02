@@ -1,8 +1,19 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import type { ComplaintCounts } from '../api/supportApi';
 
-export const SupportStats: React.FC = () => {
+interface SupportStatsProps {
+  counts: ComplaintCounts | null;
+  isLoading: boolean;
+}
+
+export const SupportStats: React.FC<SupportStatsProps> = ({ counts, isLoading }) => {
   const { t } = useTranslation();
+
+  const display = (value: number | undefined) =>
+    isLoading || value === undefined ? '—' : value.toLocaleString();
+
+  const totalOpen = counts ? counts.pending + counts.in_review : undefined;
 
   return (
     <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -11,7 +22,7 @@ export const SupportStats: React.FC = () => {
           <p className="text-on-surface-variant mb-1 uppercase tracking-wider text-xs font-semibold">
             {t('support.total_open')}
           </p>
-          <h3 className="text-4xl font-headline font-extrabold text-primary">124</h3>
+          <h3 className="text-4xl font-headline font-extrabold text-primary">{display(totalOpen)}</h3>
         </div>
         <div className="bg-secondary/10 p-4 rounded-full">
           <span className="material-symbols-outlined text-secondary text-3xl">pending_actions</span>
@@ -20,10 +31,10 @@ export const SupportStats: React.FC = () => {
       <div className="bg-surface-container-lowest p-6 rounded-xl shadow-sm border-b-2 border-tertiary-fixed-variant flex items-center justify-between">
         <div>
           <p className="text-on-surface-variant mb-1 uppercase tracking-wider text-xs font-semibold">
-            {t('support.avg_response')}
+            {t('support.pending')}
           </p>
           <h3 className="text-4xl font-headline font-extrabold text-primary">
-            14 <span className="text-sm font-normal text-slate-400">{t('support.minutes')}</span>
+            {display(counts?.pending)}
           </h3>
         </div>
         <div className="bg-tertiary-fixed/30 p-4 rounded-full">
@@ -33,12 +44,14 @@ export const SupportStats: React.FC = () => {
       <div className="bg-surface-container-lowest p-6 rounded-xl shadow-sm border-b-2 border-error flex items-center justify-between">
         <div>
           <p className="text-on-surface-variant mb-1 uppercase tracking-wider text-xs font-semibold">
-            {t('support.critical_issues')}
+            {t('support.resolved')}
           </p>
-          <h3 className="text-4xl font-headline font-extrabold text-error">08</h3>
+          <h3 className="text-4xl font-headline font-extrabold text-error">
+            {display(counts?.resolved)}
+          </h3>
         </div>
         <div className="bg-error-container p-4 rounded-full">
-          <span className="material-symbols-outlined text-error text-3xl">priority_high</span>
+          <span className="material-symbols-outlined text-error text-3xl">task_alt</span>
         </div>
       </div>
     </section>

@@ -1,120 +1,84 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useMockAction } from '../../shared/useMockAction';
+import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
-import { usersApi } from '../api/usersApi';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  type: 'driver' | 'passenger';
-  joinDate: string;
-  status: 'verified' | 'pending' | 'blocked';
-  phone: string;
-  carType?: string;
-  city: string;
-  rating: number;
-  totalTrips: number;
-  walletBalance: number;
-  avatar: string;
-  memberSince: string;
-}
+import { useUsers } from '../hooks/useUsers';
+import type { UserRow } from '../hooks/useUsers';
 
 const Users: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
-  const [users, setUsers] = useState<User[]>([]);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [typeFilter, setTypeFilter] = useState<'all' | User['type']>('all');
-  const [statusFilter, setStatusFilter] = useState<'all' | User['status']>('all');
+  const { runAction, isBusy, feedback, clearFeedback } = useApiAction();
+  const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
   const isRtl = i18n.language === 'ar';
-  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      setIsLoading(true);
-      try {
-        const response = await usersApi.getAllUsers();
-        const data = response.data || [];
-        setUsers(data.map((u: any) => ({
-          id: String(u.id),
-          name: u.first_name ? `${u.first_name} ${u.last_name || ''}`.trim() : (u.name || 'غير معروف'),
-          email: u.email || '',
-          type: u.type || 'passenger',
-          joinDate: u.created_at || 'Recently',
-          status: u.is_banned ? 'blocked' : 'verified',
-          phone: u.number || u.phone || '',
-          carType: u.vehicle_type || '',
-          city: u.city || '',
-          rating: u.rating || 0,
-          totalTrips: u.total_trips || 0,
-          walletBalance: u.wallet_balance || 0,
-          avatar: u.profile_photo || `https://i.pravatar.cc/100?u=${u.id}`,
-          memberSince: u.created_at || 'Recently',
-        })));
-      } catch (err) {
-        console.error('Failed to load users', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchUsers();
-  }, []);
+  const {
+    users,
+    stats,
+    typeFilter,
+    setTypeFilter,
+    statusFilter,
+    setStatusFilter,
+    page,
+    setPage,
+    lastPage,
+    total,
+    perPage,
+    isLoading,
+    error,
+    banUser,
+    unbanUser,
+  } = useUsers();
 
   const closePanel = () => setSelectedUser(null);
 
-  const visibleUsers = useMemo(() => users.filter((user) => {
-    const typePass = typeFilter === 'all' || user.type === typeFilter;
-    const statusPass = statusFilter === 'all' || user.status === statusFilter;
-    return typePass && statusPass;
-  }), [statusFilter, typeFilter, users]);
-
-  const createDemoUser = async () => {
+  const handleToggleStatus = async (user: UserRow) => {
+    const isSuspended = user.status === 'suspended';
     await runAction({
-      key: 'add-user',
-      successMessage: 'User draft created and ready for API sync.',
-      errorMessage: 'Could not create user draft.',
+      key: `status-${user.id}`,
+      action: () =>
+        isSuspended ? unbanUser(user) : banUser(user, t('users.ban_reason_default')),
+      successMessage: isSuspended
+        ? t('users.unban_success', { name: user.name })
+        : t('users.ban_success', { name: user.name }),
+      errorMessage: t('users.status_update_failed'),
       onSuccess: () => {
-        setUsers((prev) => [{
-          id: String(Date.now()),
-          name: 'مستخدم جديد',
-          email: `new.user.${prev.length + 1}@email.com`,
-          type: prev.length % 2 === 0 ? 'driver' : 'passenger',
-          joinDate: '20 أبريل 2026',
-          status: 'pending',
-          phone: '+966 50 000 0000',
-          city: 'الرياض',
-          rating: 4.5,
-          totalTrips: 0,
-          walletBalance: 0,
-          avatar: 'https://i.pravatar.cc/120?u=new-user',
-          memberSince: 'أبريل 2026',
-        }, ...prev]);
+        setSelectedUser((prev) =>
+          prev && prev.id === user.id
+            ? { ...prev, status: isSuspended ? 'verified' : 'suspended' }
+            : prev
+        );
       },
     });
   };
+
+  const paginationStart = total === 0 ? 0 : (page - 1) * perPage + 1;
+  const paginationEnd = Math.min(page * perPage, total);
+
+  const statusLabel = (status: UserRow['status']) =>
+    status === 'pending'
+      ? t('users.pending_review')
+      : status === 'verified'
+      ? t('users.verified')
+      : t('users.blocked');
 
   return (
     <div className="space-y-8 relative">
       <ActionBanner feedback={feedback} onDismiss={clearFeedback} />
 
-      {/* Page Header & Actions */}
+      {error && (
+        <div className="bg-error-container text-on-error-container px-6 py-4 rounded-2xl">
+          {t('common.load_failed')}
+        </div>
+      )}
+
+      {/* Page Header */}
       <section className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div className="space-y-1">
           <h3 className="text-3xl font-extrabold font-headline tracking-tight text-primary">{t('users.active_users')}</h3>
           <p className="text-on-surface-variant text-sm">{t('users.subtitle')}</p>
         </div>
-        <button
-          onClick={createDemoUser}
-          disabled={isBusy('add-user')}
-          className="bg-primary hover:opacity-90 text-on-primary px-6 py-2.5 rounded-xl flex items-center gap-2 font-medium transition-all shadow-lg shadow-primary/20 self-start md:self-auto disabled:opacity-60"
-        >
-          <span className="material-symbols-outlined text-lg">add</span>
-          <span>{isBusy('add-user') ? 'Creating...' : t('users.add_user')}</span>
-        </button>
       </section>
 
       {/* Filters Bento Grid */}
@@ -123,7 +87,7 @@ const Users: React.FC = () => {
           <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">{t('users.filter_type')}</label>
           <select
             value={typeFilter}
-            onChange={(event) => setTypeFilter(event.target.value as 'all' | User['type'])}
+            onChange={(event) => setTypeFilter(event.target.value as typeof typeFilter)}
             className="bg-transparent border-none text-on-surface font-medium focus:ring-0 p-0 cursor-pointer"
           >
             <option value="all">{t('users.all')}</option>
@@ -147,24 +111,25 @@ const Users: React.FC = () => {
               {t('users.pending_review')}
             </button>
             <button
-              onClick={() => setStatusFilter(statusFilter === 'blocked' ? 'all' : 'blocked')}
-              className={`px-3 py-1 text-xs font-bold rounded-full transition-colors ${statusFilter === 'blocked' ? 'bg-error text-white' : 'bg-error-container text-error'}`}
+              onClick={() => setStatusFilter(statusFilter === 'suspended' ? 'all' : 'suspended')}
+              className={`px-3 py-1 text-xs font-bold rounded-full transition-colors ${statusFilter === 'suspended' ? 'bg-error text-white' : 'bg-error-container text-error'}`}
             >
               {t('users.blocked')}
             </button>
           </div>
         </div>
         <div className="bg-surface-container-lowest p-4 rounded-2xl flex flex-col gap-2 border border-outline-variant/10">
-          <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">{t('users.filter_date')}</label>
-          <span className="text-sm font-medium text-on-surface flex items-center gap-2 cursor-pointer">
-            {t('users.last_30_days')}
-            <span className="material-symbols-outlined text-sm">expand_more</span>
-          </span>
+          <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">{t('users.suspended_users')}</label>
+          <p className="text-2xl font-bold font-headline text-error">
+            {stats ? stats.suspended_users.toLocaleString() : '—'}
+          </p>
         </div>
         <div className="bg-primary-container p-4 rounded-2xl flex items-center justify-between text-on-primary-container shadow-lg shadow-primary/10">
           <div>
             <p className="text-xs opacity-70">{t('users.total_registered')}</p>
-                <p className="text-2xl font-bold font-headline">{users.length.toLocaleString()}</p>
+            <p className="text-2xl font-bold font-headline">
+              {stats ? stats.total_registered.toLocaleString() : '—'}
+            </p>
           </div>
           <span className="material-symbols-outlined text-3xl opacity-30">group</span>
         </div>
@@ -187,118 +152,90 @@ const Users: React.FC = () => {
               {isLoading ? (
                 <tr>
                   <td colSpan={5} className="px-8 py-10 text-center text-on-surface-variant font-medium">
-                    {t('common.loading', 'Loading...')}
+                    {t('common.loading')}
+                  </td>
+                </tr>
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-8 py-10 text-center text-on-surface-variant font-medium">
+                    {t('common.no_data')}
                   </td>
                 </tr>
               ) : (
-                visibleUsers.map((user) => (
-                <tr
-                  key={user.id}
-                  className="group hover:bg-surface-container-low transition-colors cursor-pointer"
-                  onClick={() => setSelectedUser(user)}
-                >
-                  <td className="px-8 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="relative">
-                        <img className="h-10 w-10 rounded-full object-cover" src={user.avatar} alt={user.name} />
-                        {user.status === 'verified' && (
-                          <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full`}></div>
-                        )}
+                users.map((user) => (
+                  <tr
+                    key={user.id}
+                    className="group hover:bg-surface-container-low transition-colors cursor-pointer"
+                    onClick={() => setSelectedUser(user)}
+                  >
+                    <td className="px-8 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <img className="h-10 w-10 rounded-full object-cover" src={user.avatar} alt={user.name} />
+                          {user.status === 'verified' && (
+                            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-bold text-on-surface">{user.name}</p>
+                          <p className="text-xs text-on-surface-variant">{user.email}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-bold text-on-surface">{user.name}</p>
-                        <p className="text-xs text-on-surface-variant">{user.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="flex items-center gap-2 text-sm font-medium">
-                      <span className={`material-symbols-outlined ${user.type === 'driver' ? 'text-secondary' : 'text-primary'} text-lg`}>
-                        {user.type === 'driver' ? 'steering_wheel_heat' : 'person'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="flex items-center gap-2 text-sm font-medium">
+                        <span className={`material-symbols-outlined ${user.type === 'driver' ? 'text-secondary' : 'text-primary'} text-lg`}>
+                          {user.type === 'driver' ? 'steering_wheel_heat' : 'person'}
+                        </span>
+                        {t(`users.${user.type}`)}
                       </span>
-                      {t(`users.${user.type}`)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-on-surface-variant">{user.joinDate}</td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`px-3 py-1 text-xs font-bold rounded-full ${
-                        user.status === 'verified'
-                          ? 'bg-tertiary-fixed text-on-tertiary-fixed-variant'
-                          : user.status === 'pending'
-                          ? 'bg-surface-container-high text-on-surface-variant'
-                          : 'bg-error-container text-error'
-                      }`}
-                    >
-                      {t(`users.${user.status === 'pending' ? 'pending_review' : user.status === 'verified' ? 'verified' : 'blocked'}`)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center ltr:justify-end rtl:justify-start gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          navigate(`/passengers/${user.id}`);
-                        }}
-                        className="p-2 hover:bg-surface-container-high rounded-lg text-primary"
-                        title="Open profile"
+                    </td>
+                    <td className="px-6 py-4 text-sm text-on-surface-variant">{user.joinDate}</td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`px-3 py-1 text-xs font-bold rounded-full ${
+                          user.status === 'verified'
+                            ? 'bg-tertiary-fixed text-on-tertiary-fixed-variant'
+                            : user.status === 'pending'
+                            ? 'bg-surface-container-high text-on-surface-variant'
+                            : 'bg-error-container text-error'
+                        }`}
                       >
-                        <span className="material-symbols-outlined">visibility</span>
-                      </button>
-                      <button
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setSelectedUser(user);
-                        }}
-                        className="p-2 hover:bg-surface-container-high rounded-lg text-on-surface-variant"
-                        title={t('users.view_docs')}
-                      >
-                        <span className="material-symbols-outlined">description</span>
-                      </button>
-                      <button
-                        onClick={async (event) => {
-                          event.stopPropagation();
-                          await runAction({
-                            key: `edit-${user.id}`,
-                            successMessage: `${user.name} profile prepared for editing.`,
-                            errorMessage: 'Failed to load profile editor.',
-                          });
-                        }}
-                        disabled={isBusy(`edit-${user.id}`)}
-                        className="p-2 hover:bg-surface-container-high rounded-lg text-on-surface-variant disabled:opacity-40"
-                        title={t('users.edit')}
-                      >
-                        <span className="material-symbols-outlined">edit</span>
-                      </button>
-                      <button
-                        onClick={async (event) => {
-                          event.stopPropagation();
-                          await runAction({
-                            key: `status-${user.id}`,
-                            successMessage: user.status === 'blocked' ? 'User unblocked successfully.' : 'User blocked successfully.',
-                            errorMessage: 'Status update failed.',
-                            onSuccess: () => {
-                              setUsers((prev) => prev.map((entry) => {
-                                if (entry.id !== user.id) {
-                                  return entry;
-                                }
-                                return {
-                                  ...entry,
-                                  status: entry.status === 'blocked' ? 'verified' : 'blocked',
-                                };
-                              }));
-                            },
-                          });
-                        }}
-                        disabled={isBusy(`status-${user.id}`)}
-                        className="p-2 hover:bg-error-container text-error rounded-lg disabled:opacity-40"
-                        title={t('users.block')}
-                      >
-                        <span className="material-symbols-outlined">block</span>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                        {statusLabel(user.status)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center ltr:justify-end rtl:justify-start gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            navigate(`/passengers/${user.id}`);
+                          }}
+                          className="p-2 hover:bg-surface-container-high rounded-lg text-primary"
+                          title={t('users.open_profile')}
+                        >
+                          <span className="material-symbols-outlined">visibility</span>
+                        </button>
+                        <button
+                          onClick={async (event) => {
+                            event.stopPropagation();
+                            await handleToggleStatus(user);
+                          }}
+                          disabled={isBusy(`status-${user.id}`)}
+                          className={`p-2 rounded-lg disabled:opacity-40 ${
+                            user.status === 'suspended'
+                              ? 'hover:bg-secondary/10 text-secondary'
+                              : 'hover:bg-error-container text-error'
+                          }`}
+                          title={user.status === 'suspended' ? t('users.approve') : t('users.block')}
+                        >
+                          <span className="material-symbols-outlined">
+                            {user.status === 'suspended' ? 'undo' : 'block'}
+                          </span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
                 ))
               )}
             </tbody>
@@ -307,23 +244,31 @@ const Users: React.FC = () => {
         {/* Pagination */}
         <div className="bg-surface-container-low px-8 py-4 flex items-center justify-between border-t border-outline-variant/10">
           <span className="text-xs text-on-surface-variant">
-            {t('users.pagination_info', { start: 1, end: 10, total: 1240 })}
+            {t('users.pagination_info', { start: paginationStart, end: paginationEnd, total })}
           </span>
-          <div className="flex gap-2">
-            <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high text-on-surface-variant">
+          <div className="flex gap-2 items-center">
+            <button
+              onClick={() => setPage(Math.max(1, page - 1))}
+              disabled={page <= 1}
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high text-on-surface-variant disabled:opacity-40"
+            >
               <span className="material-symbols-outlined text-sm">{isRtl ? 'chevron_right' : 'chevron_left'}</span>
             </button>
-            <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-primary text-on-primary text-xs font-bold">1</button>
-            <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high text-on-surface-variant text-xs font-bold">2</button>
-            <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high text-on-surface-variant text-xs font-bold">3</button>
-            <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high text-on-surface-variant">
+            <span className="text-xs font-bold text-on-surface px-2">
+              {page} / {lastPage}
+            </span>
+            <button
+              onClick={() => setPage(Math.min(lastPage, page + 1))}
+              disabled={page >= lastPage}
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high text-on-surface-variant disabled:opacity-40"
+            >
               <span className="material-symbols-outlined text-sm">{isRtl ? 'chevron_left' : 'chevron_right'}</span>
             </button>
           </div>
         </div>
       </section>
 
-      {/* Detailed User Profile View (Side Panel Modal Design) */}
+      {/* User Quick View (Side Panel) */}
       {selectedUser && (
         <>
           <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[55]" onClick={closePanel}></div>
@@ -351,90 +296,45 @@ const Users: React.FC = () => {
                 </div>
                 <div>
                   <h4 className="text-2xl font-extrabold font-headline text-primary">{selectedUser.name}</h4>
-                  <p className="text-on-surface-variant">{t('users.member_since', { date: selectedUser.memberSince })}</p>
+                  <p className="text-on-surface-variant">{t('users.member_since', { date: selectedUser.joinDate })}</p>
                 </div>
               </div>
 
-              {/* Stats Grid */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-surface-container-low p-5 rounded-3xl text-center shadow-sm">
-                  <span className="material-symbols-outlined text-secondary mb-2">star</span>
-                  <p className="text-xl font-bold">{selectedUser.rating}</p>
-                  <p className="text-xs text-on-surface-variant uppercase tracking-tighter">{t('users.rating')}</p>
-                </div>
-                <div className="bg-surface-container-low p-5 rounded-3xl text-center shadow-sm">
-                  <span className="material-symbols-outlined text-primary mb-2">route</span>
-                  <p className="text-xl font-bold">{selectedUser.totalTrips}</p>
-                  <p className="text-xs text-on-surface-variant uppercase tracking-tighter">{t('users.total_trips')}</p>
-                </div>
-              </div>
-
-              {/* Wallet Card */}
-              <div className="bg-primary-container text-on-primary-container p-6 rounded-3xl relative overflow-hidden shadow-lg">
-                <div className="relative z-10">
-                  <p className="text-xs opacity-70 mb-1">{t('users.wallet_balance')}</p>
-                  <h5 className="text-3xl font-extrabold font-headline">
-                    {selectedUser.walletBalance.toLocaleString()} {t('users.currency')}
-                  </h5>
-                </div>
-                <span className="material-symbols-outlined absolute -bottom-4 ltr:-right-4 rtl:-left-4 text-8xl opacity-10">
-                  account_balance_wallet
-                </span>
-              </div>
-
-              {/* User Details List */}
+              {/* Details List */}
               <div className="space-y-4">
                 <h6 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest px-2">{t('users.additional_info')}</h6>
                 <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl divide-y divide-outline-variant/10 shadow-sm">
                   <div className="p-4 flex justify-between items-center">
-                    <span className="text-sm text-on-surface-variant">{t('users.phone')}</span>
-                    <span className="text-sm font-bold ltr:font-mono">{selectedUser.phone}</span>
+                    <span className="text-sm text-on-surface-variant">{t('users.table_type')}</span>
+                    <span className="text-sm font-bold">{t(`users.${selectedUser.type}`)}</span>
                   </div>
-                  {selectedUser.carType && (
-                    <div className="p-4 flex justify-between items-center">
-                      <span className="text-sm text-on-surface-variant">{t('users.car_type')}</span>
-                      <span className="text-sm font-bold">{selectedUser.carType}</span>
-                    </div>
-                  )}
                   <div className="p-4 flex justify-between items-center">
-                    <span className="text-sm text-on-surface-variant">{t('users.city')}</span>
-                    <span className="text-sm font-bold">{selectedUser.city}</span>
+                    <span className="text-sm text-on-surface-variant">{t('users.table_status')}</span>
+                    <span className="text-sm font-bold">{statusLabel(selectedUser.status)}</span>
+                  </div>
+                  <div className="p-4 flex justify-between items-center">
+                    <span className="text-sm text-on-surface-variant">{t('auth.email')}</span>
+                    <span className="text-sm font-bold">{selectedUser.email || '--'}</span>
                   </div>
                 </div>
               </div>
 
               <div className="flex gap-3 pt-4">
                 <button
-                  onClick={async () => {
-                    if (!selectedUser) {
-                      return;
-                    }
-                    await runAction({
-                      key: `panel-edit-${selectedUser.id}`,
-                      successMessage: 'Profile changes queued for update API.',
-                      errorMessage: 'Could not save profile changes.',
-                    });
-                  }}
-                  disabled={!selectedUser || isBusy(`panel-edit-${selectedUser?.id ?? ''}`)}
-                  className="flex-1 bg-secondary text-white py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-md disabled:opacity-50"
+                  onClick={() => navigate(`/passengers/${selectedUser.id}`)}
+                  className="flex-1 bg-secondary text-white py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-md"
                 >
-                  {t('users.edit_profile')}
+                  {t('users.open_profile')}
                 </button>
                 <button
-                  onClick={async () => {
-                    if (!selectedUser) {
-                      return;
-                    }
-                    await runAction({
-                      key: `panel-block-${selectedUser.id}`,
-                      successMessage: `${selectedUser.name} status updated from profile panel.`,
-                      errorMessage: 'Unable to update user status.',
-                    });
-                  }}
-                  disabled={!selectedUser || isBusy(`panel-block-${selectedUser?.id ?? ''}`)}
+                  onClick={() => void handleToggleStatus(selectedUser)}
+                  disabled={isBusy(`status-${selectedUser.id}`)}
                   className="px-4 py-3 border border-error text-error rounded-xl hover:bg-error-container transition-all disabled:opacity-50"
+                  title={selectedUser.status === 'suspended' ? t('users.approve') : t('users.block')}
                 >
-                  <span className="material-symbols-outlined">block</span>
+                  <span className="material-symbols-outlined">
+                    {selectedUser.status === 'suspended' ? 'undo' : 'block'}
+                  </span>
                 </button>
               </div>
             </div>

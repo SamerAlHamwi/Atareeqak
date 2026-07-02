@@ -29,27 +29,68 @@ export interface TripResponse {
   price_per_seat: number;
 }
 
+export interface TripsListResponse {
+  status: string;
+  data: TripResponse[];
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    filter: string;
+  };
+  counts: {
+    all: number;
+    scheduled: number;
+    active: number;
+    completed: number;
+    cancelled: number;
+    awaiting: number;
+  };
+}
+
+export interface PopularRouteResponse {
+  from: string;
+  to: string;
+  trip_count: number;
+  total_passengers: number;
+  demand_percentage: number;
+  demand_level: 'Very High' | 'High' | 'Medium' | 'Low';
+}
+
+export interface TopDriverResponse {
+  rank: number;
+  id: number;
+  name: string;
+  profile_photo: string | null;
+  avg_rating: number | null;
+  rating_count: number;
+  total_rides: number;
+}
+
 export const tripsApi = {
-  getAllTrips: async (page = 1, status = 'all'): Promise<{ data: TripResponse[], current_page: number, last_page: number, total: number }> => {
-    // Note: Adjust the generic get return type if needed.
+  getAllTrips: async (page = 1, filter = 'all'): Promise<TripsListResponse> => {
+    // Backend expects `filter` (all|active|scheduled|completed|cancelled|awaiting)
     const response = await api.get(ENDPOINTS.TRIPS.ALL, {
-      params: { page, status },
+      params: { page, filter },
     });
-    // The backend uses paginate, so response.data usually has data, current_page, etc.
-    // Ensure we handle standard laravel pagination wrapper
     return response.data;
   },
   getLiveTrips: async (): Promise<TripResponse[]> => {
     const response = await api.get(ENDPOINTS.TRIPS.LIVE);
-    // Might be wrapped in response.data.data depending on backend
     return response.data.data || response.data;
   },
-  getPopularRoutes: async () => {
-    const response = await api.get(ENDPOINTS.TRIPS.POPULAR_ROUTES);
+  getPopularRoutes: async (limit = 10): Promise<PopularRouteResponse[]> => {
+    const response = await api.get(ENDPOINTS.TRIPS.POPULAR_ROUTES, { params: { limit } });
     return response.data.data || response.data;
   },
-  cancelTrip: async (id: number | string) => {
-    const response = await api.post(ENDPOINTS.STAFF.CANCEL_TRIP(id));
+  getTopDrivers: async (limit = 10): Promise<TopDriverResponse[]> => {
+    const response = await api.get(ENDPOINTS.DRIVERS.TOP, { params: { limit } });
+    return response.data.data || response.data;
+  },
+  cancelTrip: async (id: number | string, reason: string) => {
+    // Staff cancellation endpoint requires a reason (min 10 chars)
+    const response = await api.post(ENDPOINTS.STAFF.CANCEL_TRIP(id), { reason });
     return response.data;
-  }
+  },
 };

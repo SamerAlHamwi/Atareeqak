@@ -28,7 +28,7 @@ interface UseTripsReturn {
   selectedTrip: Trip | null;
   isLoading: boolean;
   error: Error | null;
-  cancelTrip: (trip: Trip) => Promise<void>;
+  cancelTrip: (trip: Trip, reason: string) => Promise<void>;
   addDraftTrip: (trip: Trip) => void;
 }
 
@@ -91,15 +91,11 @@ export const useTrips = (): UseTripsReturn => {
     [selectedTripId, trips]
   );
 
-  const cancelTrip = useCallback(async (trip: Trip) => {
-    try {
-      await tripsApi.cancelTrip(trip.rawId);
-      setTrips((prev) =>
-        prev.map((entry) => (entry.id === trip.id ? { ...entry, status: 'cancelled' } : entry))
-      );
-    } catch (err) {
-      throw err instanceof Error ? err : new Error('Cancellation failed');
-    }
+  const cancelTrip = useCallback(async (trip: Trip, reason: string) => {
+    await tripsApi.cancelTrip(trip.rawId, reason);
+    setTrips((prev) =>
+      prev.map((entry) => (entry.id === trip.id ? { ...entry, status: 'cancelled' } : entry))
+    );
   }, []);
 
   const addDraftTrip = useCallback((trip: Trip) => {

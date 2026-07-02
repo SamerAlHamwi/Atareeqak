@@ -7,9 +7,8 @@ interface ComplaintDetailsProps {
   replyText: string;
   setReplyText: (text: string) => void;
   onSendReply: () => void;
+  onResolve: () => void;
   onEscalate: () => void;
-  onHideComment: () => void;
-  onSecurityReview: () => void;
   isBusy: (key: string) => boolean;
 }
 
@@ -18,9 +17,8 @@ export const ComplaintDetails: React.FC<ComplaintDetailsProps> = ({
   replyText,
   setReplyText,
   onSendReply,
+  onResolve,
   onEscalate,
-  onHideComment,
-  onSecurityReview,
   isBusy,
 }) => {
   const { t } = useTranslation();
@@ -28,10 +26,12 @@ export const ComplaintDetails: React.FC<ComplaintDetailsProps> = ({
   if (!complaint) {
     return (
       <div className="lg:col-span-4 flex items-center justify-center p-12 text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant/10">
-        {t('common.loading', 'Loading...')}
+        {t('common.no_data')}
       </div>
     );
   }
+
+  const isClosed = complaint.status === 'resolved' || complaint.status === 'closed';
 
   return (
     <div className="lg:col-span-4 space-y-6 sticky top-24">
@@ -43,7 +43,7 @@ export const ComplaintDetails: React.FC<ComplaintDetailsProps> = ({
               <h4 className="text-lg font-bold">{complaint.id.replace('#', '')}</h4>
             </div>
             <span className="bg-white/20 text-[10px] px-2 py-1 rounded text-white font-bold">
-              {t('support.status_active')}
+              {t(`support.${complaint.status}`)}
             </span>
           </div>
           <div className="flex items-center gap-3">
@@ -54,9 +54,7 @@ export const ComplaintDetails: React.FC<ComplaintDetailsProps> = ({
             />
             <div className="text-start">
               <p className="font-bold text-sm">{complaint.user}</p>
-              <p className="text-xs opacity-80">
-                {t(`users.${complaint.userType}`)} • {complaint.userRating} {t('support.rating')}
-              </p>
+              <p className="text-xs opacity-80">{complaint.userEmail}</p>
             </div>
           </div>
         </div>
@@ -74,67 +72,72 @@ export const ComplaintDetails: React.FC<ComplaintDetailsProps> = ({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="p-3 bg-surface rounded border border-outline-variant/10 text-start">
-              <p className="text-[10px] text-on-surface-variant">{t('support.trip_id')}</p>
-              <p className="text-xs font-bold text-secondary">{complaint.tripId}</p>
+              <p className="text-[10px] text-on-surface-variant">{t('support.table_category')}</p>
+              <p className="text-xs font-bold text-secondary">{complaint.category}</p>
             </div>
             <div className="p-3 bg-surface rounded border border-outline-variant/10 text-start">
-              <p className="text-[10px] text-on-surface-variant">{t('support.location')}</p>
-              <p className="text-xs font-bold">{complaint.location}</p>
+              <p className="text-[10px] text-on-surface-variant">{t('support.table_date')}</p>
+              <p className="text-xs font-bold">{complaint.date}</p>
             </div>
           </div>
 
-          <div>
-            <h5 className="text-xs font-bold text-indigo-900 mb-2 text-start">
-              {t('support.quick_reply')}
-            </h5>
-            <textarea
-              value={replyText}
-              onChange={(e) => setReplyText(e.target.value)}
-              className="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm focus:ring-1 focus:ring-secondary min-h-[100px] outline-none mb-3 text-start"
-              placeholder={t('support.reply_placeholder')}
-            ></textarea>
-            <div className="flex gap-2">
-              <button
-                onClick={onSendReply}
-                disabled={!replyText.trim() || isBusy(`reply-${complaint.id}`)}
-                className="flex-1 bg-secondary text-on-secondary text-xs font-bold py-3 rounded-lg hover:bg-secondary/90 transition-all flex items-center justify-center gap-2 shadow-sm shadow-secondary/20 disabled:opacity-50"
-              >
-                <span className="material-symbols-outlined text-sm">send</span>
-                {t('support.send_reply')}
-              </button>
-              <button
-                onClick={onEscalate}
-                disabled={isBusy(`escalate-${complaint.id}`)}
-                className="bg-surface-container-high text-on-surface text-xs font-bold px-4 py-3 rounded-lg hover:bg-slate-200 transition-all disabled:opacity-50"
-              >
-                {t('support.escalate')}
-              </button>
+          {complaint.resolutionNotes && (
+            <div>
+              <h5 className="text-xs font-bold text-indigo-900 mb-2 text-start">
+                {t('support.resolution_notes')}
+              </h5>
+              <div className="bg-tertiary-fixed/20 p-4 rounded-lg text-sm text-on-surface-variant leading-relaxed text-start whitespace-pre-line">
+                {complaint.resolutionNotes}
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="pt-4 border-t border-outline-variant/20">
-            <p className="text-[10px] text-on-surface-variant mb-3 uppercase font-bold tracking-tight text-start">
-              {t('support.moderation_tools')}
+          {complaint.assignedTo && (
+            <p className="text-xs text-on-surface-variant text-start">
+              {t('support.assigned_to')}: <span className="font-bold">{complaint.assignedTo}</span>
             </p>
-            <div className="flex gap-3">
-              <button
-                onClick={onHideComment}
-                disabled={isBusy(`hide-${complaint.id}`)}
-                className="flex items-center gap-2 text-[11px] font-bold text-error border border-error/20 px-3 py-2 rounded-lg hover:bg-error-container/50 transition-all disabled:opacity-50"
-              >
-                <span className="material-symbols-outlined text-sm">visibility_off</span>
-                {t('support.hide_comment')}
-              </button>
-              <button
-                onClick={onSecurityReview}
-                disabled={isBusy(`review-${complaint.id}`)}
-                className="flex items-center gap-2 text-[11px] font-bold text-indigo-900 border border-indigo-900/20 px-3 py-2 rounded-lg hover:bg-slate-100 transition-all disabled:opacity-50"
-              >
-                <span className="material-symbols-outlined text-sm">gavel</span>
-                {t('support.security_review')}
-              </button>
+          )}
+
+          {!isClosed && (
+            <div>
+              <h5 className="text-xs font-bold text-indigo-900 mb-2 text-start">
+                {t('support.quick_reply')}
+              </h5>
+              <textarea
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                className="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm focus:ring-1 focus:ring-secondary min-h-[100px] outline-none mb-3 text-start"
+                placeholder={t('support.reply_placeholder')}
+              ></textarea>
+              <div className="flex gap-2">
+                <button
+                  onClick={onSendReply}
+                  disabled={replyText.trim().length < 10 || isBusy(`reply-${complaint.id}`)}
+                  className="flex-1 bg-secondary text-on-secondary text-xs font-bold py-3 rounded-lg hover:bg-secondary/90 transition-all flex items-center justify-center gap-2 shadow-sm shadow-secondary/20 disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined text-sm">send</span>
+                  {t('support.send_reply')}
+                </button>
+                <button
+                  onClick={onResolve}
+                  disabled={replyText.trim().length < 10 || isBusy(`resolve-${complaint.id}`)}
+                  className="bg-primary text-on-primary text-xs font-bold px-4 py-3 rounded-lg hover:opacity-90 transition-all disabled:opacity-50"
+                >
+                  {t('support.mark_resolved')}
+                </button>
+                <button
+                  onClick={onEscalate}
+                  disabled={complaint.status === 'escalated' || isBusy(`escalate-${complaint.id}`)}
+                  className="bg-surface-container-high text-on-surface text-xs font-bold px-4 py-3 rounded-lg hover:bg-slate-200 transition-all disabled:opacity-50"
+                >
+                  {t('support.escalate')}
+                </button>
+              </div>
+              <p className="text-[10px] text-on-surface-variant mt-2 text-start">
+                {t('support.reply_min_hint')}
+              </p>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

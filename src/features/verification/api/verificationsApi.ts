@@ -1,4 +1,5 @@
 import api from '../../../services/api';
+import { ENDPOINTS } from '../../../services/endpoints';
 
 export interface VerificationDocument {
   type: 'face_id' | 'back_id' | 'license' | 'mechanic_card';
@@ -22,7 +23,8 @@ export const verificationsApi = {
     status: string;
     data: PendingVerification[];
   }> => {
-    const response = await api.get('/admin/verifications/pending');
+    // Note: backend route is GET /admin/verifications (no /pending suffix, unlike the Postman collection)
+    const response = await api.get(ENDPOINTS.VERIFICATIONS.PENDING);
     return response.data;
   },
 
@@ -38,7 +40,7 @@ export const verificationsApi = {
       verification_status: string;
     };
   }> => {
-    const response = await api.post(`/admin/verifications/${userId}/approve`);
+    const response = await api.post(ENDPOINTS.VERIFICATIONS.APPROVE(userId));
     return response.data;
   },
 
@@ -50,7 +52,7 @@ export const verificationsApi = {
     status: string;
     message: string;
   }> => {
-    const response = await api.post(`/admin/verifications/${userId}/reject`);
+    const response = await api.post(ENDPOINTS.VERIFICATIONS.REJECT(userId));
     return response.data;
   },
 };

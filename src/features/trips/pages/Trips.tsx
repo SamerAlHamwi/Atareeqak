@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMockAction } from '../../shared/useMockAction';
+import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
 import { useTrips } from '../hooks/useTrips';
 import type { Trip } from '../hooks/useTrips';
@@ -10,7 +11,14 @@ import { MonitoringSidebar } from '../components/MonitoringSidebar';
 
 const Trips: React.FC = () => {
   const { t } = useTranslation();
+  // Mock actions remain only for flows with no backend endpoint (draft trip, contact driver)
   const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
+  const {
+    runAction: runApiAction,
+    isBusy: isApiBusy,
+    feedback: apiFeedback,
+    clearFeedback: clearApiFeedback,
+  } = useApiAction();
 
   const {
     visibleTrips,
@@ -69,13 +77,11 @@ const Trips: React.FC = () => {
 
   const handleCancelTrip = async (trip: Trip, event: React.MouseEvent) => {
     event.stopPropagation();
-    await runAction({
+    await runApiAction({
       key: `cancel-${trip.id}`,
-      successMessage: `${trip.id} marked as cancelled.`,
-      errorMessage: 'Could not cancel trip.',
-      onSuccess: async () => {
-        await cancelTrip(trip);
-      },
+      action: () => cancelTrip(trip, t('trips.cancel_reason_default')),
+      successMessage: t('trips.cancel_success', { id: trip.id }),
+      errorMessage: t('trips.cancel_failed'),
     });
   };
 
@@ -92,7 +98,13 @@ const Trips: React.FC = () => {
     <div className="grid grid-cols-12 gap-8">
       {/* Left Column: Trips Management */}
       <div className="col-span-12 xl:col-span-8 space-y-10">
-        <ActionBanner feedback={feedback} onDismiss={clearFeedback} />
+        <ActionBanner
+          feedback={apiFeedback ?? feedback}
+          onDismiss={() => {
+            clearApiFeedback();
+            clearFeedback();
+          }}
+        />
 
         {/* Filters Section */}
         <section className="flex flex-wrap items-center justify-between gap-4">
@@ -134,7 +146,7 @@ const Trips: React.FC = () => {
             onViewHistory={handleViewHistory}
             onViewDetails={handleViewDetails}
             onCancelTrip={handleCancelTrip}
-            isBusy={isBusy}
+            isBusy={(key: string) => isBusy(key) || isApiBusy(key)}
           />
         )}
 

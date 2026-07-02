@@ -1,6 +1,9 @@
 {
   "common": {
-    "dismiss": "إغلاق"
+    "dismiss": "إغلاق",
+    "loading": "جاري التحميل...",
+    "load_failed": "تعذر تحميل البيانات",
+    "no_data": "لا توجد بيانات"
   },
   "auth": {
     "login_title": "لوحة التحكم الإدارية",
@@ -95,7 +98,9 @@
       "active": "نشطة",
       "completed": "مكتملة",
       "cancelled": "ملغاة"
-    }
+    },
+    "export_success": "تم تنزيل تقرير لوحة التحكم بصيغة PDF",
+    "export_failed": "تعذر تصدير التقرير — هذه الميزة تتطلب صلاحية مدير النظام"
   },
   "users": {
     "title": "إدارة المستخدمين",
@@ -133,7 +138,34 @@
     "phone": "رقم الجوال",
     "car_type": "نوع السيارة",
     "city": "المدينة",
-    "edit_profile": "تعديل الملف"
+    "edit_profile": "تعديل الملف",
+    "suspended_users": "حسابات موقوفة",
+    "open_profile": "فتح الملف الكامل",
+    "ban_reason_default": "تم إيقاف الحساب من قبل الإدارة لمخالفة سياسات المنصة",
+    "ban_success": "تم إيقاف حساب {{name}}",
+    "unban_success": "تمت إعادة تفعيل حساب {{name}}",
+    "status_update_failed": "تعذر تحديث حالة المستخدم",
+    "back_to_list": "العودة إلى الركاب",
+    "active_label": "نشط",
+    "charge_wallet": "شحن المحفظة",
+    "charge_amount_placeholder": "المبلغ",
+    "confirm_charge": "تأكيد الشحن",
+    "charge_success": "تم شحن المحفظة بمبلغ {{amount}}",
+    "charge_failed": "تعذر شحن المحفظة",
+    "total_spending": "إجمالي الإنفاق",
+    "monthly_stats_title": "إحصائيات الرحلات الشهرية",
+    "monthly_stats_subtitle": "نشاط الراكب خلال الأشهر الماضية",
+    "recent_trips": "الرحلات الأخيرة",
+    "show_latest": "عرض الأحدث",
+    "trip_cost": "التكلفة",
+    "complaints_title": "الشكاوى والبلاغات",
+    "wallet_charge_log": "سجل شحن المحفظة",
+    "transaction_id": "رقم المعاملة",
+    "amount": "المبلغ",
+    "processed_by": "تم بواسطة",
+    "charge_completed": "مكتملة",
+    "account_info": "معلومات الحساب",
+    "ban_reason_label": "سبب الإيقاف"
   },
   "drivers": {
     "title": "إدارة السائقين",
@@ -167,7 +199,27 @@
     },
     "by_system": "بواسطة النظام",
     "by_admin": "بواسطة المشرف",
-    "pagination_info": "عرض {{start}}-{{end}} من أصل {{total}} سائق"
+    "pagination_info": "عرض {{start}}-{{end}} من أصل {{total}} سائق",
+    "ban_reason_default": "تم إيقاف الحساب من قبل الإدارة لمخالفة سياسات المنصة",
+    "ban_success": "تم إيقاف حساب {{name}}",
+    "unban_success": "تمت إعادة تفعيل حساب {{name}}",
+    "status_update_failed": "تعذر تحديث حالة السائق",
+    "back_to_list": "العودة إلى قائمة السائقين",
+    "member_since": "عضو منذ: {{date}}",
+    "total_rides": "إجمالي الرحلات",
+    "completed_rides": "{{count}} رحلة مكتملة",
+    "cancelled_rides": "{{count}} رحلة ملغاة",
+    "total_earnings": "إجمالي الأرباح",
+    "net_after_fees": "صافي الربح بعد العمولة",
+    "cancel_rate": "معدل الإلغاء",
+    "favorite_destination": "الوجهة المفضلة",
+    "visit_count": "{{count}} زيارة",
+    "vehicle_color": "اللون",
+    "vehicle_seats": "عدد المقاعد",
+    "documents_title": "التحقق والمستندات",
+    "view_document": "عرض الملف",
+    "recent_rides": "الرحلات الأخيرة",
+    "price_per_seat": "سعر المقعد"
   },
   "trips": {
     "title": "إدارة الرحلات",
@@ -193,9 +245,10 @@
     "map_update_freq": "يتم التحديث كل 30 ثانية",
     "route_monitoring": "مراقبة المسارات",
     "congestion": {
-        "very_high": "عالي جداً",
-        "medium": "متوسط",
-        "low": "منخفض"
+      "very_high": "عالي جداً",
+      "medium": "متوسط",
+      "low": "منخفض",
+      "high": "عالي"
     },
     "current_trips": "{{count}} رحلة حالية",
     "current_passengers": "{{count}} راكب",
@@ -209,7 +262,10 @@
     "view_all_activity": "عرض جميع الأنشطة",
     "top_drivers": "أفضل السائقين",
     "minutes_ago": "منذ {{count}} دقائق",
-    "tomorrow": "غداً"
+    "tomorrow": "غداً",
+    "cancel_reason_default": "تم إلغاء الرحلة من قبل الإدارة عبر لوحة التحكم",
+    "cancel_success": "تم إلغاء الرحلة {{id}} بنجاح",
+    "cancel_failed": "تعذر إلغاء الرحلة"
   },
   "reports": {
     "title": "الإدارة المالية",
@@ -238,15 +294,40 @@
     "filter": "تصفية",
     "pagination_info": "عرض {{count}} من أصل {{total}} معاملة",
     "types": {
-        "commission": "عمولة المنصة",
-        "credit": "شحن رصيد",
-        "refund": "طلب استرداد",
-        "withdrawal": "سحب رصيد"
+      "commission": "عمولة المنصة",
+      "credit": "شحن رصيد",
+      "refund": "طلب استرداد",
+      "withdrawal": "سحب رصيد"
     },
     "txn_status": {
-        "completed": "مكتملة",
-        "pending": "قيد الانتظار"
-    }
+      "completed": "مكتملة",
+      "pending": "قيد الانتظار"
+    },
+    "locked_funds": "أموال محجوزة برحلات نشطة",
+    "active_rides_count": "{{count}} رحلة نشطة",
+    "wallet_requests": "طلبات المحافظ",
+    "request_type": {
+      "charge": "شحن",
+      "withdraw": "سحب"
+    },
+    "request_status": {
+      "pending": "معلّق",
+      "approved": "مقبول",
+      "rejected": "مرفوض"
+    },
+    "approve": "قبول",
+    "reject": "رفض",
+    "approve_success": "تم قبول الطلب {{id}} وتحديث رصيد المحفظة",
+    "reject_success": "تم رفض الطلب {{id}}",
+    "request_action_failed": "تعذر تنفيذ الإجراء على الطلب",
+    "manual_credit_desc": "شحن مباشر لمحفظة مستخدم عبر رقم الهاتف (صلاحية مدير النظام فقط)",
+    "credit_phone_placeholder": "رقم الهاتف",
+    "credit_amount_placeholder": "المبلغ",
+    "credit_success": "تم شحن {{amount}} إلى المحفظة {{phone}}",
+    "credit_failed": "تعذر شحن المحفظة",
+    "export_success": "تم تنزيل التقرير المالي بصيغة PDF",
+    "export_failed": "تعذر تصدير التقرير",
+    "load_failed_hint": "تعذر تحميل التقرير المالي — هذه الصفحة تتطلب صلاحية مدير النظام"
   },
   "support": {
     "title": "الدعم والشكاوى",
@@ -284,7 +365,21 @@
     "moderation_tools": "أدوات الرقابة",
     "hide_comment": "إخفاء التعليق",
     "security_review": "مراجعة أمنية",
-    "driver_history_note": "بناءً على تاريخ السائق، هذه أول شكوى مادية مقدمة ضده منذ 6 أشهر."
+    "driver_history_note": "بناءً على تاريخ السائق، هذه أول شكوى مادية مقدمة ضده منذ 6 أشهر.",
+    "in_review": "قيد المراجعة",
+    "closed": "مغلقة",
+    "escalated": "مصعّدة",
+    "mark_resolved": "حلّ الشكوى",
+    "resolution_notes": "سجل المعالجة",
+    "assigned_to": "مسندة إلى",
+    "reply_min_hint": "الرد يجب أن لا يقل عن 10 أحرف",
+    "reply_success": "تم إرسال الرد إلى {{user}}",
+    "reply_failed": "تعذر إرسال الرد",
+    "resolve_success": "تم حل الشكوى {{id}}",
+    "resolve_failed": "تعذر حل الشكوى",
+    "escalate_success": "تم تصعيد الشكوى {{id}} إلى الإدارة",
+    "escalate_failed": "تعذر تصعيد الشكوى",
+    "escalate_reason_default": "تصعيد من وكيل الدعم لمراجعة الإدارة"
   },
   "settings": {
     "title": "إعدادات النظام",
@@ -343,7 +438,10 @@
     "roles": {
       "ops_manager": "مدير عمليات",
       "finance": "محاسب مالي",
-      "support": "دعم فني"
+      "support": "دعم فني",
+      "system_admin": "مدير النظام",
+      "admin": "مدير",
+      "support_agent": "وكيل دعم"
     },
     "status": {
       "active": "نشط",
@@ -368,7 +466,26 @@
     "perm_edit_configs": "تعديل التكوينات العامة",
     "save_edits": "حفظ التعديلات",
     "cancel": "إلغاء",
-    "pagination_info": "عرض {{count}} من أصل {{total}} موظف"
+    "pagination_info": "عرض {{count}} من أصل {{total}} موظف",
+    "inactive_staff": "حسابات معطلة",
+    "create_success": "تم إنشاء حساب الموظف {{name}}",
+    "create_failed": "تعذر إنشاء حساب الموظف",
+    "activate": "تفعيل الحساب",
+    "deactivate": "تعطيل الحساب",
+    "activate_success": "تم تفعيل حساب {{name}}",
+    "deactivate_success": "تم تعطيل حساب {{name}}",
+    "toggle_failed": "تعذر تحديث حالة الموظف",
+    "reset_password_title": "إعادة تعيين كلمة المرور",
+    "reset_password_action": "إعادة التعيين",
+    "reset_password_success": "تم تحديث كلمة مرور {{name}}",
+    "reset_password_failed": "تعذر تحديث كلمة المرور",
+    "form_first_name": "الاسم الأول",
+    "form_last_name": "الكنية",
+    "form_username": "اسم المستخدم",
+    "form_email": "البريد الإلكتروني (اختياري)",
+    "form_password": "كلمة المرور (8 أحرف على الأقل)",
+    "form_new_password": "كلمة المرور الجديدة (8 أحرف على الأقل)",
+    "form_hint": "اسم المستخدم بأحرف لاتينية وأرقام فقط، وكلمة المرور 8 أحرف على الأقل"
   },
   "footer": {
     "copyright": "© 2024 عطريقك. جميع الحقوق محفوظة."

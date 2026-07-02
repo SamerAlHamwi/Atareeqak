@@ -1,92 +1,143 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { reportsApi } from '../api/reportsApi';
+import type { ReportData } from '../api/reportsApi';
+import { walletApi } from '../../wallet/api/walletApi';
+import type { Wallet, WalletRequestResponse } from '../../wallet/api/walletApi';
 
-export interface Transaction {
-  id: string;
+export interface WalletRequestRow {
+  id: number;
+  displayId: string;
   user: string;
-  userType: 'driver' | 'passenger';
   userInitial: string;
-  type: 'commission' | 'credit' | 'refund' | 'withdrawal';
-  amount: string;
+  type: 'charge' | 'withdraw';
+  amount: number;
+  phone: string;
   date: string;
-  status: 'completed' | 'pending';
+  status: 'pending' | 'approved' | 'rejected';
 }
 
-const mockTransactions: Transaction[] = [
-  {
-    id: '#TXN-89210',
-    user: 'أحمد محمد',
-    userType: 'driver',
-    userInitial: 'أ م',
-    type: 'commission',
-    amount: '24.50 ر.س',
-    date: '14 أكتوبر 2023',
-    status: 'completed',
-  },
-  {
-    id: '#TXN-89209',
-    user: 'سارة غانم',
-    userType: 'passenger',
-    userInitial: 'س غ',
-    type: 'credit',
-    amount: '150.00 ر.س',
-    date: '14 أكتوبر 2023',
-    status: 'completed',
-  },
-  {
-    id: '#TXN-89208',
-    user: 'محمد علي',
-    userType: 'driver',
-    userInitial: 'م ع',
-    type: 'refund',
-    amount: '45.00 ر.س',
-    date: '13 أكتوبر 2023',
-    status: 'pending',
-  },
-  {
-    id: '#TXN-89207',
-    user: 'خالد لؤي',
-    userType: 'driver',
-    userInitial: 'خ ل',
-    type: 'withdrawal',
-    amount: '1,200.00 ر.س',
-    date: '13 أكتوبر 2023',
-    status: 'completed',
-  },
-];
+export type RequestStatusFilter = 'all' | WalletRequestRow['status'];
+
+const mapRequest = (r: WalletRequestResponse): WalletRequestRow => ({
+  id: r.id,
+  displayId: `#WR-${r.id}`,
+  user: r.user?.name || 'غير معروف',
+  userInitial: r.user?.name
+    ? r.user.name
+        .split(' ')
+        .map((n) => n[0])
+        .slice(0, 2)
+        .join(' ')
+    : '?',
+  type: r.type,
+  amount: r.amount,
+  phone: r.wallet?.phone_number || '',
+  date: r.created_at ? new Date(r.created_at).toLocaleDateString('ar-SY') : '',
+  status: r.status,
+});
 
 export const useReports = () => {
-  const [commissionRate, setCommissionRate] = useState<string>('15');
-  const [walletQuery, setWalletQuery] = useState<string>('');
-  const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions);
+  const [report, setReport] = useState<ReportData | null>(null);
+  const [wallets, setWallets] = useState<Wallet[]>([]);
+  const [requests, setRequests] = useState<WalletRequestRow[]>([]);
+  const [requestCounts, setRequestCounts] = useState<{ pending: number; approved: number; rejected: number } | null>(null);
+  const [statusFilter, setStatusFilter] = useState<RequestStatusFilter>('all');
+  const [walletQuery, setWalletQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter((entry) => {
-      if (!walletQuery.trim()) {
-        return true;
-      }
-      const query = walletQuery.toLowerCase();
-      return entry.id.toLowerCase().includes(query) || entry.user.toLowerCase().includes(query);
-    });
-  }, [transactions, walletQuery]);
+  const fetchAll = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [reportResponse, walletsResponse, requestsResponse] = await Promise.all([
+        reportsApi.generateFinancialReport(),
+        walletApi.getAllWallets(),
+        walletApi.getWalletRequests(statusFilter === 'all' ? {} : { status: statusFilter }),
+      ]);
+      setReport(reportResponse.report_data);
+      setWallets(walletsResponse.all_wallets || []);
+      setRequests((requestsResponse.data || []).map(mapRequest));
+      setRequestCounts(requestsResponse.counts ?? null);
+    } catch (err) {
+      const fetchError = err instanceof Error ? err : new Error('Failed to load reports');
+      setError(fetchError);
+      console.error(fetchError.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [statusFilter]);
 
-  const toggleTransactionStatus = useCallback((txnId: string) => {
-    setTransactions((prev) =>
-      prev.map((entry) => {
-        if (entry.id !== txnId) return entry;
-        return {
-          ...entry,
-          status: entry.status === 'pending' ? 'completed' : 'pending',
-        };
-      })
+  useEffect(() => {
+    void fetchAll();
+  }, [fetchAll]);
+
+  const filteredWallets = useMemo(() => {
+    const query = walletQuery.trim().toLowerCase();
+    if (!query) {
+      return [];
+    }
+    return wallets
+      .filter(
+        (wallet) =>
+          wallet.phone_number?.toLowerCase().includes(query) ||
+          wallet.wallet_number?.toLowerCase().includes(query) ||
+          wallet.owner?.toLowerCase().includes(query)
+      )
+      .slice(0, 5);
+  }, [wallets, walletQuery]);
+
+  const approveRequest = useCallback(async (request: WalletRequestRow) => {
+    await walletApi.approveWalletRequest(request.id);
+    setRequests((prev) =>
+      prev.map((entry) => (entry.id === request.id ? { ...entry, status: 'approved' } : entry))
+    );
+    setRequestCounts((prev) =>
+      prev ? { ...prev, pending: Math.max(0, prev.pending - 1), approved: prev.approved + 1 } : prev
     );
   }, []);
 
+  const rejectRequest = useCallback(async (request: WalletRequestRow) => {
+    await walletApi.rejectWalletRequest(request.id);
+    setRequests((prev) =>
+      prev.map((entry) => (entry.id === request.id ? { ...entry, status: 'rejected' } : entry))
+    );
+    setRequestCounts((prev) =>
+      prev ? { ...prev, pending: Math.max(0, prev.pending - 1), rejected: prev.rejected + 1 } : prev
+    );
+  }, []);
+
+  const chargeWalletByPhone = useCallback(async (phoneNumber: string, amount: number) => {
+    return walletApi.chargeUserWallet(phoneNumber, amount);
+  }, []);
+
+  const exportPdf = useCallback(async () => {
+    const blob = await reportsApi.exportReportToPdf();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `financial-report-${new Date().toISOString().slice(0, 10)}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  }, []);
+
   return {
-    commissionRate,
-    setCommissionRate,
+    report,
+    wallets,
+    filteredWallets,
+    requests,
+    requestCounts,
+    statusFilter,
+    setStatusFilter,
     walletQuery,
     setWalletQuery,
-    filteredTransactions,
-    toggleTransactionStatus,
+    isLoading,
+    error,
+    approveRequest,
+    rejectRequest,
+    chargeWalletByPhone,
+    exportPdf,
   };
 };

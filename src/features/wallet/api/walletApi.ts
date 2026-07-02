@@ -25,6 +25,40 @@ export interface WalletTransaction {
   created_at: string;
 }
 
+export interface WalletRequestResponse {
+  id: number;
+  type: 'charge' | 'withdraw';
+  amount: number;
+  status: 'pending' | 'approved' | 'rejected';
+  user_notes: string | null;
+  admin_notes: string | null;
+  processed_at: string | null;
+  created_at: string;
+  user: { id: number; name: string; email: string | null } | null;
+  wallet: {
+    id: number;
+    wallet_number: string;
+    phone_number: string;
+    current_balance: number;
+  } | null;
+}
+
+export interface WalletRequestsListResponse {
+  status: string;
+  data: WalletRequestResponse[];
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
+  counts: {
+    pending: number;
+    approved: number;
+    rejected: number;
+  };
+}
+
 export const walletApi = {
   getMyWallet: async (): Promise<{ status: string; wallet: Wallet }> => {
     const response = await api.get(ENDPOINTS.WALLET.ADMIN_WALLET);
@@ -68,6 +102,34 @@ export const walletApi = {
     };
   }> => {
     const response = await api.get(ENDPOINTS.WALLET.TRANSACTIONS(walletId));
+    return response.data;
+  },
+
+  getWalletRequests: async (
+    params: {
+      status?: 'pending' | 'approved' | 'rejected';
+      type?: 'charge' | 'withdraw';
+      page?: number;
+      per_page?: number;
+    } = {}
+  ): Promise<WalletRequestsListResponse> => {
+    const response = await api.get(ENDPOINTS.WALLET.REQUESTS, { params });
+    return response.data;
+  },
+
+  approveWalletRequest: async (id: string | number, adminNotes?: string) => {
+    const response = await api.post(
+      ENDPOINTS.WALLET.APPROVE_REQUEST(id),
+      adminNotes ? { admin_notes: adminNotes } : {}
+    );
+    return response.data;
+  },
+
+  rejectWalletRequest: async (id: string | number, adminNotes?: string) => {
+    const response = await api.post(
+      ENDPOINTS.WALLET.REJECT_REQUEST(id),
+      adminNotes ? { admin_notes: adminNotes } : {}
+    );
     return response.data;
   },
 };
