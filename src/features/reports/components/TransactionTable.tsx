@@ -1,11 +1,17 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import TableSkeleton from '../../shared/components/TableSkeleton';
+import TablePagination from '../../shared/components/TablePagination';
 import type { WalletRequestRow, RequestStatusFilter } from '../hooks/useReports';
 
 interface TransactionTableProps {
   requests: WalletRequestRow[];
   statusFilter: RequestStatusFilter;
   setStatusFilter: (filter: RequestStatusFilter) => void;
+  page: number;
+  lastPage: number;
+  total: number;
+  onPageChange: (page: number) => void;
   onApprove: (request: WalletRequestRow) => void;
   onReject: (request: WalletRequestRow) => void;
   onExport: () => void;
@@ -17,6 +23,10 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   requests,
   statusFilter,
   setStatusFilter,
+  page,
+  lastPage,
+  total,
+  onPageChange,
   onApprove,
   onReject,
   onExport,
@@ -64,11 +74,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
           </thead>
           <tbody className="divide-y divide-surface-container">
             {isLoading ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-10 text-center text-on-surface-variant">
-                  {t('common.loading')}
-                </td>
-              </tr>
+              <TableSkeleton rows={5} cols={6} firstColAvatar />
             ) : requests.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-6 py-10 text-center text-on-surface-variant">
@@ -150,6 +156,15 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
           </tbody>
         </table>
       </div>
+
+      {/* Pagination (wallet requests return meta) */}
+      <TablePagination
+        page={page}
+        lastPage={lastPage}
+        onPageChange={onPageChange}
+        isLoading={isLoading}
+        info={t('reports.requests_pagination_info', { page, pages: lastPage, total })}
+      />
     </div>
   );
 };

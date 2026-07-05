@@ -2,6 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
+import ErrorBanner from '../../shared/components/ErrorBanner';
+import TableSkeleton from '../../shared/components/TableSkeleton';
 import { useReviews } from '../hooks/useReviews';
 import type { Review, DateFilter } from '../hooks/useReviews';
 
@@ -22,6 +24,7 @@ const Reviews: React.FC = () => {
     setDateFilter,
     page,
     setPage,
+    refetch,
     deleteReview,
   } = useReviews();
 
@@ -42,11 +45,7 @@ const Reviews: React.FC = () => {
     <div className="space-y-10">
       <ActionBanner feedback={feedback} onDismiss={clearFeedback} />
 
-      {error && (
-        <div className="bg-error-container text-on-error-container px-6 py-4 rounded-2xl">
-          {t('common.load_failed')}
-        </div>
-      )}
+      {error && <ErrorBanner onRetry={() => void refetch()} />}
 
       {/* Header */}
       <section className="flex flex-wrap items-end justify-between gap-4">
@@ -111,11 +110,7 @@ const Reviews: React.FC = () => {
             </thead>
             <tbody>
               {isLoading ? (
-                <tr>
-                  <td colSpan={5} className="py-12 text-center text-on-surface-variant">
-                    {t('common.loading')}
-                  </td>
-                </tr>
+                <TableSkeleton rows={5} cols={5} />
               ) : reviews.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-12 text-center text-on-surface-variant">

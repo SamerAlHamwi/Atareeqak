@@ -1,4 +1,7 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
 import { reportsApi } from '../api/reportsApi';
 import type { ReportData } from '../api/reportsApi';
 import { walletApi } from '../../wallet/api/walletApi';
@@ -18,10 +21,10 @@ export interface WalletRequestRow {
 
 export type RequestStatusFilter = 'all' | WalletRequestRow['status'];
 
-const mapRequest = (r: WalletRequestResponse): WalletRequestRow => ({
+const mapRequest = (r: WalletRequestResponse, t: TFunction): WalletRequestRow => ({
   id: r.id,
   displayId: `#WR-${r.id}`,
-  user: r.user?.name || 'غير معروف',
+  user: r.user?.name || t('common.unknown'),
   userInitial: r.user?.name
     ? r.user.name
         .split(' ')
@@ -37,14 +40,23 @@ const mapRequest = (r: WalletRequestResponse): WalletRequestRow => ({
 });
 
 export const useReports = () => {
+  const { t } = useTranslation();
   const [report, setReport] = useState<ReportData | null>(null);
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [requests, setRequests] = useState<WalletRequestRow[]>([]);
   const [requestCounts, setRequestCounts] = useState<{ pending: number; approved: number; rejected: number } | null>(null);
-  const [statusFilter, setStatusFilter] = useState<RequestStatusFilter>('all');
+  const [statusFilter, setStatusFilterState] = useState<RequestStatusFilter>('all');
+  const [requestsPage, setRequestsPage] = useState(1);
+  const [requestsLastPage, setRequestsLastPage] = useState(1);
+  const [requestsTotal, setRequestsTotal] = useState(0);
   const [walletQuery, setWalletQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+
+  const setStatusFilter = useCallback((filter: RequestStatusFilter) => {
+    setStatusFilterState(filter);
+    setRequestsPage(1);
+  }, []);
 
   const fetchAll = useCallback(async () => {
     setIsLoading(true);
@@ -53,12 +65,17 @@ export const useReports = () => {
       const [reportResponse, walletsResponse, requestsResponse] = await Promise.all([
         reportsApi.generateFinancialReport(),
         walletApi.getAllWallets(),
-        walletApi.getWalletRequests(statusFilter === 'all' ? {} : { status: statusFilter }),
+        walletApi.getWalletRequests({
+          page: requestsPage,
+          ...(statusFilter === 'all' ? {} : { status: statusFilter }),
+        }),
       ]);
       setReport(reportResponse.report_data);
       setWallets(walletsResponse.all_wallets || []);
-      setRequests((requestsResponse.data || []).map(mapRequest));
+      setRequests((requestsResponse.data || []).map((r) => mapRequest(r, t)));
       setRequestCounts(requestsResponse.counts ?? null);
+      setRequestsLastPage(requestsResponse.meta?.last_page ?? 1);
+      setRequestsTotal(requestsResponse.meta?.total ?? 0);
     } catch (err) {
       const fetchError = err instanceof Error ? err : new Error('Failed to load reports');
       setError(fetchError);
@@ -66,11 +83,9 @@ export const useReports = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, requestsPage, t]);
 
-  useEffect(() => {
-    void fetchAll();
-  }, [fetchAll]);
+  useFetchEffect(fetchAll);
 
   const filteredWallets = useMemo(() => {
     const query = walletQuery.trim().toLowerCase();
@@ -131,10 +146,15 @@ export const useReports = () => {
     requestCounts,
     statusFilter,
     setStatusFilter,
+    requestsPage,
+    setRequestsPage,
+    requestsLastPage,
+    requestsTotal,
     walletQuery,
     setWalletQuery,
     isLoading,
     error,
+    refetch: fetchAll,
     approveRequest,
     rejectRequest,
     chargeWalletByPhone,

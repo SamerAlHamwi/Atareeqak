@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { isAxiosError } from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useApiAction } from '../../shared/useApiAction';
@@ -36,9 +37,10 @@ const Dashboard: React.FC = () => {
           setCityDistribution(response.data.city_distribution);
           setRecentActivities(response.data.recent_activities);
         }
-      } catch (err: any) {
+      } catch (err) {
         console.error('Error fetching dashboard data:', err);
-        setError(err.response?.data?.message || 'Failed to load dashboard data');
+        const apiMessage = isAxiosError(err) ? err.response?.data?.message : undefined;
+        setError(apiMessage || 'Failed to load dashboard data');
       } finally {
         setIsLoading(false);
       }

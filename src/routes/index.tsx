@@ -1,57 +1,92 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import AuthLayout from '../components/layout/AuthLayout';
 import ProtectedRoute from './ProtectedRoute';
+import RoleRoute from './RoleRoute';
 
-import Login from '../features/auth/pages/Login';
-import Register from '../features/auth/pages/Register';
-import Dashboard from '../features/dashboard/pages/Dashboard';
-import Home from '../features/home/pages/Home';
-import Users from '../features/users/pages/Users';
-import UserDetails from '../features/users/pages/UserDetails';
-import Drivers from '../features/drivers/pages/Drivers';
-import DriverDetails from '../features/drivers/pages/DriverDetails';
-import Trips from '../features/trips/pages/Trips';
-import Reports from '../features/reports/pages/Reports';
-import Support from '../features/support/pages/Support';
-import Settings from '../features/settings/pages/Settings';
-import Staff from '../features/staff/pages/Staff';
-import Verifications from '../features/verification/pages/Verifications';
-import Reviews from '../features/reviews/pages/Reviews';
+// Route-level code splitting: each page becomes its own chunk so the initial
+// bundle only carries the shell (layouts, router, auth context).
+const Login = lazy(() => import('../features/auth/pages/Login'));
+const Dashboard = lazy(() => import('../features/dashboard/pages/Dashboard'));
+const Home = lazy(() => import('../features/home/pages/Home'));
+const Users = lazy(() => import('../features/users/pages/Users'));
+const UserDetails = lazy(() => import('../features/users/pages/UserDetails'));
+const Drivers = lazy(() => import('../features/drivers/pages/Drivers'));
+const DriverDetails = lazy(() => import('../features/drivers/pages/DriverDetails'));
+const Trips = lazy(() => import('../features/trips/pages/Trips'));
+const Reports = lazy(() => import('../features/reports/pages/Reports'));
+const Support = lazy(() => import('../features/support/pages/Support'));
+const Settings = lazy(() => import('../features/settings/pages/Settings'));
+const Staff = lazy(() => import('../features/staff/pages/Staff'));
+const Verifications = lazy(() => import('../features/verification/pages/Verifications'));
+const Reviews = lazy(() => import('../features/reviews/pages/Reviews'));
+
+const RouteFallback: React.FC = () => (
+  <div className="min-h-[60vh] flex items-center justify-center">
+    <div
+      className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"
+      role="status"
+      aria-label="Loading"
+    />
+  </div>
+);
 
 const AppRoutes: React.FC = () => {
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Public Routes */}
-        <Route element={<AuthLayout />}>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-        </Route>
-
-        {/* Protected Routes */}
-        <Route element={<ProtectedRoute />}>
-          <Route element={<MainLayout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/passengers" element={<Users />} />
-            <Route path="/passengers/:userId" element={<UserDetails />} />
-            <Route path="/drivers" element={<Drivers />} />
-            <Route path="/drivers/:driverId" element={<DriverDetails />} />
-            <Route path="/staff" element={<Staff />} />
-            <Route path="/verifications" element={<Verifications />} />
-            <Route path="/reviews" element={<Reviews />} />
-            <Route path="/trips" element={<Trips />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/support" element={<Support />} />
-            <Route path="/settings" element={<Settings />} />
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          {/* Public Routes */}
+          <Route element={<AuthLayout />}>
+            <Route path="/login" element={<Login />} />
+            {/* Employees are created by the system admin — no self-registration */}
+            <Route path="/register" element={<Navigate to="/login" replace />} />
           </Route>
-        </Route>
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          {/* Protected Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<MainLayout />}>
+              <Route path="/" element={<Home />} />
+
+              {/* admin + system_admin (backed by /admin/* endpoints) */}
+              <Route element={<RoleRoute section="dashboard" />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+              </Route>
+              <Route element={<RoleRoute section="passengers" />}>
+                <Route path="/passengers" element={<Users />} />
+                <Route path="/passengers/:userId" element={<UserDetails />} />
+              </Route>
+              <Route element={<RoleRoute section="drivers" />}>
+                <Route path="/drivers" element={<Drivers />} />
+                <Route path="/drivers/:driverId" element={<DriverDetails />} />
+              </Route>
+              <Route element={<RoleRoute section="trips" />}>
+                <Route path="/trips" element={<Trips />} />
+              </Route>
+              <Route element={<RoleRoute section="verifications" />}>
+                <Route path="/verifications" element={<Verifications />} />
+              </Route>
+
+              {/* system_admin only */}
+              <Route element={<RoleRoute section="staff" />}>
+                <Route path="/staff" element={<Staff />} />
+              </Route>
+              <Route element={<RoleRoute section="reports" />}>
+                <Route path="/reports" element={<Reports />} />
+              </Route>
+
+              {/* any staff role */}
+              <Route path="/reviews" element={<Reviews />} />
+              <Route path="/support" element={<Support />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
+          </Route>
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 };

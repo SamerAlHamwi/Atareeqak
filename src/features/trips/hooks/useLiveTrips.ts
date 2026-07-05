@@ -1,4 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
 import { tripsApi } from '../api/tripsApi';
 import type { LiveTripResponse, LatLng } from '../api/tripsApi';
 
@@ -39,10 +42,10 @@ const toPath = (geometry: LiveTripResponse['route']['geometry']): [number, numbe
     .map(([lng, lat]) => [lat, lng] as [number, number]);
 };
 
-const mapLiveTrip = (trip: LiveTripResponse): LiveTrip => ({
+const mapLiveTrip = (trip: LiveTripResponse, t: TFunction): LiveTrip => ({
   id: trip.id,
   tripRef: trip.trip_ref,
-  driverName: trip.driver?.name || 'غير معروف',
+  driverName: trip.driver?.name || t('common.unknown'),
   driverPhone: trip.driver?.communication_number ?? null,
   from: trip.route?.from || '',
   to: trip.route?.to || '',
@@ -65,6 +68,7 @@ interface UseLiveTripsReturn {
 }
 
 export const useLiveTrips = (): UseLiveTripsReturn => {
+  const { t } = useTranslation();
   const [liveTrips, setLiveTrips] = useState<LiveTrip[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -76,7 +80,7 @@ export const useLiveTrips = (): UseLiveTripsReturn => {
     }
     try {
       const trips = await tripsApi.getLiveTrips();
-      setLiveTrips((trips || []).map(mapLiveTrip));
+      setLiveTrips((trips || []).map((trip) => mapLiveTrip(trip, t)));
       setError(null);
       hasLoadedRef.current = true;
     } catch (err) {
@@ -86,13 +90,9 @@ export const useLiveTrips = (): UseLiveTripsReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
-  useEffect(() => {
-    void fetchLiveTrips();
-    const interval = setInterval(() => void fetchLiveTrips(), REFRESH_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [fetchLiveTrips]);
+  useFetchEffect(fetchLiveTrips, REFRESH_INTERVAL_MS);
 
   return { liveTrips, isLoading, error, refresh: fetchLiveTrips };
 };

@@ -1,9 +1,33 @@
+export type StaffRole = 'system_admin' | 'admin' | 'support_agent';
+
 export type User = {
   id?: string | number;
   name: string;
   email: string;
   type?: 'primary' | 'sycash';
   phone?: string;
+  username?: string;
+  role?: StaffRole;
+  roleLabel?: string;
+};
+
+export type StaffEmployee = {
+  id: number;
+  username: string;
+  email: string;
+  full_name: string;
+  role: StaffRole;
+  role_label: string;
+  is_active: boolean;
+  last_login_at: string | null;
+  created_at: string;
+};
+
+export type StaffAuthResponse = {
+  status: string;
+  message?: string;
+  employee: StaffEmployee;
+  tokens: TokenPair;
 };
 
 export type TokenPair = {

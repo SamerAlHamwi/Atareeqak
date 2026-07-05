@@ -1,36 +1,37 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import ActionBanner from '../../shared/components/ActionBanner';
 import { useApiAction } from '../../shared/useApiAction';
 import { useUserDetails } from '../hooks/useUserDetails';
 
-const tripStatusBadge = (status: string): { label: string; classes: string } => {
+const tripStatusBadge = (status: string, t: TFunction): { label: string; classes: string } => {
   switch (status) {
     case 'confirmed':
     case 'completed':
-      return { label: 'مكتملة', classes: 'bg-tertiary-fixed text-on-tertiary-fixed-variant' };
+      return { label: t('common.status.completed'), classes: 'bg-tertiary-fixed text-on-tertiary-fixed-variant' };
     case 'cancelled':
-      return { label: 'ملغاة', classes: 'bg-error-container text-on-error-container' };
+      return { label: t('common.status.cancelled'), classes: 'bg-error-container text-on-error-container' };
     case 'pending':
-      return { label: 'معلقة', classes: 'bg-surface-container-high text-on-surface-variant' };
+      return { label: t('common.status.pending'), classes: 'bg-surface-container-high text-on-surface-variant' };
     default:
       return { label: status, classes: 'bg-surface-container-high text-on-surface-variant' };
   }
 };
 
-const complaintStatusBadge = (status: string): { label: string; classes: string } => {
+const complaintStatusBadge = (status: string, t: TFunction): { label: string; classes: string } => {
   switch (status) {
     case 'in_review':
-      return { label: 'قيد المراجعة', classes: 'bg-yellow-100 text-yellow-800' };
+      return { label: t('common.status.in_review'), classes: 'bg-yellow-100 text-yellow-800' };
     case 'resolved':
-      return { label: 'تم الحل', classes: 'bg-tertiary-fixed text-on-tertiary-fixed-variant' };
+      return { label: t('common.status.resolved'), classes: 'bg-tertiary-fixed text-on-tertiary-fixed-variant' };
     case 'closed':
-      return { label: 'مغلقة', classes: 'bg-surface-container-high text-on-surface-variant' };
+      return { label: t('common.status.closed'), classes: 'bg-surface-container-high text-on-surface-variant' };
     case 'escalated':
-      return { label: 'مصعّدة', classes: 'bg-red-100 text-red-700' };
+      return { label: t('common.status.escalated'), classes: 'bg-red-100 text-red-700' };
     default:
-      return { label: 'معلقة', classes: 'bg-surface-container-high text-on-surface-variant' };
+      return { label: t('common.status.pending'), classes: 'bg-surface-container-high text-on-surface-variant' };
   }
 };
 
@@ -309,7 +310,7 @@ const UserDetails: React.FC = () => {
                     </tr>
                   ) : (
                     visibleTrips.map((trip) => {
-                      const badge = tripStatusBadge(trip.status);
+                      const badge = tripStatusBadge(trip.status, t);
                       return (
                         <tr key={trip.id} className="hover:bg-surface-container-low/50 transition-colors">
                           <td className="px-8 py-6 font-medium">{trip.date}</td>
@@ -379,7 +380,7 @@ const UserDetails: React.FC = () => {
                     </tr>
                   ) : (
                     visibleComplaints.map((item) => {
-                      const badge = complaintStatusBadge(item.status);
+                      const badge = complaintStatusBadge(item.status, t);
                       return (
                         <tr key={item.id} className="hover:bg-surface-container-low/50 transition-colors">
                           <td className="px-8 py-6 font-bold">{item.id}</td>

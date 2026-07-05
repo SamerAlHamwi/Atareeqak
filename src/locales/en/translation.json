@@ -3,7 +3,31 @@
     "dismiss": "Dismiss",
     "loading": "Loading...",
     "load_failed": "Failed to load data",
-    "no_data": "No data available"
+    "no_data": "No data available",
+    "cancel": "Cancel",
+    "retry": "Retry",
+    "no_permission": "You don't have permission",
+    "no_permission_hint": "This section isn't available for your current role. If you think this is a mistake, contact the system administrator.",
+    "back_home": "Back to home",
+    "unknown": "Unknown",
+    "unknown_user": "Unknown user",
+    "general_complaint": "General complaint",
+    "status": {
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "pending": "Pending",
+      "active": "Active",
+      "in_review": "In review",
+      "resolved": "Resolved",
+      "closed": "Closed",
+      "escalated": "Escalated"
+    },
+    "documents": {
+      "face_id": "ID card (front)",
+      "back_id": "ID card (back)",
+      "license": "Driving license",
+      "mechanic_card": "Vehicle registration card"
+    }
   },
   "auth": {
     "login_title": "Administrative Dashboard",
@@ -167,7 +191,11 @@
     "processed_by": "Processed by",
     "charge_completed": "Completed",
     "account_info": "Account information",
-    "ban_reason_label": "Ban reason"
+    "ban_reason_label": "Ban reason",
+    "search_placeholder": "Search by name or email...",
+    "ban_modal_title": "Ban {{name}}?",
+    "ban_modal_description": "The user will be blocked from the platform. The reason will be sent to them.",
+    "ban_confirm": "Confirm ban"
   },
   "drivers": {
     "title": "Driver Management",
@@ -221,11 +249,20 @@
     "documents_title": "Verification & documents",
     "view_document": "View file",
     "recent_rides": "Recent rides",
-    "price_per_seat": "Price per seat"
+    "price_per_seat": "Price per seat",
+    "search_placeholder": "Search by name or email...",
+    "ban_modal_title": "Ban driver {{name}}?",
+    "ban_modal_description": "The driver will be blocked from the platform. The reason will be sent to them.",
+    "ban_confirm": "Confirm ban"
   },
   "trips": {
     "title": "Trip Management",
     "new_trip": "New Trip",
+    "draft_driver": "New driver",
+    "draft_driver_initial": "N.D",
+    "draft_from": "Riyadh",
+    "draft_to": "Jeddah",
+    "draft_time": "07:30 PM",
     "filter_all": "All",
     "filter_active": "Active",
     "filter_scheduled": "Scheduled",
@@ -276,7 +313,10 @@
     "map_popup_eta": "ETA",
     "map_popup_passengers": "Passengers",
     "map_pickup": "Pickup",
-    "map_destination": "Destination"
+    "map_destination": "Destination",
+    "cancel_modal_title": "Cancel trip {{id}}?",
+    "cancel_modal_description": "The driver and passengers will be notified with the reason provided.",
+    "cancel_confirm": "Confirm cancellation"
   },
   "reports": {
     "title": "Financial Management",
@@ -338,7 +378,8 @@
     "credit_failed": "Could not charge wallet",
     "export_success": "Financial report PDF downloaded",
     "export_failed": "Could not export report",
-    "load_failed_hint": "Could not load the financial report — this page requires system admin privileges"
+    "load_failed_hint": "Could not load the financial report — this page requires system admin privileges",
+    "requests_pagination_info": "Page {{page}} of {{pages}} ({{total}} requests)"
   },
   "support": {
     "title": "Support & Complaints",
@@ -399,7 +440,11 @@
     "resolve_and_notify": "Resolve & Notify User",
     "close_complaint": "Close",
     "close_success": "Complaint {{id}} closed",
-    "close_failed": "Could not close complaint"
+    "close_failed": "Could not close complaint",
+    "escalate_modal_title": "Escalate complaint {{id}}?",
+    "escalate_modal_description": "The complaint will be forwarded to senior management with the reason provided.",
+    "escalate_confirm": "Confirm escalation",
+    "pagination_info": "Page {{page}} of {{pages}} ({{total}} complaints)"
   },
   "verifications": {
     "title": "Verification Requests",
@@ -456,6 +501,8 @@
     "title": "System Settings",
     "subtitle": "Manage core configurations and business rules for Atareeqak platform",
     "save_changes": "Save Changes",
+    "last_update_value": "May 24, 2024 - 10:45 AM",
+    "moderation_words_default": "word1, word2, link, fraud, unofficial discount code",
     "platform_config": "Platform Configuration",
     "app_name": "App Name",
     "support_email": "Support Email",
@@ -560,5 +607,20 @@
   },
   "footer": {
     "copyright": "© 2024 Atareeqak. All rights reserved."
+  },
+  "roles": {
+    "system_admin": "System Admin",
+    "admin": "Admin",
+    "support_agent": "Support Agent"
+  },
+  "modal": {
+    "reason_label": "Reason",
+    "reason_placeholder": "Write the reason (at least {{count}} characters)...",
+    "reason_too_short": "The reason must be at least {{count}} characters.",
+    "ban_type_label": "Ban type",
+    "ban_permanent": "Permanent",
+    "ban_temporary": "Temporary",
+    "ban_expiry_label": "Expiry date",
+    "expiry_required": "An expiry date is required for temporary bans."
   }
 }

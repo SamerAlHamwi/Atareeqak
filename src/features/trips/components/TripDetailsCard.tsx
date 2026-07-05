@@ -69,7 +69,7 @@ export const TripDetailsCard: React.FC<TripDetailsCardProps> = ({
                 title={passenger.name}
                 className="w-10 h-10 rounded-full border-2 border-primary-container bg-secondary-container text-on-secondary-container flex items-center justify-center text-xs font-bold"
               >
-                {passenger.name.charAt(0) || '؟'}
+                {passenger.name.charAt(0) || '?'}
               </div>
             ))}
             {featured && featured.passengers.length > 3 && (

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { isAxiosError } from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../../app/context/AuthContext';
+import { useAuth } from '../../../app/context/useAuth';
 import { useTranslation } from 'react-i18next';
 import { useMockAction } from '../../shared/useMockAction';
 import ActionBanner from '../../shared/components/ActionBanner';
 import { authApi } from '../api/authApi';
+import { defaultRouteForRole } from '../../../app/roles';
 
 const Login: React.FC = () => {
   const { t } = useTranslation();
@@ -28,23 +30,13 @@ const Login: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const response = await authApi.login({ email, password });
-
-      if (response.status === 'success' && response.admin && response.tokens) {
-        const userData = {
-          id: response.admin.id,
-          name: response.admin.name,
-          email: response.admin.email,
-          type: response.admin.type,
-          phone: response.admin.phone,
-        };
-        login(userData, response.tokens.access_token, response.tokens.refresh_token);
-        navigate(from, { replace: true });
-      } else {
-        throw new Error(t('auth.invalid_credentials') || 'Invalid credentials');
-      }
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Login failed';
+      const { user, tokens, kind } = await authApi.login({ email, password });
+      login(user, tokens.access_token, tokens.refresh_token, kind);
+      const target = from !== '/' ? from : defaultRouteForRole(user.role);
+      navigate(target, { replace: true });
+    } catch (err) {
+      const apiMessage = isAxiosError(err) ? err.response?.data?.message : undefined;
+      const errorMessage = apiMessage || (err instanceof Error ? err.message : 'Login failed');
       setError(errorMessage);
     } finally {
       setIsLoading(false);

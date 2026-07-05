@@ -1,4 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
 import { driversApi } from '../api/driversApi';
 import type {
   DriverRowResponse,
@@ -7,6 +10,7 @@ import type {
   VerificationEfficiencyResponse,
 } from '../api/driversApi';
 import { usersApi } from '../../users/api/usersApi';
+import type { BanRequest } from '../../users/api/usersApi';
 
 export interface Driver {
   id: string;
@@ -29,6 +33,8 @@ interface UseDriversReturn {
   efficiency: VerificationEfficiencyResponse | null;
   statusFilter: DriverStatusFilter;
   setStatusFilter: (filter: DriverStatusFilter) => void;
+  search: string;
+  setSearch: (value: string) => void;
   page: number;
   setPage: (page: number) => void;
   lastPage: number;
@@ -36,27 +42,31 @@ interface UseDriversReturn {
   perPage: number;
   isLoading: boolean;
   error: Error | null;
-  banDriver: (driver: Driver, reason: string) => Promise<void>;
+  refetch: () => Promise<void>;
+  banDriver: (driver: Driver, ban: BanRequest) => Promise<void>;
   unbanDriver: (driver: Driver) => Promise<void>;
 }
 
-const mapDriver = (d: DriverRowResponse): Driver => ({
+const mapDriver = (d: DriverRowResponse, t: TFunction): Driver => ({
   id: String(d.id),
-  name: d.full_name || 'غير معروف',
+  name: d.full_name || t('common.unknown'),
   displayId: d.driver_ref,
   phone: d.phone || '',
-  vehicle: d.vehicle || 'غير معروف',
+  vehicle: d.vehicle || t('common.unknown'),
   status: d.status,
   rating: d.avg_rating,
   avatar: d.profile_photo || `https://i.pravatar.cc/100?u=${d.id}`,
 });
 
 export const useDrivers = (): UseDriversReturn => {
+  const { t } = useTranslation();
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [stats, setStats] = useState<DriverStatsResponse | null>(null);
   const [activity, setActivity] = useState<DriverActivityResponse[]>([]);
   const [efficiency, setEfficiency] = useState<VerificationEfficiencyResponse | null>(null);
   const [statusFilter, setStatusFilter] = useState<DriverStatusFilter>('all');
+  const [search, setSearchState] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -75,12 +85,22 @@ export const useDrivers = (): UseDriversReturn => {
     }
   }, []);
 
+  // Debounce the search input so we don't hit the API on every keystroke
+  useEffect(() => {
+    const handle = setTimeout(() => setDebouncedSearch(search.trim()), 400);
+    return () => clearTimeout(handle);
+  }, [search]);
+
   const fetchDrivers = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await driversApi.getAllDrivers({ filter: statusFilter, page });
-      setDrivers((response.data || []).map(mapDriver));
+      const response = await driversApi.getAllDrivers({
+        filter: statusFilter,
+        page,
+        ...(debouncedSearch ? { search: debouncedSearch } : {}),
+      });
+      setDrivers((response.data || []).map((d) => mapDriver(d, t)));
       setLastPage(response.meta?.last_page ?? 1);
       setTotal(response.meta?.total ?? 0);
       setPerPage(response.meta?.per_page ?? 10);
@@ -91,18 +111,18 @@ export const useDrivers = (): UseDriversReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, [statusFilter, page]);
+  }, [statusFilter, page, debouncedSearch, t]);
 
-  useEffect(() => {
-    void fetchDashboard();
-  }, [fetchDashboard]);
-
-  useEffect(() => {
-    void fetchDrivers();
-  }, [fetchDrivers]);
+  useFetchEffect(fetchDashboard);
+  useFetchEffect(fetchDrivers);
 
   const handleSetStatusFilter = useCallback((filter: DriverStatusFilter) => {
     setStatusFilter(filter);
+    setPage(1);
+  }, []);
+
+  const setSearch = useCallback((value: string) => {
+    setSearchState(value);
     setPage(1);
   }, []);
 
@@ -114,8 +134,8 @@ export const useDrivers = (): UseDriversReturn => {
     return drivers.filter((driver) => driver.status === statusFilter);
   }, [drivers, statusFilter]);
 
-  const banDriver = useCallback(async (driver: Driver, reason: string) => {
-    await usersApi.banUser(driver.id, { reason, type: 'permanent' });
+  const banDriver = useCallback(async (driver: Driver, ban: BanRequest) => {
+    await usersApi.banUser(driver.id, ban);
     setDrivers((prev) =>
       prev.map((entry) => (entry.id === driver.id ? { ...entry, status: 'suspended' } : entry))
     );
@@ -136,6 +156,8 @@ export const useDrivers = (): UseDriversReturn => {
     efficiency,
     statusFilter,
     setStatusFilter: handleSetStatusFilter,
+    search,
+    setSearch,
     page,
     setPage,
     lastPage,
@@ -143,6 +165,7 @@ export const useDrivers = (): UseDriversReturn => {
     perPage,
     isLoading,
     error,
+    refetch: fetchDrivers,
     banDriver,
     unbanDriver,
   };

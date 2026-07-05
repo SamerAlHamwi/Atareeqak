@@ -86,7 +86,7 @@ const Settings: React.FC = () => {
         <div className="flex items-center gap-4">
           <span>{t('settings.system_version')}: v2.4.0-stable</span>
           <span className="w-1 h-1 bg-on-surface-variant/20 rounded-full"></span>
-          <span>{t('settings.last_update')}: 24 مايو 2024 - 10:45 ص</span>
+          <span>{t('settings.last_update')}: {t('settings.last_update_value')}</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="material-symbols-outlined text-sm">verified_user</span>

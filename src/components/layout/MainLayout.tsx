@@ -1,21 +1,39 @@
-import React, { useState, useEffect } from 'react';
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { useAuth } from '../../app/context/AuthContext';
+import React, { useState } from 'react';
+import { Outlet, NavLink } from 'react-router-dom';
+import { useAuth } from '../../app/context/useAuth';
+import { canAccess } from '../../app/roles';
+import type { AppSection } from '../../app/roles';
 import { useTranslation } from 'react-i18next';
 
+interface NavItem {
+  to: string;
+  icon: string;
+  labelKey: string;
+  section: AppSection;
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { to: '/dashboard', icon: 'grid_view', labelKey: 'nav.dashboard', section: 'dashboard' },
+  { to: '/trips', icon: 'directions_car', labelKey: 'nav.trips', section: 'trips' },
+  { to: '/drivers', icon: 'person', labelKey: 'nav.drivers', section: 'drivers' },
+  { to: '/passengers', icon: 'group', labelKey: 'nav.passengers', section: 'passengers' },
+  { to: '/verifications', icon: 'verified_user', labelKey: 'nav.verifications', section: 'verifications' },
+  { to: '/reviews', icon: 'rate_review', labelKey: 'nav.reviews', section: 'reviews' },
+  { to: '/support', icon: 'support_agent', labelKey: 'nav.support', section: 'support' },
+  { to: '/reports', icon: 'assessment', labelKey: 'nav.reports', section: 'reports' },
+  { to: '/staff', icon: 'badge', labelKey: 'nav.staff', section: 'staff' },
+  { to: '/settings', icon: 'settings', labelKey: 'nav.settings', section: 'settings' },
+];
+
 const MainLayout: React.FC = () => {
-  const { logout } = useAuth();
+  const { logout, user, role } = useAuth();
   const { t, i18n } = useTranslation();
-  const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const visibleNavItems = NAV_ITEMS.filter((item) => canAccess(role, item.section));
 
   // Robust RTL check
   const isRtl = i18n.language.startsWith('ar');
-
-  // Close sidebar on route change (mobile)
-  useEffect(() => {
-    setIsSidebarOpen(false);
-  }, [location]);
 
   return (
     <div className="bg-[#f8fafc] text-slate-900 min-h-screen font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
@@ -39,131 +57,31 @@ const MainLayout: React.FC = () => {
       `}>
         <div className="flex flex-col items-center py-12 px-6">
           <div className="flex flex-col items-center">
-             <span className="text-3xl font-black text-[#000666]">عطريقك</span>
+             <span className="text-3xl font-black text-[#000666]">{t('auth.brand_name')}</span>
              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-               {isRtl ? 'لوحة التحكم الذكية' : 'Smart Dashboard'}
+               {t('nav.smart_dashboard')}
              </p>
           </div>
         </div>
 
         <nav className="flex-1 px-6 space-y-2 overflow-y-auto">
-          <NavLink
-            to="/dashboard"
-            className={({ isActive }) =>
-              `flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-black transition-all duration-200 ${
-                isActive
-                  ? 'bg-[#d1f5ea] text-[#134e48]'
-                  : 'text-slate-500 hover:bg-slate-50'
-              }`
-            }
-          >
-            <span className="material-symbols-outlined text-2xl font-bold">grid_view</span>
-            <span>{t('nav.dashboard')}</span>
-          </NavLink>
-          <NavLink
-            to="/trips"
-            className={({ isActive }) =>
-              `flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-black transition-all duration-200 ${
-                isActive
-                  ? 'bg-[#d1f5ea] text-[#134e48]'
-                  : 'text-slate-500 hover:bg-slate-50'
-              }`
-            }
-          >
-            <span className="material-symbols-outlined text-2xl font-bold">directions_car</span>
-            <span>{t('nav.trips')}</span>
-          </NavLink>
-          <NavLink
-            to="/drivers"
-            className={({ isActive }) =>
-              `flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-black transition-all duration-200 ${
-                isActive
-                  ? 'bg-[#d1f5ea] text-[#134e48]'
-                  : 'text-slate-500 hover:bg-slate-50'
-              }`
-            }
-          >
-            <span className="material-symbols-outlined text-2xl font-bold">person</span>
-            <span>{t('nav.drivers')}</span>
-          </NavLink>
-          <NavLink
-            to="/passengers"
-            className={({ isActive }) =>
-              `flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-black transition-all duration-200 ${
-                isActive
-                  ? 'bg-[#d1f5ea] text-[#134e48]'
-                  : 'text-slate-500 hover:bg-slate-50'
-              }`
-            }
-          >
-            <span className="material-symbols-outlined text-2xl font-bold">group</span>
-            <span>{t('nav.passengers')}</span>
-          </NavLink>
-          <NavLink
-            to="/verifications"
-            className={({ isActive }) =>
-              `flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-black transition-all duration-200 ${
-                isActive
-                  ? 'bg-[#d1f5ea] text-[#134e48]'
-                  : 'text-slate-500 hover:bg-slate-50'
-              }`
-            }
-          >
-            <span className="material-symbols-outlined text-2xl font-bold">verified_user</span>
-            <span>{t('nav.verifications')}</span>
-          </NavLink>
-          <NavLink
-            to="/reviews"
-            className={({ isActive }) =>
-              `flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-black transition-all duration-200 ${
-                isActive
-                  ? 'bg-[#d1f5ea] text-[#134e48]'
-                  : 'text-slate-500 hover:bg-slate-50'
-              }`
-            }
-          >
-            <span className="material-symbols-outlined text-2xl font-bold">rate_review</span>
-            <span>{t('nav.reviews')}</span>
-          </NavLink>
-          <NavLink
-            to="/support"
-            className={({ isActive }) =>
-              `flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-black transition-all duration-200 ${
-                isActive
-                  ? 'bg-[#d1f5ea] text-[#134e48]'
-                  : 'text-slate-500 hover:bg-slate-50'
-              }`
-            }
-          >
-            <span className="material-symbols-outlined text-2xl font-bold">support_agent</span>
-            <span>{t('nav.support')}</span>
-          </NavLink>
-          <NavLink
-            to="/reports"
-            className={({ isActive }) =>
-              `flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-black transition-all duration-200 ${
-                isActive
-                  ? 'bg-[#d1f5ea] text-[#134e48]'
-                  : 'text-slate-500 hover:bg-slate-50'
-              }`
-            }
-          >
-            <span className="material-symbols-outlined text-2xl font-bold">assessment</span>
-            <span>{t('nav.reports')}</span>
-          </NavLink>
-          <NavLink
-            to="/settings"
-            className={({ isActive }) =>
-              `flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-black transition-all duration-200 ${
-                isActive
-                  ? 'bg-[#d1f5ea] text-[#134e48]'
-                  : 'text-slate-500 hover:bg-slate-50'
-              }`
-            }
-          >
-            <span className="material-symbols-outlined text-2xl font-bold">settings</span>
-            <span>{t('nav.settings')}</span>
-          </NavLink>
+          {visibleNavItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              onClick={() => setIsSidebarOpen(false)}
+              className={({ isActive }) =>
+                `flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-black transition-all duration-200 ${
+                  isActive
+                    ? 'bg-[#d1f5ea] text-[#134e48]'
+                    : 'text-slate-500 hover:bg-slate-50'
+                }`
+              }
+            >
+              <span className="material-symbols-outlined text-2xl font-bold">{item.icon}</span>
+              <span>{t(item.labelKey)}</span>
+            </NavLink>
+          ))}
         </nav>
 
         <div className="p-6 border-t border-slate-50">
@@ -218,8 +136,12 @@ const MainLayout: React.FC = () => {
 
             <div className={`flex items-center gap-4 ${isRtl ? 'lg:pr-8' : 'lg:pl-8'}`}>
               <div className="hidden sm:flex text-right rtl flex flex-col">
-                <p className="text-sm font-black text-[#000666] leading-none">{t('header.admin_name')}</p>
-                <p className="text-[11px] font-bold text-slate-400 mt-1.5">{t('header.admin_role')}</p>
+                <p className="text-sm font-black text-[#000666] leading-none">
+                  {user?.name || t('header.admin_name')}
+                </p>
+                <p className="text-[11px] font-bold text-slate-400 mt-1.5">
+                  {user?.roleLabel || (role ? t(`roles.${role}`) : t('header.admin_role'))}
+                </p>
               </div>
               <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-slate-200 overflow-hidden border-2 lg:border-4 border-white shadow-md">
                 <img

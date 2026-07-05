@@ -1,4 +1,6 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
 import { tripsApi } from '../api/tripsApi';
 import type { TripResponse } from '../api/tripsApi';
 
@@ -33,6 +35,7 @@ interface UseTripsReturn {
 }
 
 export const useTrips = (): UseTripsReturn => {
+  const { t } = useTranslation();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [activeFilter, setActiveFilter] = useState<TripFilter>('all');
   const [selectedTripId, setSelectedTripId] = useState<string>('');
@@ -48,7 +51,7 @@ export const useTrips = (): UseTripsReturn => {
       const formattedTrips: Trip[] = data.map((trip: TripResponse) => ({
         id: trip.trip_ref,
         rawId: trip.id,
-        driver: trip.driver?.name || 'غير معروف',
+        driver: trip.driver?.name || t('common.unknown'),
         driverInitial: trip.driver?.name
           ? trip.driver.name.split(' ').map((n) => n[0]).join('.')
           : '?',
@@ -73,11 +76,9 @@ export const useTrips = (): UseTripsReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, [activeFilter, selectedTripId]);
+  }, [activeFilter, selectedTripId, t]);
 
-  useEffect(() => {
-    void fetchTrips();
-  }, [fetchTrips]);
+  useFetchEffect(fetchTrips);
 
   const visibleTrips = useMemo(() => {
     if (activeFilter === 'all') {

@@ -3,7 +3,31 @@
     "dismiss": "إغلاق",
     "loading": "جاري التحميل...",
     "load_failed": "تعذر تحميل البيانات",
-    "no_data": "لا توجد بيانات"
+    "no_data": "لا توجد بيانات",
+    "cancel": "إلغاء",
+    "retry": "إعادة المحاولة",
+    "no_permission": "لا تملك صلاحية الوصول",
+    "no_permission_hint": "هذا القسم غير متاح لدورك الوظيفي الحالي. إذا كنت تعتقد أن هذا خطأ، تواصل مع مدير النظام.",
+    "back_home": "العودة للصفحة الرئيسية",
+    "unknown": "غير معروف",
+    "unknown_user": "مستخدم غير معروف",
+    "general_complaint": "شكوى عامة",
+    "status": {
+      "completed": "مكتملة",
+      "cancelled": "ملغاة",
+      "pending": "معلقة",
+      "active": "نشطة",
+      "in_review": "قيد المراجعة",
+      "resolved": "تم الحل",
+      "closed": "مغلقة",
+      "escalated": "مصعّدة"
+    },
+    "documents": {
+      "face_id": "الهوية الشخصية (وجه)",
+      "back_id": "الهوية الشخصية (ظهر)",
+      "license": "رخصة القيادة",
+      "mechanic_card": "استمارة المركبة"
+    }
   },
   "auth": {
     "login_title": "لوحة التحكم الإدارية",
@@ -167,7 +191,11 @@
     "processed_by": "تم بواسطة",
     "charge_completed": "مكتملة",
     "account_info": "معلومات الحساب",
-    "ban_reason_label": "سبب الإيقاف"
+    "ban_reason_label": "سبب الإيقاف",
+    "search_placeholder": "ابحث بالاسم أو البريد الإلكتروني...",
+    "ban_modal_title": "حظر {{name}}؟",
+    "ban_modal_description": "سيتم منع المستخدم من استخدام المنصة. سيُرسل السبب للمستخدم.",
+    "ban_confirm": "تأكيد الحظر"
   },
   "drivers": {
     "title": "إدارة السائقين",
@@ -221,11 +249,20 @@
     "documents_title": "التحقق والمستندات",
     "view_document": "عرض الملف",
     "recent_rides": "الرحلات الأخيرة",
-    "price_per_seat": "سعر المقعد"
+    "price_per_seat": "سعر المقعد",
+    "search_placeholder": "ابحث بالاسم أو البريد الإلكتروني...",
+    "ban_modal_title": "حظر السائق {{name}}؟",
+    "ban_modal_description": "سيتم منع السائق من استخدام المنصة. سيُرسل السبب للسائق.",
+    "ban_confirm": "تأكيد الحظر"
   },
   "trips": {
     "title": "إدارة الرحلات",
     "new_trip": "رحلة جديدة",
+    "draft_driver": "سائق جديد",
+    "draft_driver_initial": "س.ج",
+    "draft_from": "الرياض",
+    "draft_to": "جدة",
+    "draft_time": "07:30 م",
     "filter_all": "الكل",
     "filter_active": "نشطة",
     "filter_scheduled": "مجدولة",
@@ -276,7 +313,10 @@
     "map_popup_eta": "الوصول المتوقع",
     "map_popup_passengers": "الركاب",
     "map_pickup": "الانطلاق",
-    "map_destination": "الوجهة"
+    "map_destination": "الوجهة",
+    "cancel_modal_title": "إلغاء الرحلة {{id}}؟",
+    "cancel_modal_description": "سيتم إشعار السائق والركاب بالإلغاء مع السبب المذكور.",
+    "cancel_confirm": "تأكيد الإلغاء"
   },
   "reports": {
     "title": "الإدارة المالية",
@@ -338,7 +378,8 @@
     "credit_failed": "تعذر شحن المحفظة",
     "export_success": "تم تنزيل التقرير المالي بصيغة PDF",
     "export_failed": "تعذر تصدير التقرير",
-    "load_failed_hint": "تعذر تحميل التقرير المالي — هذه الصفحة تتطلب صلاحية مدير النظام"
+    "load_failed_hint": "تعذر تحميل التقرير المالي — هذه الصفحة تتطلب صلاحية مدير النظام",
+    "requests_pagination_info": "صفحة {{page}} من {{pages}} ({{total}} طلب)"
   },
   "support": {
     "title": "الدعم والشكاوى",
@@ -399,7 +440,11 @@
     "resolve_and_notify": "حلّ وإشعار المستخدم",
     "close_complaint": "إغلاق",
     "close_success": "تم إغلاق الشكوى {{id}}",
-    "close_failed": "تعذر إغلاق الشكوى"
+    "close_failed": "تعذر إغلاق الشكوى",
+    "escalate_modal_title": "تصعيد الشكوى {{id}}؟",
+    "escalate_modal_description": "سيتم تحويل الشكوى إلى الإدارة العليا مع السبب المذكور.",
+    "escalate_confirm": "تأكيد التصعيد",
+    "pagination_info": "صفحة {{page}} من {{pages}} ({{total}} شكوى)"
   },
   "verifications": {
     "title": "طلبات التوثيق",
@@ -456,6 +501,8 @@
     "title": "إعدادات النظام",
     "subtitle": "إدارة التكوينات الأساسية وقواعد العمل لمنصة عطريقك",
     "save_changes": "حفظ التغييرات",
+    "last_update_value": "24 مايو 2024 - 10:45 ص",
+    "moderation_words_default": "كلمة1، كلمة2، رابط، احتيال، كود خصم غير رسمي",
     "platform_config": "تكوين المنصة",
     "app_name": "اسم التطبيق",
     "support_email": "بريد الدعم الفني",
@@ -560,5 +607,20 @@
   },
   "footer": {
     "copyright": "© 2024 عطريقك. جميع الحقوق محفوظة."
+  },
+  "roles": {
+    "system_admin": "مدير النظام",
+    "admin": "مشرف",
+    "support_agent": "موظف دعم"
+  },
+  "modal": {
+    "reason_label": "السبب",
+    "reason_placeholder": "اكتب السبب ({{count}} أحرف على الأقل)...",
+    "reason_too_short": "يجب أن يكون السبب {{count}} أحرف على الأقل.",
+    "ban_type_label": "نوع الحظر",
+    "ban_permanent": "دائم",
+    "ban_temporary": "مؤقت",
+    "ban_expiry_label": "تاريخ الانتهاء",
+    "expiry_required": "يجب تحديد تاريخ انتهاء للحظر المؤقت."
   }
 }

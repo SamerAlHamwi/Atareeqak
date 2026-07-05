@@ -1,4 +1,7 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
 import { verificationsApi } from '../api/verificationsApi';
 import type { PendingVerification, VerificationDocument } from '../api/verificationsApi';
 
@@ -30,9 +33,9 @@ interface UseVerificationsReturn {
   refresh: () => Promise<void>;
 }
 
-const mapRequest = (item: PendingVerification): VerificationRequest => ({
+const mapRequest = (item: PendingVerification, t: TFunction): VerificationRequest => ({
   userId: item.user_id,
-  name: item.name || 'غير معروف',
+  name: item.name || t('common.unknown'),
   email: item.email || '',
   type: item.type,
   documents: item.documents || [],
@@ -41,6 +44,7 @@ const mapRequest = (item: PendingVerification): VerificationRequest => ({
 });
 
 export const useVerifications = (): UseVerificationsReturn => {
+  const { t } = useTranslation();
   const [requests, setRequests] = useState<VerificationRequest[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -52,7 +56,7 @@ export const useVerifications = (): UseVerificationsReturn => {
     setError(null);
     try {
       const response = await verificationsApi.listPendingVerifications();
-      const mapped = (response.data || []).map(mapRequest);
+      const mapped = (response.data || []).map((item) => mapRequest(item, t));
       setRequests(mapped);
       setSelectedRequest((prev) => {
         if (prev) {
@@ -67,11 +71,9 @@ export const useVerifications = (): UseVerificationsReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
-  useEffect(() => {
-    void fetchRequests();
-  }, [fetchRequests]);
+  useFetchEffect(fetchRequests);
 
   const visibleRequests = useMemo(() => {
     if (typeFilter === 'all') {

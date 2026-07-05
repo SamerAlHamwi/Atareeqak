@@ -1,4 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
 import { reviewsApi } from '../api/reviewsApi';
 import type { ReviewResponse, ReviewDateFilter } from '../api/reviewsApi';
 
@@ -32,20 +35,22 @@ interface UseReviewsReturn {
   setDateFilter: (value: DateFilter) => void;
   page: number;
   setPage: (page: number) => void;
+  refetch: () => Promise<void>;
   deleteReview: (review: Review) => Promise<void>;
 }
 
-const mapReview = (item: ReviewResponse): Review => ({
+const mapReview = (item: ReviewResponse, t: TFunction): Review => ({
   id: item.id,
   comment: item.comment || '',
-  commenter: item.commenter?.name || 'غير معروف',
+  commenter: item.commenter?.name || t('common.unknown'),
   commenterId: item.commenter?.id ?? null,
-  recipient: item.recipient?.name || 'غير معروف',
+  recipient: item.recipient?.name || t('common.unknown'),
   recipientId: item.recipient?.id ?? null,
   date: item.created_at ? new Date(item.created_at).toLocaleDateString('ar-SY') : '',
 });
 
 export const useReviews = (): UseReviewsReturn => {
+  const { t } = useTranslation();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [meta, setMeta] = useState<ReviewsMeta | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -80,7 +85,7 @@ export const useReviews = (): UseReviewsReturn => {
         ...(debouncedSearch ? { search: debouncedSearch } : {}),
         ...(dateFilter !== 'all' ? { date: dateFilter } : {}),
       });
-      setReviews((response.data || []).map(mapReview));
+      setReviews((response.data || []).map((item) => mapReview(item, t)));
       setMeta(
         response.meta
           ? {
@@ -98,11 +103,9 @@ export const useReviews = (): UseReviewsReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, [page, debouncedSearch, dateFilter]);
+  }, [page, debouncedSearch, dateFilter, t]);
 
-  useEffect(() => {
-    void fetchReviews();
-  }, [fetchReviews]);
+  useFetchEffect(fetchReviews);
 
   const deleteReview = useCallback(
     async (review: Review) => {
@@ -124,6 +127,7 @@ export const useReviews = (): UseReviewsReturn => {
     setDateFilter,
     page,
     setPage,
+    refetch: fetchReviews,
     deleteReview,
   };
 };

@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
 import { tripsApi } from '../api/tripsApi';
 import type { PopularRouteResponse, TopDriverResponse } from '../api/tripsApi';
 import { dashboardApi } from '../../dashboard/api/dashboardApi';
@@ -41,6 +43,7 @@ const demandKeyMap: Record<PopularRouteResponse['demand_level'], PopularRoute['d
 };
 
 export const useTripMonitoring = (): UseTripMonitoringReturn => {
+  const { t } = useTranslation();
   const [popularRoutes, setPopularRoutes] = useState<PopularRoute[]>([]);
   const [topDrivers, setTopDrivers] = useState<TopDriver[]>([]);
   const [recentEvents, setRecentEvents] = useState<TripEvent[]>([]);
@@ -70,7 +73,7 @@ export const useTripMonitoring = (): UseTripMonitoringReturn => {
       setTopDrivers(
         drivers.map((driver: TopDriverResponse) => ({
           rank: driver.rank,
-          name: driver.name || 'غير معروف',
+          name: driver.name || t('common.unknown'),
           rating: driver.avg_rating != null ? driver.avg_rating.toFixed(1) : '--',
         }))
       );
@@ -91,11 +94,9 @@ export const useTripMonitoring = (): UseTripMonitoringReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
-  useEffect(() => {
-    void fetchMonitoring();
-  }, [fetchMonitoring]);
+  useFetchEffect(fetchMonitoring);
 
   return { popularRoutes, topDrivers, recentEvents, isLoading, error };
 };

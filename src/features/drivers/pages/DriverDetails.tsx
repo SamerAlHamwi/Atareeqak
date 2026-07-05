@@ -1,25 +1,26 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import ActionBanner from '../../shared/components/ActionBanner';
 import { useApiAction } from '../../shared/useApiAction';
 import { useDriverDetails } from '../hooks/useDriverDetails';
 
-const documentLabels: Record<string, string> = {
-  face_id: 'الهوية الشخصية (وجه)',
-  back_id: 'الهوية الشخصية (ظهر)',
-  license: 'رخصة القيادة',
-  mechanic_card: 'استمارة المركبة',
+const documentLabelKeys: Record<string, string> = {
+  face_id: 'common.documents.face_id',
+  back_id: 'common.documents.back_id',
+  license: 'common.documents.license',
+  mechanic_card: 'common.documents.mechanic_card',
 };
 
-const rideStatusLabel = (status: string): { label: string; classes: string } => {
+const rideStatusLabel = (status: string, t: TFunction): { label: string; classes: string } => {
   switch (status) {
     case 'finished':
-      return { label: 'مكتملة', classes: 'bg-tertiary-fixed text-on-tertiary-fixed-variant' };
+      return { label: t('common.status.completed'), classes: 'bg-tertiary-fixed text-on-tertiary-fixed-variant' };
     case 'cancelled':
-      return { label: 'ملغاة', classes: 'bg-error-container text-on-error-container' };
+      return { label: t('common.status.cancelled'), classes: 'bg-error-container text-on-error-container' };
     case 'active':
-      return { label: 'نشطة', classes: 'bg-secondary-container text-on-secondary-container' };
+      return { label: t('common.status.active'), classes: 'bg-secondary-container text-on-secondary-container' };
     default:
       return { label: status, classes: 'bg-surface-container-high text-on-surface-variant' };
   }
@@ -230,7 +231,7 @@ const DriverDetails: React.FC = () => {
                       <span className="material-symbols-outlined text-secondary" style={{ fontVariationSettings: "'FILL' 1" }}>
                         check_circle
                       </span>
-                      <span className="font-medium">{documentLabels[doc.type] ?? doc.type}</span>
+                      <span className="font-medium">{documentLabelKeys[doc.type] ? t(documentLabelKeys[doc.type]) : doc.type}</span>
                     </div>
                     <a
                       href={doc.url}
@@ -274,7 +275,7 @@ const DriverDetails: React.FC = () => {
                     </tr>
                   ) : (
                     driver.recentRides.map((ride) => {
-                      const status = rideStatusLabel(ride.status);
+                      const status = rideStatusLabel(ride.status, t);
                       return (
                         <tr key={ride.id} className="hover:bg-surface/50 transition-colors">
                           <td className="px-6 py-4">

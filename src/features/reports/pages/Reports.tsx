@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
+import ErrorBanner from '../../shared/components/ErrorBanner';
 import { useReports } from '../hooks/useReports';
 import type { WalletRequestRow } from '../hooks/useReports';
 import { OverviewCards } from '../components/OverviewCards';
@@ -18,10 +19,15 @@ const Reports: React.FC = () => {
     requests,
     statusFilter,
     setStatusFilter,
+    requestsPage,
+    setRequestsPage,
+    requestsLastPage,
+    requestsTotal,
     walletQuery,
     setWalletQuery,
     isLoading,
     error,
+    refetch,
     approveRequest,
     rejectRequest,
     chargeWalletByPhone,
@@ -77,11 +83,7 @@ const Reports: React.FC = () => {
     <div className="space-y-10">
       <ActionBanner feedback={feedback} onDismiss={clearFeedback} />
 
-      {error && (
-        <div className="bg-error-container text-on-error-container px-6 py-4 rounded-2xl">
-          {t('reports.load_failed_hint')}
-        </div>
-      )}
+      {error && <ErrorBanner message={t('reports.load_failed_hint')} onRetry={() => void refetch()} />}
 
       {/* Overview Bento Grid */}
       <OverviewCards report={report} isLoading={isLoading} />
@@ -100,6 +102,10 @@ const Reports: React.FC = () => {
           requests={requests}
           statusFilter={statusFilter}
           setStatusFilter={setStatusFilter}
+          page={requestsPage}
+          lastPage={requestsLastPage}
+          total={requestsTotal}
+          onPageChange={setRequestsPage}
           onApprove={handleApprove}
           onReject={handleReject}
           onExport={handleExport}

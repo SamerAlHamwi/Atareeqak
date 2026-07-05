@@ -1,4 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
 import { driversApi } from '../api/driversApi';
 import type { DriverDashboardDetailResponse } from '../api/driversApi';
 import { usersApi } from '../../users/api/usersApi';
@@ -52,10 +55,10 @@ interface UseDriverDetailsReturn {
   unbanDriver: () => Promise<void>;
 }
 
-const mapDriver = (d: DriverDashboardDetailResponse): DriverDetails => ({
+const mapDriver = (d: DriverDashboardDetailResponse, t: TFunction): DriverDetails => ({
   id: d.id,
   ref: d.driver_ref,
-  name: d.full_name || 'غير معروف',
+  name: d.full_name || t('common.unknown'),
   email: d.email || '',
   phone: d.phone || '',
   address: d.address || '',
@@ -70,7 +73,7 @@ const mapDriver = (d: DriverDashboardDetailResponse): DriverDetails => ({
   cancelledRides: d.stats?.cancelled_rides ?? 0,
   cancelRate: d.stats?.cancel_rate ?? 0,
   totalEarnings: d.stats?.total_earnings ?? 0,
-  vehicleType: d.vehicle?.type || 'غير معروف',
+  vehicleType: d.vehicle?.type || t('common.unknown'),
   vehicleColor: d.vehicle?.color || '',
   vehicleSeats: d.vehicle?.seats ?? null,
   vehiclePhoto: d.vehicle?.photo_url ?? null,
@@ -89,6 +92,7 @@ const mapDriver = (d: DriverDashboardDetailResponse): DriverDetails => ({
 });
 
 export const useDriverDetails = (driverId: string | undefined): UseDriverDetailsReturn => {
+  const { t } = useTranslation();
   const [driver, setDriver] = useState<DriverDetails | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -99,7 +103,7 @@ export const useDriverDetails = (driverId: string | undefined): UseDriverDetails
     setError(null);
     try {
       const response = await driversApi.getDriverDashboard(driverId);
-      setDriver(mapDriver(response.data));
+      setDriver(mapDriver(response.data, t));
     } catch (err) {
       const fetchError = err instanceof Error ? err : new Error('Failed to load driver');
       setError(fetchError);
@@ -107,11 +111,9 @@ export const useDriverDetails = (driverId: string | undefined): UseDriverDetails
     } finally {
       setIsLoading(false);
     }
-  }, [driverId]);
+  }, [driverId, t]);
 
-  useEffect(() => {
-    void fetchDriver();
-  }, [fetchDriver]);
+  useFetchEffect(fetchDriver);
 
   const banDriver = useCallback(
     async (reason: string) => {

@@ -9,7 +9,7 @@ export const useSettings = () => {
   const [commission, setCommission] = useState<number>(15);
   const [minWithdrawal, setMinWithdrawal] = useState<number>(100);
   const [moderationWords, setModerationWords] = useState<string>(
-    'كلمة1، كلمة2، رابط، احتيال، كود خصم غير رسمي'
+    t('settings.moderation_words_default')
   );
 
   return {

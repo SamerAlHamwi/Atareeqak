@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
 import { staffApi } from '../api/staffApi';
 import type { EmployeeResponse, CreateEmployeeRequest, StaffRole } from '../api/staffApi';
 
@@ -58,9 +59,7 @@ export const useStaff = (): UseStaffReturn => {
     }
   }, []);
 
-  useEffect(() => {
-    void fetchStaff();
-  }, [fetchStaff]);
+  useFetchEffect(fetchStaff);
 
   const createEmployee = useCallback(async (payload: CreateEmployeeRequest) => {
     const response = await staffApi.createEmployee(payload);

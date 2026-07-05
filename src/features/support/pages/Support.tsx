@@ -1,7 +1,13 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../../app/context/useAuth';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
+import ConfirmActionModal from '../../shared/components/ConfirmActionModal';
+import type { ConfirmActionPayload } from '../../shared/components/ConfirmActionModal';
+import ErrorBanner from '../../shared/components/ErrorBanner';
+import TableSkeleton from '../../shared/components/TableSkeleton';
+import TablePagination from '../../shared/components/TablePagination';
 import { useSupport } from '../hooks/useSupport';
 import type { StatusFilter, SupportView } from '../hooks/useSupport';
 import { SupportStats } from '../components/SupportStats';
@@ -21,7 +27,12 @@ const escalatedStatusOptions: StatusFilter[] = ['escalated', 'resolved', 'closed
 const Support: React.FC = () => {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'ar';
+  const { role } = useAuth();
   const { runAction, isBusy, feedback, clearFeedback } = useApiAction();
+  const [escalateOpen, setEscalateOpen] = useState(false);
+
+  // Escalated complaints are staff:admin,system_admin on the backend
+  const canSeeEscalated = role === 'admin' || role === 'system_admin';
 
   const {
     counts,
@@ -36,7 +47,12 @@ const Support: React.FC = () => {
     setView,
     replyText,
     setReplyText,
+    page,
+    setPage,
+    lastPage,
+    total,
     visibleComplaints,
+    refetch,
     respondToComplaint,
     escalateComplaint,
     resolveEscalatedComplaint,
@@ -87,18 +103,26 @@ const Support: React.FC = () => {
     });
   }, [selectedComplaint, replyText, resolveEscalatedComplaint, setReplyText, runAction, t]);
 
-  const handleEscalate = useCallback(async () => {
+  const handleEscalate = useCallback(() => {
     if (!selectedComplaint) return;
-    const reason =
-      replyText.trim().length >= 10 ? replyText.trim() : t('support.escalate_reason_default');
-    await runAction({
-      key: `escalate-${selectedComplaint.id}`,
-      action: () => escalateComplaint(selectedComplaint, reason),
-      successMessage: t('support.escalate_success', { id: selectedComplaint.id }),
-      errorMessage: t('support.escalate_failed'),
-      onSuccess: () => setReplyText(''),
-    });
-  }, [selectedComplaint, replyText, escalateComplaint, setReplyText, runAction, t]);
+    setEscalateOpen(true);
+  }, [selectedComplaint]);
+
+  const handleConfirmEscalate = useCallback(
+    async ({ reason }: ConfirmActionPayload) => {
+      if (!selectedComplaint) return;
+      await runAction({
+        key: `escalate-${selectedComplaint.id}`,
+        action: () => escalateComplaint(selectedComplaint, reason),
+        successMessage: t('support.escalate_success', { id: selectedComplaint.id }),
+        errorMessage: t('support.escalate_failed'),
+        onSuccess: () => setReplyText(''),
+      });
+      // Close either way — success and error feedback both show in the page banner
+      setEscalateOpen(false);
+    },
+    [selectedComplaint, escalateComplaint, setReplyText, runAction, t]
+  );
 
   const statusOptions = view === 'escalated' ? escalatedStatusOptions : inboxStatusOptions;
 
@@ -106,16 +130,12 @@ const Support: React.FC = () => {
     <div className="space-y-10">
       <ActionBanner feedback={feedback} onDismiss={clearFeedback} />
 
-      {error && (
-        <div className="bg-error-container text-on-error-container px-6 py-4 rounded-2xl">
-          {t('common.load_failed')}
-        </div>
-      )}
+      {error && <ErrorBanner onRetry={() => void refetch()} />}
 
       {/* View Tabs */}
       <section className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex p-1 bg-surface-container-low rounded-xl">
-          {(['inbox', 'escalated'] as SupportView[]).map((tab) => (
+          {(canSeeEscalated ? (['inbox', 'escalated'] as SupportView[]) : (['inbox'] as SupportView[])).map((tab) => (
             <button
               key={tab}
               onClick={() => setView(tab)}
@@ -178,11 +198,7 @@ const Support: React.FC = () => {
               </thead>
               <tbody>
                 {isLoading ? (
-                  <tr>
-                    <td colSpan={6} className="py-12 text-center text-on-surface-variant">
-                      {t('common.loading')}
-                    </td>
-                  </tr>
+                  <TableSkeleton rows={5} cols={6} firstColAvatar />
                 ) : visibleComplaints.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-12 text-center text-on-surface-variant">
@@ -252,6 +268,15 @@ const Support: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination (complaints list returns meta) */}
+          <TablePagination
+            page={page}
+            lastPage={lastPage}
+            onPageChange={setPage}
+            isLoading={isLoading}
+            info={t('support.pagination_info', { page, pages: lastPage, total })}
+          />
         </div>
 
         {/* Complaint Details View */}
@@ -267,6 +292,17 @@ const Support: React.FC = () => {
           onCloseComplaint={handleCloseComplaint}
         />
       </section>
+
+      {/* Escalate confirmation modal (real reason instead of the hardcoded default) */}
+      <ConfirmActionModal
+        open={escalateOpen}
+        title={t('support.escalate_modal_title', { id: selectedComplaint?.id ?? '' })}
+        description={t('support.escalate_modal_description')}
+        confirmLabel={t('support.escalate_confirm')}
+        isBusy={selectedComplaint ? isBusy(`escalate-${selectedComplaint.id}`) : false}
+        onConfirm={handleConfirmEscalate}
+        onClose={() => setEscalateOpen(false)}
+      />
     </div>
   );
 };

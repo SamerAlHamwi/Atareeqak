@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
+import ConfirmActionModal from '../../shared/components/ConfirmActionModal';
+import type { ConfirmActionPayload } from '../../shared/components/ConfirmActionModal';
+import ErrorBanner from '../../shared/components/ErrorBanner';
+import TableSkeleton from '../../shared/components/TableSkeleton';
 import { useUsers } from '../hooks/useUsers';
 import type { UserRow } from '../hooks/useUsers';
 
@@ -11,6 +15,7 @@ const Users: React.FC = () => {
   const navigate = useNavigate();
   const { runAction, isBusy, feedback, clearFeedback } = useApiAction();
   const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
+  const [banTarget, setBanTarget] = useState<UserRow | null>(null);
   const isRtl = i18n.language === 'ar';
 
   const {
@@ -20,6 +25,8 @@ const Users: React.FC = () => {
     setTypeFilter,
     statusFilter,
     setStatusFilter,
+    search,
+    setSearch,
     page,
     setPage,
     lastPage,
@@ -27,30 +34,56 @@ const Users: React.FC = () => {
     perPage,
     isLoading,
     error,
+    refetch,
     banUser,
     unbanUser,
   } = useUsers();
 
   const closePanel = () => setSelectedUser(null);
 
-  const handleToggleStatus = async (user: UserRow) => {
-    const isSuspended = user.status === 'suspended';
+  const handleUnban = async (user: UserRow) => {
     await runAction({
       key: `status-${user.id}`,
-      action: () =>
-        isSuspended ? unbanUser(user) : banUser(user, t('users.ban_reason_default')),
-      successMessage: isSuspended
-        ? t('users.unban_success', { name: user.name })
-        : t('users.ban_success', { name: user.name }),
+      action: () => unbanUser(user),
+      successMessage: t('users.unban_success', { name: user.name }),
       errorMessage: t('users.status_update_failed'),
       onSuccess: () => {
         setSelectedUser((prev) =>
-          prev && prev.id === user.id
-            ? { ...prev, status: isSuspended ? 'verified' : 'suspended' }
-            : prev
+          prev && prev.id === user.id ? { ...prev, status: 'verified' } : prev
         );
       },
     });
+  };
+
+  const handleToggleStatus = async (user: UserRow) => {
+    if (user.status === 'suspended') {
+      await handleUnban(user);
+    } else {
+      setBanTarget(user);
+    }
+  };
+
+  const handleConfirmBan = async ({ reason, banType, expiresAt }: ConfirmActionPayload) => {
+    if (!banTarget) return;
+    const user = banTarget;
+    await runAction({
+      key: `status-${user.id}`,
+      action: () =>
+        banUser(user, {
+          reason,
+          type: banType ?? 'permanent',
+          ...(expiresAt ? { expires_at: expiresAt } : {}),
+        }),
+      successMessage: t('users.ban_success', { name: user.name }),
+      errorMessage: t('users.status_update_failed'),
+      onSuccess: () => {
+        setSelectedUser((prev) =>
+          prev && prev.id === user.id ? { ...prev, status: 'suspended' } : prev
+        );
+      },
+    });
+    // Close either way — success and error feedback both show in the page banner
+    setBanTarget(null);
   };
 
   const paginationStart = total === 0 ? 0 : (page - 1) * perPage + 1;
@@ -67,17 +100,25 @@ const Users: React.FC = () => {
     <div className="space-y-8 relative">
       <ActionBanner feedback={feedback} onDismiss={clearFeedback} />
 
-      {error && (
-        <div className="bg-error-container text-on-error-container px-6 py-4 rounded-2xl">
-          {t('common.load_failed')}
-        </div>
-      )}
+      {error && <ErrorBanner onRetry={() => void refetch()} />}
 
       {/* Page Header */}
       <section className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div className="space-y-1">
           <h3 className="text-3xl font-extrabold font-headline tracking-tight text-primary">{t('users.active_users')}</h3>
           <p className="text-on-surface-variant text-sm">{t('users.subtitle')}</p>
+        </div>
+        <div className="relative w-full md:max-w-xs">
+          <span className={`absolute inset-y-0 ${isRtl ? 'right-0 pr-4' : 'left-0 pl-4'} flex items-center pointer-events-none text-on-surface-variant`}>
+            <span className="material-symbols-outlined text-lg">search</span>
+          </span>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className={`block w-full ${isRtl ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3 bg-surface-container-lowest border border-outline-variant/10 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all`}
+            placeholder={t('users.search_placeholder')}
+            type="text"
+          />
         </div>
       </section>
 
@@ -150,11 +191,7 @@ const Users: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-outline-variant/10">
               {isLoading ? (
-                <tr>
-                  <td colSpan={5} className="px-8 py-10 text-center text-on-surface-variant font-medium">
-                    {t('common.loading')}
-                  </td>
-                </tr>
+                <TableSkeleton rows={6} cols={5} firstColAvatar />
               ) : users.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-8 py-10 text-center text-on-surface-variant font-medium">
@@ -267,6 +304,18 @@ const Users: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Ban confirmation modal (reason + permanent/temporary + expiry) */}
+      <ConfirmActionModal
+        open={!!banTarget}
+        title={t('users.ban_modal_title', { name: banTarget?.name ?? '' })}
+        description={t('users.ban_modal_description')}
+        confirmLabel={t('users.ban_confirm')}
+        showBanOptions
+        isBusy={banTarget ? isBusy(`status-${banTarget.id}`) : false}
+        onConfirm={handleConfirmBan}
+        onClose={() => setBanTarget(null)}
+      />
 
       {/* User Quick View (Side Panel) */}
       {selectedUser && (

@@ -1,4 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
 import { usersApi } from '../api/usersApi';
 
 interface FullProfileResponse {
@@ -99,9 +102,9 @@ export interface PassengerProfile {
   }[];
 }
 
-const mapProfile = (data: FullProfileResponse): PassengerProfile => ({
+const mapProfile = (data: FullProfileResponse, t: TFunction): PassengerProfile => ({
   id: data.user.id,
-  name: data.user.full_name || 'غير معروف',
+  name: data.user.full_name || t('common.unknown'),
   email: data.user.email || '',
   phone: data.user.phone || '',
   address: data.user.address || '',
@@ -122,7 +125,7 @@ const mapProfile = (data: FullProfileResponse): PassengerProfile => ({
     date: tr.date || '',
     from: tr.route_from || '',
     to: tr.route_to || '',
-    driver: tr.driver || 'غير معروف',
+    driver: tr.driver || t('common.unknown'),
     cost: tr.total_cost,
     status: tr.status,
   })),
@@ -153,6 +156,7 @@ interface UseUserDetailsReturn {
 }
 
 export const useUserDetails = (userId: string | undefined): UseUserDetailsReturn => {
+  const { t } = useTranslation();
   const [profile, setProfile] = useState<PassengerProfile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -163,7 +167,7 @@ export const useUserDetails = (userId: string | undefined): UseUserDetailsReturn
     setError(null);
     try {
       const response = await usersApi.getPassengerFullProfile(userId);
-      setProfile(mapProfile(response.data));
+      setProfile(mapProfile(response.data, t));
     } catch (err) {
       const fetchError = err instanceof Error ? err : new Error('Failed to load profile');
       setError(fetchError);
@@ -171,11 +175,9 @@ export const useUserDetails = (userId: string | undefined): UseUserDetailsReturn
     } finally {
       setIsLoading(false);
     }
-  }, [userId]);
+  }, [userId, t]);
 
-  useEffect(() => {
-    void fetchProfile();
-  }, [fetchProfile]);
+  useFetchEffect(fetchProfile);
 
   const chargeWallet = useCallback(
     async (amount: number, notes?: string) => {

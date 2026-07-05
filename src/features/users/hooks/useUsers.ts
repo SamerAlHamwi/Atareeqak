@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
 import { usersApi } from '../api/usersApi';
-import type { UserRowResponse, UsersStatsResponse } from '../api/usersApi';
+import type { BanRequest, UserRowResponse, UsersStatsResponse } from '../api/usersApi';
 
 export interface UserRow {
   id: string;
@@ -22,6 +25,8 @@ interface UseUsersReturn {
   setTypeFilter: (filter: UserTypeFilter) => void;
   statusFilter: UserStatusFilter;
   setStatusFilter: (filter: UserStatusFilter) => void;
+  search: string;
+  setSearch: (value: string) => void;
   page: number;
   setPage: (page: number) => void;
   lastPage: number;
@@ -29,13 +34,14 @@ interface UseUsersReturn {
   perPage: number;
   isLoading: boolean;
   error: Error | null;
-  banUser: (user: UserRow, reason: string) => Promise<void>;
+  refetch: () => Promise<void>;
+  banUser: (user: UserRow, ban: BanRequest) => Promise<void>;
   unbanUser: (user: UserRow) => Promise<void>;
 }
 
-const mapUser = (u: UserRowResponse): UserRow => ({
+const mapUser = (u: UserRowResponse, t: TFunction): UserRow => ({
   id: String(u.id),
-  name: u.full_name || 'غير معروف',
+  name: u.full_name || t('common.unknown'),
   email: u.email || '',
   type: u.type,
   joinDate: u.joined_label || '',
@@ -44,16 +50,25 @@ const mapUser = (u: UserRowResponse): UserRow => ({
 });
 
 export const useUsers = (): UseUsersReturn => {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [stats, setStats] = useState<UsersStatsResponse | null>(null);
   const [typeFilter, setTypeFilter] = useState<UserTypeFilter>('all');
   const [statusFilter, setStatusFilter] = useState<UserStatusFilter>('all');
+  const [search, setSearchState] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [perPage, setPerPage] = useState(10);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+
+  // Debounce the search input so we don't hit the API on every keystroke
+  useEffect(() => {
+    const handle = setTimeout(() => setDebouncedSearch(search.trim()), 400);
+    return () => clearTimeout(handle);
+  }, [search]);
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
@@ -63,8 +78,9 @@ export const useUsers = (): UseUsersReturn => {
         type: typeFilter,
         status: statusFilter,
         page,
+        ...(debouncedSearch ? { search: debouncedSearch } : {}),
       });
-      setUsers((response.data.users || []).map(mapUser));
+      setUsers((response.data.users || []).map((u) => mapUser(u, t)));
       setStats(response.data.stats ?? null);
       setLastPage(response.data.meta?.last_page ?? 1);
       setTotal(response.data.meta?.total ?? 0);
@@ -76,11 +92,9 @@ export const useUsers = (): UseUsersReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, [typeFilter, statusFilter, page]);
+  }, [typeFilter, statusFilter, page, debouncedSearch, t]);
 
-  useEffect(() => {
-    void fetchUsers();
-  }, [fetchUsers]);
+  useFetchEffect(fetchUsers);
 
   const handleSetTypeFilter = useCallback((filter: UserTypeFilter) => {
     setTypeFilter(filter);
@@ -92,8 +106,13 @@ export const useUsers = (): UseUsersReturn => {
     setPage(1);
   }, []);
 
-  const banUser = useCallback(async (user: UserRow, reason: string) => {
-    await usersApi.banUser(user.id, { reason, type: 'permanent' });
+  const setSearch = useCallback((value: string) => {
+    setSearchState(value);
+    setPage(1);
+  }, []);
+
+  const banUser = useCallback(async (user: UserRow, ban: BanRequest) => {
+    await usersApi.banUser(user.id, ban);
     setUsers((prev) =>
       prev.map((entry) => (entry.id === user.id ? { ...entry, status: 'suspended' } : entry))
     );
@@ -113,6 +132,8 @@ export const useUsers = (): UseUsersReturn => {
     setTypeFilter: handleSetTypeFilter,
     statusFilter,
     setStatusFilter: handleSetStatusFilter,
+    search,
+    setSearch,
     page,
     setPage,
     lastPage,
@@ -120,6 +141,7 @@ export const useUsers = (): UseUsersReturn => {
     perPage,
     isLoading,
     error,
+    refetch: fetchUsers,
     banUser,
     unbanUser,
   };

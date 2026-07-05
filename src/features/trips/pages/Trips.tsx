@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMockAction } from '../../shared/useMockAction';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
+import ConfirmActionModal from '../../shared/components/ConfirmActionModal';
+import type { ConfirmActionPayload } from '../../shared/components/ConfirmActionModal';
 import { useTrips } from '../hooks/useTrips';
 import type { Trip } from '../hooks/useTrips';
 import { useLiveTrips } from '../hooks/useLiveTrips';
@@ -44,12 +46,12 @@ const Trips: React.FC = () => {
         const newTrip: Trip = {
           id: `#TR-${9000 + Math.floor(Math.random() * 1000)}`,
           rawId: Date.now(),
-          driver: 'سائق جديد',
-          driverInitial: 'س.ج',
-          from: 'الرياض',
-          to: 'جدة',
+          driver: t('trips.draft_driver'),
+          driverInitial: t('trips.draft_driver_initial'),
+          from: t('trips.draft_from'),
+          to: t('trips.draft_to'),
           timing: 'today',
-          timeDetail: '07:30 م',
+          timeDetail: t('trips.draft_time'),
           passengers: '0/4',
           status: 'scheduled',
           color: 'primary',
@@ -78,14 +80,24 @@ const Trips: React.FC = () => {
     });
   };
 
-  const handleCancelTrip = async (trip: Trip, event: React.MouseEvent) => {
+  const [cancelTarget, setCancelTarget] = useState<Trip | null>(null);
+
+  const handleCancelTrip = (trip: Trip, event: React.MouseEvent) => {
     event.stopPropagation();
+    setCancelTarget(trip);
+  };
+
+  const handleConfirmCancel = async ({ reason }: ConfirmActionPayload) => {
+    if (!cancelTarget) return;
+    const trip = cancelTarget;
     await runApiAction({
       key: `cancel-${trip.id}`,
-      action: () => cancelTrip(trip, t('trips.cancel_reason_default')),
+      action: () => cancelTrip(trip, reason),
       successMessage: t('trips.cancel_success', { id: trip.id }),
       errorMessage: t('trips.cancel_failed'),
     });
+    // Close either way — success and error feedback both show in the page banner
+    setCancelTarget(null);
   };
 
   const handleContactDriver = async () => {
@@ -165,6 +177,17 @@ const Trips: React.FC = () => {
 
       {/* Right Column: Monitoring Sidebar */}
       <MonitoringSidebar />
+
+      {/* Cancel confirmation modal (real reason instead of the hardcoded default) */}
+      <ConfirmActionModal
+        open={!!cancelTarget}
+        title={t('trips.cancel_modal_title', { id: cancelTarget?.id ?? '' })}
+        description={t('trips.cancel_modal_description')}
+        confirmLabel={t('trips.cancel_confirm')}
+        isBusy={cancelTarget ? isApiBusy(`cancel-${cancelTarget.id}`) : false}
+        onConfirm={handleConfirmCancel}
+        onClose={() => setCancelTarget(null)}
+      />
     </div>
   );
 };

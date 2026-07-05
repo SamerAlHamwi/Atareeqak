@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
+import ConfirmActionModal from '../../shared/components/ConfirmActionModal';
+import type { ConfirmActionPayload } from '../../shared/components/ConfirmActionModal';
+import ErrorBanner from '../../shared/components/ErrorBanner';
+import TableSkeleton from '../../shared/components/TableSkeleton';
 import { useDrivers } from '../hooks/useDrivers';
 import type { Driver } from '../hooks/useDrivers';
 
@@ -36,6 +40,7 @@ const Drivers: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { runAction, isBusy, feedback, clearFeedback } = useApiAction();
+  const [banTarget, setBanTarget] = React.useState<Driver | null>(null);
   const isRtl = i18n.language === 'ar';
 
   const {
@@ -45,6 +50,8 @@ const Drivers: React.FC = () => {
     efficiency,
     statusFilter,
     setStatusFilter,
+    search,
+    setSearch,
     page,
     setPage,
     lastPage,
@@ -52,6 +59,7 @@ const Drivers: React.FC = () => {
     perPage,
     isLoading,
     error,
+    refetch,
     banDriver,
     unbanDriver,
   } = useDrivers();
@@ -65,13 +73,26 @@ const Drivers: React.FC = () => {
         errorMessage: t('drivers.status_update_failed'),
       });
     } else {
-      await runAction({
-        key: `status-${driver.id}`,
-        action: () => banDriver(driver, t('drivers.ban_reason_default')),
-        successMessage: t('drivers.ban_success', { name: driver.name }),
-        errorMessage: t('drivers.status_update_failed'),
-      });
+      setBanTarget(driver);
     }
+  };
+
+  const handleConfirmBan = async ({ reason, banType, expiresAt }: ConfirmActionPayload) => {
+    if (!banTarget) return;
+    const driver = banTarget;
+    await runAction({
+      key: `status-${driver.id}`,
+      action: () =>
+        banDriver(driver, {
+          reason,
+          type: banType ?? 'permanent',
+          ...(expiresAt ? { expires_at: expiresAt } : {}),
+        }),
+      successMessage: t('drivers.ban_success', { name: driver.name }),
+      errorMessage: t('drivers.status_update_failed'),
+    });
+    // Close either way — success and error feedback both show in the page banner
+    setBanTarget(null);
   };
 
   const paginationStart = total === 0 ? 0 : (page - 1) * perPage + 1;
@@ -81,11 +102,7 @@ const Drivers: React.FC = () => {
     <div className="space-y-10">
       <ActionBanner feedback={feedback} onDismiss={clearFeedback} />
 
-      {error && (
-        <div className="bg-error-container text-on-error-container px-6 py-4 rounded-2xl">
-          {t('common.load_failed')}
-        </div>
-      )}
+      {error && <ErrorBanner onRetry={() => void refetch()} />}
 
       {/* Summary Bento Grid */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -177,6 +194,18 @@ const Drivers: React.FC = () => {
             </button>
           </div>
         </div>
+        <div className="relative w-full md:max-w-xs">
+          <span className={`absolute inset-y-0 ${isRtl ? 'right-0 pr-4' : 'left-0 pl-4'} flex items-center pointer-events-none text-on-surface-variant`}>
+            <span className="material-symbols-outlined text-lg">search</span>
+          </span>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className={`block w-full ${isRtl ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3 bg-surface-container-lowest border border-outline-variant/10 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all`}
+            placeholder={t('drivers.search_placeholder')}
+            type="text"
+          />
+        </div>
       </section>
 
       {/* Data Table Section */}
@@ -195,11 +224,7 @@ const Drivers: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-surface-container text-sm">
               {isLoading ? (
-                <tr>
-                  <td colSpan={6} className="px-8 py-10 text-center text-on-surface-variant font-medium">
-                    {t('common.loading')}
-                  </td>
-                </tr>
+                <TableSkeleton rows={6} cols={6} firstColAvatar />
               ) : visibleDrivers.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-8 py-10 text-center text-on-surface-variant font-medium">
@@ -294,6 +319,18 @@ const Drivers: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Ban confirmation modal (reason + permanent/temporary + expiry) */}
+      <ConfirmActionModal
+        open={!!banTarget}
+        title={t('drivers.ban_modal_title', { name: banTarget?.name ?? '' })}
+        description={t('drivers.ban_modal_description')}
+        confirmLabel={t('drivers.ban_confirm')}
+        showBanOptions
+        isBusy={banTarget ? isBusy(`status-${banTarget.id}`) : false}
+        onConfirm={handleConfirmBan}
+        onClose={() => setBanTarget(null)}
+      />
 
       {/* Secondary Widget Section */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
