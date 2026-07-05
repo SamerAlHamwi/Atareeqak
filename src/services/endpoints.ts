@@ -85,6 +85,9 @@ export const ENDPOINTS = {
     TOGGLE_ACTIVE: (id: string | number) => `/employees/${id}/toggle-active`,
     RESET_PASSWORD: (id: string | number) => `/employees/${id}/reset-password`,
   },
+  SETTINGS: '/admin/settings',
+  BROADCAST_ALERT: '/admin/broadcast-alert',
+  SUPPORT_METRICS: '/staff/complaints/metrics',
   REPORTS: '/admin/reports',
   EXPORT_PDF: '/admin/export/pdf',
 };

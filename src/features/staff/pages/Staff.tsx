@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
+import ConfirmActionModal from '../../shared/components/ConfirmActionModal';
+import BroadcastAlertModal from '../components/BroadcastAlertModal';
 import { useStaff } from '../hooks/useStaff';
 import type { Employee } from '../hooks/useStaff';
-import type { StaffRole } from '../api/staffApi';
+import { staffApi } from '../api/staffApi';
+import type { StaffRole, BroadcastAlertRequest } from '../api/staffApi';
 
 const roleBadgeClasses: Record<StaffRole, string> = {
   system_admin: 'bg-indigo-50 text-indigo-700',
@@ -36,6 +39,8 @@ const Staff: React.FC = () => {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [form, setForm] = useState<NewEmployeeForm>(emptyForm);
   const [newPassword, setNewPassword] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
+  const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
 
   const {
     staff,
@@ -47,6 +52,7 @@ const Staff: React.FC = () => {
     createEmployee,
     toggleActive,
     resetPassword,
+    deleteEmployee,
   } = useStaff();
 
   const formValid =
@@ -90,6 +96,29 @@ const Staff: React.FC = () => {
     });
   };
 
+  const handleDelete = async (employee: Employee) => {
+    await runAction({
+      key: `staff-delete-${employee.id}`,
+      action: () => deleteEmployee(employee),
+      successMessage: t('staff.delete_success', { name: employee.name }),
+      errorMessage: t('staff.delete_failed'),
+      onSuccess: () => {
+        setDeleteTarget(null);
+        setSelectedEmployee((prev) => (prev && prev.id === employee.id ? null : prev));
+      },
+    });
+  };
+
+  const handleBroadcast = async (payload: BroadcastAlertRequest) => {
+    await runAction({
+      key: 'broadcast-alert',
+      action: () => staffApi.sendBroadcastAlert(payload),
+      successMessage: (result) => t('broadcast.success', { count: result.sent_count }),
+      errorMessage: t('broadcast.failed'),
+      onSuccess: () => setIsBroadcastOpen(false),
+    });
+  };
+
   const handleResetPassword = async () => {
     if (!selectedEmployee || newPassword.length < 8) return;
     await runAction({
@@ -105,6 +134,21 @@ const Staff: React.FC = () => {
     <div className="space-y-10">
       <ActionBanner feedback={feedback} onDismiss={clearFeedback} />
 
+      <ConfirmActionModal
+        open={deleteTarget !== null}
+        title={t('staff.delete_confirm_title')}
+        description={deleteTarget ? t('staff.delete_confirm_desc', { name: deleteTarget.name }) : undefined}
+        confirmLabel={t('staff.delete')}
+        minReasonLength={0}
+        isBusy={deleteTarget ? isBusy(`staff-delete-${deleteTarget.id}`) : false}
+        onConfirm={async () => {
+          if (deleteTarget) {
+            await handleDelete(deleteTarget);
+          }
+        }}
+        onClose={() => setDeleteTarget(null)}
+      />
+
       {error && (
         <div className="bg-error-container text-on-error-container px-6 py-4 rounded-2xl">
           {t('common.load_failed')}
@@ -117,7 +161,21 @@ const Staff: React.FC = () => {
           <h2 className="text-3xl font-black text-primary tracking-tight mb-2 font-headline">{t('staff.title')}</h2>
           <p className="text-on-surface-variant text-sm">{t('staff.subtitle')}</p>
         </div>
+        <button
+          onClick={() => setIsBroadcastOpen(true)}
+          className="bg-secondary text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:opacity-90 transition-all shadow-md self-start md:self-auto"
+        >
+          <span className="material-symbols-outlined">campaign</span>
+          {t('broadcast.open_button')}
+        </button>
       </div>
+
+      <BroadcastAlertModal
+        open={isBroadcastOpen}
+        isBusy={isBusy('broadcast-alert')}
+        onSend={handleBroadcast}
+        onClose={() => setIsBroadcastOpen(false)}
+      />
 
       {/* Summary Bento Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -227,6 +285,17 @@ const Staff: React.FC = () => {
                             <span className="material-symbols-outlined text-sm">
                               {emp.isActive ? 'person_off' : 'how_to_reg'}
                             </span>
+                          </button>
+                          <button
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setDeleteTarget(emp);
+                            }}
+                            disabled={isBusy(`staff-delete-${emp.id}`)}
+                            className="p-1.5 rounded-lg text-error hover:bg-error-container/20 disabled:opacity-40"
+                            title={t('staff.delete')}
+                          >
+                            <span className="material-symbols-outlined text-sm">delete</span>
                           </button>
                         </div>
                       </td>

@@ -9,6 +9,7 @@ import type {
   EscalatedCounts,
   RespondStatus,
   EscalatedResolveStatus,
+  SupportMetricsResponse,
 } from '../api/supportApi';
 
 export interface Complaint {
@@ -46,6 +47,7 @@ export const useSupport = () => {
   const { t } = useTranslation();
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [counts, setCounts] = useState<ComplaintCounts | null>(null);
+  const [metrics, setMetrics] = useState<SupportMetricsResponse | null>(null);
   const [escalatedCounts, setEscalatedCounts] = useState<EscalatedCounts | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -111,6 +113,19 @@ export const useSupport = () => {
 
   useFetchEffect(fetchComplaints);
 
+  // Aggregate KPIs (avg response time, resolution rate) — loaded once, not per filter
+  const fetchMetrics = useCallback(async () => {
+    try {
+      const response = await supportApi.getMetrics();
+      setMetrics(response.data);
+    } catch (err) {
+      // Non-blocking: the stat card shows a dash if metrics are unavailable
+      console.error('Failed to load support metrics', err);
+    }
+  }, []);
+
+  useFetchEffect(fetchMetrics);
+
   const visibleComplaints = useMemo(() => {
     if (statusFilter === 'all') {
       return complaints;
@@ -160,6 +175,7 @@ export const useSupport = () => {
   return {
     complaints,
     counts,
+    metrics,
     escalatedCounts,
     isLoading,
     error,

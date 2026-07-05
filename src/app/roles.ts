@@ -33,7 +33,8 @@ export const SECTION_ROLES: Record<AppSection, StaffRole[]> = {
   support: ALL_ROLES,
   reports: ['system_admin'],
   staff: ['system_admin'],
-  settings: ALL_ROLES,
+  // Settings are backed by /admin/settings, which requires admin or above
+  settings: ADMIN_AND_UP,
 };
 
 export const canAccess = (role: StaffRole | null | undefined, section: AppSection): boolean =>

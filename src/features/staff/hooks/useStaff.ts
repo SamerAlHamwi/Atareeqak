@@ -25,6 +25,7 @@ interface UseStaffReturn {
   createEmployee: (payload: CreateEmployeeRequest) => Promise<Employee>;
   toggleActive: (employee: Employee) => Promise<void>;
   resetPassword: (employee: Employee, newPassword: string) => Promise<void>;
+  deleteEmployee: (employee: Employee) => Promise<void>;
 }
 
 const mapEmployee = (e: EmployeeResponse): Employee => ({
@@ -81,6 +82,11 @@ export const useStaff = (): UseStaffReturn => {
     await staffApi.resetStaffPassword(employee.id, newPassword);
   }, []);
 
+  const deleteEmployee = useCallback(async (employee: Employee) => {
+    await staffApi.deleteEmployee(employee.id);
+    setStaff((prev) => prev.filter((entry) => entry.id !== employee.id));
+  }, []);
+
   const totalStaff = staff.length;
   const activeStaff = useMemo(() => staff.filter((e) => e.isActive).length, [staff]);
   const inactiveStaff = totalStaff - activeStaff;
@@ -95,5 +101,6 @@ export const useStaff = (): UseStaffReturn => {
     createEmployee,
     toggleActive,
     resetPassword,
+    deleteEmployee,
   };
 };

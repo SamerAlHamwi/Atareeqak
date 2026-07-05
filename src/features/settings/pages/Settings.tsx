@@ -1,7 +1,8 @@
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMockAction } from '../../shared/useMockAction';
+import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
+import ErrorBanner from '../../shared/components/ErrorBanner';
 import { useSettings } from '../hooks/useSettings';
 import { PlatformConfig } from '../components/PlatformConfig';
 import { PaymentSettings } from '../components/PaymentSettings';
@@ -11,7 +12,7 @@ import { ModerationRules } from '../components/ModerationRules';
 const Settings: React.FC = () => {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'ar';
-  const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
+  const { runAction, isBusy, feedback, clearFeedback } = useApiAction();
 
   const {
     appName,
@@ -24,19 +25,24 @@ const Settings: React.FC = () => {
     setMinWithdrawal,
     moderationWords,
     setModerationWords,
+    error,
+    saveSettings,
+    refresh,
   } = useSettings();
 
   const handleSaveChanges = useCallback(async () => {
     await runAction({
       key: 'save-settings',
-      successMessage: 'Settings saved locally and ready for API sync.',
-      errorMessage: 'Could not save settings.',
+      action: saveSettings,
+      successMessage: t('settings.save_success'),
+      errorMessage: t('settings.save_failed'),
     });
-  }, [runAction]);
+  }, [runAction, saveSettings, t]);
 
   return (
     <div className="space-y-10">
       <ActionBanner feedback={feedback} onDismiss={clearFeedback} />
+      {error && <ErrorBanner onRetry={refresh} />}
 
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -52,7 +58,7 @@ const Settings: React.FC = () => {
           className="bg-primary text-on-primary px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:opacity-90 transition-all shadow-lg shadow-primary/20 self-start md:self-auto disabled:opacity-50"
         >
           <span className="material-symbols-outlined">save</span>
-          {isBusy('save-settings') ? 'Saving...' : t('settings.save_changes')}
+          {isBusy('save-settings') ? t('common.loading') : t('settings.save_changes')}
         </button>
       </div>
 

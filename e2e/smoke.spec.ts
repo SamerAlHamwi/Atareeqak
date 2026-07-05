@@ -22,7 +22,7 @@ const ROUTES_BY_ROLE: Record<Role, string[]> = {
     '/settings',
   ],
   admin: ['/dashboard', '/trips', '/drivers', '/passengers', '/verifications', '/reviews', '/support', '/settings'],
-  support_agent: ['/reviews', '/support', '/settings'],
+  support_agent: ['/reviews', '/support'],
 };
 
 const collectErrors = (page: Page): string[] => {

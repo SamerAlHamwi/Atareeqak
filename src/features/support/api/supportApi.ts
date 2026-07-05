@@ -67,7 +67,20 @@ export interface EscalatedComplaintsResponse {
 export type RespondStatus = 'in_review' | 'resolved' | 'closed';
 export type EscalatedResolveStatus = 'resolved' | 'closed';
 
+export interface SupportMetricsResponse {
+  avg_response_time_minutes: number | null;
+  tickets_total: number;
+  tickets_resolved: number;
+  tickets_open: number;
+  tickets_escalated: number;
+  resolution_rate_pct: number;
+}
+
 export const supportApi = {
+  getMetrics: async (): Promise<{ status: string; data: SupportMetricsResponse }> => {
+    const response = await api.get(ENDPOINTS.SUPPORT_METRICS);
+    return response.data;
+  },
   getComplaints: async (
     params: { status?: string; type?: string; page?: number; per_page?: number } = {}
   ): Promise<ComplaintsListResponse> => {

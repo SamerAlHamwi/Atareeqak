@@ -76,6 +76,29 @@ const usersFixture = {
  * empty states without console errors.
  */
 const rules: [string, unknown][] = [
+  ['/admin/settings', {
+    status: 'success',
+    data: {
+      app_name: 'Atareeqak',
+      support_email: 'support@atareeqak.com',
+      commission_rate: 15,
+      min_withdrawal: 100,
+      moderation_words: '',
+      alert_message: '',
+      maintenance_mode: false,
+    },
+  }],
+  ['/staff/complaints/metrics', {
+    status: 'success',
+    data: {
+      avg_response_time_minutes: 42,
+      tickets_total: 10,
+      tickets_resolved: 6,
+      tickets_open: 3,
+      tickets_escalated: 1,
+      resolution_rate_pct: 60,
+    },
+  }],
   ['/admin/dashboard/recent', { status: 'success', data: [] }],
   ['/admin/dashboard/stats', { status: 'success', data: dashboardFixture.data.stats }],
   ['/admin/dashboard/growth', { status: 'success', data: { period: 'last_6_months', data: [] } }],

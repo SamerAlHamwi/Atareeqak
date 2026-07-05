@@ -36,6 +36,7 @@ const Support: React.FC = () => {
 
   const {
     counts,
+    metrics,
     escalatedCounts,
     isLoading,
     error,
@@ -160,7 +161,7 @@ const Support: React.FC = () => {
       </section>
 
       {/* Summary Stats (global complaint counts) */}
-      <SupportStats counts={counts} isLoading={isLoading && !counts} />
+      <SupportStats counts={counts} metrics={metrics} isLoading={isLoading && !counts} />
 
       {/* Main Workspace Layout */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
