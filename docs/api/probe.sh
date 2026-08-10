@@ -63,8 +63,8 @@ echo "── DISPUTED: called by the dashboard, absent from routes/api.php ─�
 probe GET    /admin/settings            "Q1 — backs the whole Settings page"
 probe POST   /admin/settings            "Q1"
 probe POST   /admin/broadcast-alert     "Q2 — Staff broadcast modal"
-probe GET    /staff/complaints/metrics  "Q3 — Support KPI row (collides with /{id})"
-probe DELETE /employees/999             "Q4 — Staff delete button"
+probe GET    /staff/complaints/metrics  "Q3 — 401 here is a FALSE POSITIVE: it matches /staff/complaints/{id}"
+probe DELETE /employees/999             "Q4 — 405 means the path exists but DELETE is not registered = MISSING"
 
 echo
 echo "── CONTROL: known-good routes (these MUST come back 401, never 404) ───────"

@@ -2,7 +2,35 @@
 
 **Run date:** 2026-08-10
 **Phase:** 0.2 of `BACKEND_INTEGRATION_PLAN.md`
-**Outcome:** ⚠️ **Inconclusive — there is no reachable SyRide backend to probe.** See §3 for what to do next.
+
+> ## ✅ Superseded — a backend now runs locally and the probe is conclusive
+>
+> Sections 1–3 below describe the first run, against the host the dashboard was configured to call.
+> That run was **inconclusive** (the host is not the Laravel app). It is kept because it is why
+> `vite.config.ts` and `vercel.json` were pointing at the wrong service.
+>
+> **Definitive run — `bash docs/api/probe.sh http://127.0.0.1:8000/api`, all four controls `401`:**
+>
+> | Endpoint | Code | Verdict |
+> |---|---|---|
+> | `GET /test` | 200 | Laravel confirmed |
+> | `PATCH /staff/complaints/1/open` | 404 | **missing** |
+> | `PATCH /staff/complaints/1/resolve` | 404 | **missing** |
+> | `PATCH /staff/complaints/1/close` | 404 | **missing** |
+> | `POST /staff/complaints/1/notes` | 404 | **missing** |
+> | `GET /admin/debug` | 404 | **missing** |
+> | `GET /admin/settings` | 404 | **missing** |
+> | `POST /admin/settings` | 404 | **missing** |
+> | `POST /admin/broadcast-alert` | 404 | **missing** |
+> | `GET /staff/complaints/metrics` | 401 | **missing — false positive.** 401 comes from `GET /staff/complaints/{id}` swallowing `"metrics"`, exactly the collision predicted in B10. `route:list` confirms no `metrics` route exists |
+> | `DELETE /employees/999` | 405 | **missing.** 405 = the path exists under other verbs (GET/PUT/PATCH) but DELETE is not registered |
+> | controls: `/admin/dashboard`, `/staff/me`, `/employees`, `/staff/complaints/1/respond` | 401 ×4 | exist ✅ |
+>
+> This agrees with `artisan route:list` on every line. Q1–Q5 are settled twice over, by two
+> independent methods.
+>
+> See [`local-backend.md`](./local-backend.md) for how the backend is run, and
+> [`backend-issues.md`](./backend-issues.md) for the five defects this exercise uncovered.
 
 ---
 

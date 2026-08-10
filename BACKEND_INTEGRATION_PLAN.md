@@ -219,10 +219,21 @@ Cheapest first; any one of these unblocks the rest of the plan:
 
 ---
 
-## Phase 1 — Foundation: transport, auth, roles — ✅ **DONE 2026-08-10**
+## Phase 1 — Foundation: transport, auth, roles — ✅ **DONE & VERIFIED AGAINST A LIVE BACKEND 2026-08-10**
 
-> Verified with `npx tsc -b` (clean), `npm run lint` (clean), `npm test` — **56 passing, up from 24**.
-> Not yet verified against a real backend: no host exists (Phase 0.5 / Q10).
+> `npx tsc -b` clean · `npm run lint` clean · `npm test` **57 passing, up from 24**.
+>
+> **Verified end-to-end against a real backend**: MySQL 8.0.40 + `artisan serve` on `:8000`, seeded
+> with `system_admin` and `sycash` ([`docs/api/local-backend.md`](docs/api/local-backend.md)).
+> `bash docs/api/verify-auth.sh` → **20 passed, 1 failed**; the single failure is a backend defect
+> ([BUG-1](docs/api/backend-issues.md)), not a dashboard one. The dashboard boots on `:5173` and a
+> proxied `/api/staff/login` returns `role: system_admin`.
+>
+> **Live testing corrected one of my own assumptions.** I had built 1.3 on the premise that
+> `/admin/login` returns no role. It *does* return `role` and `role_label`, so the extra `/staff/me`
+> round-trip was unnecessary — `authApi` now reads the payload directly and falls back to `/staff/me`
+> only if the field is absent. The original bug was still real: the old code did
+> `{ ...admin, role: 'system_admin' }`, overriding the server's value and mislabelling sycash.
 
 ### 1.1 Environment & base URL — ✅
 
@@ -241,9 +252,13 @@ Cheapest first; any one of these unblocks the rest of the plan:
 - [x] Locales gained `roles.sycash` and `staff.roles.sycash` (en + ar).
 - [x] `tests/app/roles.test.ts` pins the whole access matrix for all four roles.
 
-### 1.3 Server is the source of truth for role — ✅
+### 1.3 Server is the source of truth for role — ✅ (verified live)
 
-- [x] `authApi.login()` no longer hardcodes `role: 'system_admin'` on the `/admin/login` path — it calls `GET /staff/me` with the freshly issued token. `/staff/login` still uses its own response (the employee, role included), so the common path costs no extra request.
+- [x] `authApi.login()` no longer hardcodes `role: 'system_admin'`. It uses `admin.role` from the `/admin/login` payload (**confirmed present against the running backend**), falling back to `GET /staff/me` only if absent. `/staff/login` uses its own response, so neither path costs an extra request.
+- [x] Verified live: `/admin/login` and `/staff/login` tokens are interchangeable — an `/admin/login` token is accepted by `/staff/me` (200), confirming B1.
+- [x] Verified live: **`sycash` really is 403'd by `/admin/dashboard`** while reaching `/staff/reviews` (200) — so `roles.ts` is right to withhold the admin sections from it. Q8 answered empirically.
+- [x] Verified live: an invalid token returns `401 TOKEN_INVALID`, matching `AUTH_ERROR_CODES`.
+- [x] Verified live: **refresh tokens rotate and are single-use.** Both `/staff/refresh` and `/admin/refresh` accept a token from either login, and replaying a consumed one gives `REFRESH_TOKEN_INVALID`. The client already stores the rotated token — but this creates a concurrency hazard, added to Phase 13.
 - [x] `authApi.me(token?)` accepts an explicit token, and the axios request interceptor now lets a caller-supplied `Authorization` header win over the stored one — needed because the new token is not in `localStorage` yet at that point.
 - [x] `AuthContext` refreshes the profile for **both** session kinds (was `kind === 'staff'` only).
 - [x] A 403/404 from `/staff/me` now logs out instead of keeping a stale role.
@@ -398,7 +413,20 @@ Endpoints: `GET /admin/reports?start_date&end_date` · `GET /admin/export/pdf` �
 
 ---
 
-## Phase 10 — Staff / Employees (system_admin only)
+## Phase 10 — Staff / Employees (system_admin only) — 🔴 **BLOCKED ON THE BACKEND**
+
+> **All six `/employees` endpoints return 500.** `EmployeeManagementController` calls
+> `list()`, `formatEmployee()` and `resetPassword()`, none of which exist on
+> `EmployeeManagementService` (which defines `getAll()`, `rotatePassword()`, and no formatter at
+> all). The Staff page cannot work at any level until this is fixed —
+> [BUG-1](docs/api/backend-issues.md).
+>
+> Also: `POST /employees` **writes the row and then 500s**, so a "failed" creation actually
+> succeeded and the retry hits 409 (BUG-2). And `EmployeeManagementService::delete()` is fully
+> implemented but has **no route**, which suggests Q4's answer is "forgotten", not "deliberate"
+> (BUG-4).
+>
+> The frontend work below can still be written; it just cannot be verified yet.
 
 Endpoints: `GET /employees` · `POST /employees` · `GET /employees/{id}` · `PUT /employees/{id}` · `PATCH /employees/{id}/toggle-active` · `PATCH /employees/{id}/reset-password {new_password ≥8}`.
 
@@ -451,6 +479,7 @@ Apply uniformly across every page touched above:
 - [ ] **Empty states** — every table needs one; several currently render an empty `<tbody>`.
 - [ ] **Pagination** — `TablePagination` on every list backed by `meta` (trips is the known gap; audit drivers, users, reviews, complaints, wallet requests).
 - [ ] **Concurrency** — an in-flight request must be cancelled/ignored when filters change (a stale response currently overwrites fresh state in the `useFetchEffect` hooks). Use an `AbortController` or a request-sequence guard.
+- [ ] **Single-flight token refresh** — refresh tokens are single-use and rotate (verified live). If two requests 401 at the same time, both call `/refresh`; the second replays a consumed token and the user is logged out. The interceptor needs to share one in-flight refresh promise across all queued requests. Pages that fire several parallel fetches on mount (Dashboard, Reports, Trips) make this easy to hit.
 - [ ] **403 handling** — `RoleRoute` blocks navigation, but a role change mid-session can still produce a 403. Show the "no permission" panel instead of an error banner.
 - [ ] **i18n** — every new string goes in both `src/locales/en/translation.json` and `src/locales/ar/translation.json`. Check RTL for new tables/modals.
 - [ ] **Dates** — several hooks call `toLocaleDateString('ar-SY')` unconditionally. Format by active locale.

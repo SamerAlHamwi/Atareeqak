@@ -1,9 +1,22 @@
 # Running the backend locally
 
-There is no deployed SyRide API (see [`probe-results.md`](./probe-results.md)), so every phase past
-Phase 1 is verified against a backend running on this machine at **`http://localhost:8080/api`** —
-which is what [`vite.config.ts`](../../vite.config.ts) proxies to and what the newest Postman
-collection's `{{base_url}}` expects.
+There is no deployed SyRide API (see [`probe-results.md`](./probe-results.md)), so every phase is
+verified against a backend running on this machine.
+
+> ## ✅ Currently running: `http://127.0.0.1:8000/api`
+>
+> | Piece | What | How it was started |
+> |---|---|---|
+> | Database | MySQL **8.0.40** portable, `127.0.0.1:3306`, root with no password | `mysqld --console` from `C:\Users\Tech\mysql-portable\mysql-8.0.40-winx64` |
+> | API | Laravel via `php artisan serve` on **:8000** | `APP_ENV=localdev php artisan serve --host=127.0.0.1 --port=8000` |
+> | Dashboard | Vite on **:5173**, proxying `/api` → `:8000` | `npm run dev` |
+>
+> **Port 8000, not 8080** — Apache (XAMPP, PID `httpd`) already owns 8080 on this machine, and
+> `artisan serve` cannot bind it. `vite.config.ts` targets 8000 to match; override with
+> `VITE_PROXY_TARGET` if you free 8080 or start the Docker stack.
+>
+> Verified end to end: `curl http://localhost:5173/api/test` → `{"message":"API is working!"}`, and a
+> proxied `/api/staff/login` returns `role: system_admin`.
 
 ---
 
@@ -107,41 +120,83 @@ What is running today. MySQL 8 from the ZIP archive needs no installer and no el
 > and Laravel's SQLite grammar throws `The database driver in use does not support spatial indexes.`
 > MySQL (or MariaDB ≥ 10.2.2) is genuinely required.
 
+### 1. MySQL
+
 ```console
-# one-time: unpack + initialise a data directory
-#   MYSQL_HOME = wherever mysql-8.0.40-winx64 was extracted
+MYSQL_HOME="/c/Users/Tech/mysql-portable/mysql-8.0.40-winx64"
+
+# one-time
 "$MYSQL_HOME/bin/mysqld" --initialize-insecure --basedir="$MYSQL_HOME" --datadir="$MYSQL_HOME/data"
 
-# start the server (leave it running)
-"$MYSQL_HOME/bin/mysqld" --console --basedir="$MYSQL_HOME" --datadir="$MYSQL_HOME/data" --port=3306
+# start (leave running)
+"$MYSQL_HOME/bin/mysqld" --console --basedir="$MYSQL_HOME" --datadir="$MYSQL_HOME/data" \
+  --port=3306 --bind-address=127.0.0.1
 
-# create the schema
-"$MYSQL_HOME/bin/mysql" -u root --skip-password -e "CREATE DATABASE IF NOT EXISTS 4th_year_project_db"
+# one-time
+"$MYSQL_HOME/bin/mysql" -u root --skip-password -e \
+  "CREATE DATABASE IF NOT EXISTS 4th_year_project_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
 ```
 
-Then, from the backend checkout — the env vars override `.env`, which points at the Docker
-service names (`DB_HOST=mysql`, `REDIS_HOST=redis`):
+### 2. `.env.localdev` — how local settings actually take effect
+
+**`artisan serve` forwards only a whitelist of environment variables** (`APP_ENV`, `PATH`,
+`XDEBUG_*`, …) to the served process — see `ServeCommand::$passthroughVariables`. So
+`DB_HOST=127.0.0.1 php artisan serve` silently does nothing: the child still reads `.env`, which
+points at the Docker service names (`DB_HOST=mysql`, `CACHE_DRIVER=redis`) and fails.
+
+`APP_ENV` *is* forwarded, and Laravel loads `.env.{APP_ENV}` when it is set. So local config lives in
+**`4th_year_projects_refractored/.env.localdev`** (already created; gitignored by the `.env.*` rule):
+
+```ini
+APP_ENV=localdev
+APP_DEBUG=true
+APP_URL=http://localhost:8000
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=4th_year_project_db
+DB_USERNAME=root
+DB_PASSWORD=
+CACHE_DRIVER=file        # .env says redis; there is no Redis here
+SESSION_DRIVER=file
+QUEUE_CONNECTION=sync
+BROADCAST_DRIVER=log
+```
+
+Note `artisan migrate` / `db:seed` run in-process, so plain env vars *do* work for those — only
+`serve` needs the file.
+
+### 3. Migrate, seed, serve
 
 ```console
-export DB_HOST=127.0.0.1 DB_USERNAME=root DB_PASSWORD= CACHE_DRIVER=file
+cd ../4th_year_projects_refractored
+export APP_ENV=localdev
 
 php artisan migrate --force
 php artisan db:seed --class=SpecialAccountSeeder --force
-php artisan serve --port=8080
+php artisan serve --host=127.0.0.1 --port=8000
 ```
 
-`CACHE_DRIVER=file` matters: `.env` sets `redis`, and without a Redis server every cached
-dashboard endpoint would fail.
+⚠️ **The seeder fails for `sycash` on a fresh database** — `employees.role` is an ENUM that never
+gets widened, because the migration that would do it is skipped
+([BUG-3](./backend-issues.md)). Until the backend is fixed, run this once after migrating:
+
+```sql
+ALTER TABLE employees
+  MODIFY COLUMN role ENUM('system_admin','sycash','admin','support_agent') NOT NULL;
+```
+
+then re-run the seeder.
 
 ---
 
 ## Verifying the backend is really up
 
 ```console
-curl http://localhost:8080/api/test
+curl http://127.0.0.1:8000/api/test
 # {"message":"API is working!","timestamp":"..."}
 
-bash docs/api/probe.sh http://localhost:8080/api
+bash docs/api/probe.sh    http://127.0.0.1:8000/api   # which routes exist
+bash docs/api/verify-auth.sh http://127.0.0.1:8000/api # Phase 1 acceptance (20/21 pass)
 ```
 
 The probe's **control block must return `401`** on all four routes. If it returns `404`, you are not
@@ -150,7 +205,7 @@ talking to the Laravel app and nothing else in the output means anything.
 Then confirm a real login:
 
 ```console
-curl -s -X POST http://localhost:8080/api/staff/login \
+curl -s -X POST http://127.0.0.1:8000/api/staff/login \
   -H 'Content-Type: application/json' \
   -d '{"identifier":"system_admin","password":"admin"}'
 ```
@@ -161,8 +216,9 @@ Expect `{"status":"success","employee":{...,"role":"system_admin",...},"tokens":
 
 ## Point the dashboard at it
 
-Nothing to change — `vite.config.ts` already proxies `/api` to `http://localhost:8080/api`. Override
-per machine with `VITE_PROXY_TARGET` in `.env.local` if your backend listens elsewhere.
+Nothing to change — `vite.config.ts` proxies `/api` to `http://127.0.0.1:8000/api`. Override per
+machine with `VITE_PROXY_TARGET` in `.env.local` if your backend listens elsewhere (e.g.
+`http://localhost:8080/api` for the Docker stack).
 
 ```console
 cd ../Atareeqak && npm run dev
