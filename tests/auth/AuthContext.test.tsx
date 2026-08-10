@@ -86,6 +86,52 @@ describe('AuthContext', () => {
     expect(localStorage.getItem('auth_kind')).toBeNull();
   });
 
+  it('refreshes the profile for admin sessions too', async () => {
+    // Regression: this used to be skipped unless auth_kind === 'staff'. Both
+    // login flows issue StaffJwtService tokens, so /staff/me is valid for both
+    // and an admin session would otherwise keep a stale role forever.
+    seedSession('admin');
+    server.use(
+      http.get(`${API_BASE}/staff/me`, () =>
+        HttpResponse.json({
+          status: 'success',
+          employee: {
+            id: 1,
+            username: 'samer',
+            email: 'samer@atareeqak.com',
+            full_name: 'Samer',
+            role: 'sycash',
+            role_label: 'Financial Administrator (SyCash)',
+            is_active: true,
+            last_login_at: null,
+          },
+        })
+      )
+    );
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await waitFor(() => expect(result.current.role).toBe('sycash'));
+    expect(JSON.parse(localStorage.getItem('user') ?? '{}').role).toBe('sycash');
+  });
+
+  it('drops the session when /staff/me rejects the token', async () => {
+    // A 403/404 means this token can no longer identify an employee, so the
+    // cached role is untrustworthy — better to log out than render UI the
+    // server will reject on every request.
+    seedSession('staff');
+    server.use(
+      http.get(`${API_BASE}/staff/me`, () =>
+        HttpResponse.json({ status: 'error', code: 'FORBIDDEN' }, { status: 403 })
+      )
+    );
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await waitFor(() => expect(result.current.isAuthenticated).toBe(false));
+    expect(localStorage.getItem('access_token')).toBeNull();
+  });
+
   it('refreshes the profile for staff sessions so the role stays current', async () => {
     seedSession('staff');
     server.use(

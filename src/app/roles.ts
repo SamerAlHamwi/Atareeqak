@@ -1,12 +1,26 @@
 import type { StaffRole } from '../types/index';
 
 /**
- * Frontend mirror of the backend route-group permissions (routes/api.php):
- * - /admin/*      → staff:admin,system_admin (dashboard, trips, drivers, users, wallet requests)
- * - /admin system_admin block → reports, PDF export, wallet charge
- * - /staff/*      → any staff role (reviews, complaints, trip cancellation)
- * - /staff admin+ → pending verifications, escalated complaints
- * - /employees/*  → system_admin only (staff management)
+ * Frontend mirror of the backend route-group permissions (routes/api.php),
+ * verified route-by-route against docs/api/route-list.json.
+ *
+ * - /admin/*                    → staff:admin,system_admin
+ *     dashboard, trips, drivers, users/passengers, wallet requests, bans
+ * - /admin/* system_admin block → staff:admin,system_admin + staff:system_admin
+ *     reports, PDF export, wallet charge, /admin/verifications
+ * - /staff/*                    → staff (any active employee)
+ *     reviews, complaints, staff user/trip/booking lists, trip cancellation
+ * - /staff/* admin+ block       → staff + staff:admin,system_admin
+ *     pending verifications, escalated complaints
+ * - /employees/*                → staff:system_admin
+ *     employee management
+ *
+ * `sycash` is the wrinkle. StaffRole::isAdminRole() is true for it (so it may
+ * log in via /admin/login), but every /admin/* group is gated on
+ * `staff:admin,system_admin`, which does NOT include it — so a sycash token is
+ * rejected by all of them. Until that inconsistency is resolved (decisions.md
+ * Q8) sycash is granted exactly what the middleware actually lets through:
+ * the any-role /staff/* sections.
  */
 export type AppSection =
   | 'dashboard'
@@ -20,8 +34,11 @@ export type AppSection =
   | 'staff'
   | 'settings';
 
+/** Matches the `staff:admin,system_admin` middleware argument exactly. */
 const ADMIN_AND_UP: StaffRole[] = ['admin', 'system_admin'];
-const ALL_ROLES: StaffRole[] = ['support_agent', 'admin', 'system_admin'];
+
+/** Matches the bare `staff` middleware: any active employee, sycash included. */
+const ALL_ROLES: StaffRole[] = ['support_agent', 'sycash', 'admin', 'system_admin'];
 
 export const SECTION_ROLES: Record<AppSection, StaffRole[]> = {
   dashboard: ADMIN_AND_UP,
@@ -33,13 +50,14 @@ export const SECTION_ROLES: Record<AppSection, StaffRole[]> = {
   support: ALL_ROLES,
   reports: ['system_admin'],
   staff: ['system_admin'],
-  // Settings are backed by /admin/settings, which requires admin or above
+  // No backend route exists for settings yet (decisions.md C1/Q1). Kept at
+  // admin+ so the nav entry matches the page's eventual gating.
   settings: ADMIN_AND_UP,
 };
 
 export const canAccess = (role: StaffRole | null | undefined, section: AppSection): boolean =>
   !!role && SECTION_ROLES[section].includes(role);
 
-/** Landing page after login: admins get the dashboard, support agents their inbox. */
+/** Landing page after login: admins get the dashboard, everyone else their inbox. */
 export const defaultRouteForRole = (role: StaffRole | null | undefined): string =>
   canAccess(role, 'dashboard') ? '/dashboard' : '/support';

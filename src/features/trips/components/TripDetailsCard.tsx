@@ -8,16 +8,12 @@ interface TripDetailsCardProps {
   trip: Trip | null;
   liveTrips: LiveTrip[];
   isLoadingLive: boolean;
-  onContactDriver: () => void;
-  isContacting: boolean;
 }
 
 export const TripDetailsCard: React.FC<TripDetailsCardProps> = ({
   trip,
   liveTrips,
   isLoadingLive,
-  onContactDriver,
-  isContacting,
 }) => {
   const { t } = useTranslation();
 
@@ -83,13 +79,28 @@ export const TripDetailsCard: React.FC<TripDetailsCardProps> = ({
               </span>
             )}
           </div>
-          <button
-            onClick={onContactDriver}
-            disabled={isContacting || !trip}
-            className="bg-secondary text-on-secondary px-6 py-2 rounded-xl text-sm font-bold shadow-md hover:opacity-90 transition-all disabled:opacity-50"
-          >
-            {t('trips.contact_driver')}
-          </button>
+          {/*
+            There is no "message the driver" endpoint on the admin API, but live
+            trips carry driver.communication_number — so this dials directly
+            instead of pretending to send a request.
+          */}
+          {featured?.driverPhone ? (
+            <a
+              href={`tel:${featured.driverPhone}`}
+              className="bg-secondary text-on-secondary px-6 py-2 rounded-xl text-sm font-bold shadow-md hover:opacity-90 transition-all"
+            >
+              {t('trips.contact_driver')}
+            </a>
+          ) : (
+            <button
+              type="button"
+              disabled
+              title={t('trips.no_driver_phone')}
+              className="bg-secondary text-on-secondary px-6 py-2 rounded-xl text-sm font-bold shadow-md opacity-50"
+            >
+              {t('trips.contact_driver')}
+            </button>
+          )}
         </div>
       </div>
       <div className="bg-surface-container-low rounded-[2rem] overflow-hidden min-h-[280px] shadow-md border border-outline-variant/10">

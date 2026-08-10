@@ -1,37 +1,12 @@
-import React, { useCallback } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useMockAction } from '../../shared/useMockAction';
-import ActionBanner from '../../shared/components/ActionBanner';
 
 const Home: React.FC = () => {
   const { t } = useTranslation();
-  const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
-
-  const handleSync = useCallback(async () => {
-    await runAction({
-      key: 'home-sync',
-      successMessage: 'Live data sync triggered.',
-      errorMessage: 'Live sync failed.',
-    });
-  }, [runAction]);
-
-  const handleNotice = useCallback(async () => {
-    await runAction({
-      key: 'home-notice',
-      successMessage: 'Notice center opened.',
-      errorMessage: 'Could not open notice center.',
-    });
-  }, [runAction]);
 
   return (
     <div className="text-center py-24 space-y-10">
-      <ActionBanner
-        feedback={feedback}
-        onDismiss={clearFeedback}
-        className="mx-auto max-w-2xl text-start"
-      />
-
       <div className="space-y-4">
         <p className="label-md text-secondary font-bold tracking-[0.2em]">{t('common.welcome')}</p>
         <h2 className="display-lg text-on-surface leading-tight">
@@ -68,22 +43,6 @@ const Home: React.FC = () => {
         </Link>
       </div>
 
-      <div className="flex items-center justify-center gap-4 flex-wrap">
-        <button
-          onClick={handleSync}
-          disabled={isBusy('home-sync')}
-          className="px-6 py-3 rounded-xl bg-secondary text-white font-bold disabled:opacity-50"
-        >
-          {isBusy('home-sync') ? 'Syncing...' : 'Sync data'}
-        </button>
-        <button
-          onClick={handleNotice}
-          disabled={isBusy('home-notice')}
-          className="px-6 py-3 rounded-xl border border-outline-variant font-bold disabled:opacity-50"
-        >
-          Open notices
-        </button>
-      </div>
     </div>
   );
 };

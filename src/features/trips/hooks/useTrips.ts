@@ -31,7 +31,6 @@ interface UseTripsReturn {
   isLoading: boolean;
   error: Error | null;
   cancelTrip: (trip: Trip, reason: string) => Promise<void>;
-  addDraftTrip: (trip: Trip) => void;
 }
 
 export const useTrips = (): UseTripsReturn => {
@@ -99,10 +98,6 @@ export const useTrips = (): UseTripsReturn => {
     );
   }, []);
 
-  const addDraftTrip = useCallback((trip: Trip) => {
-    setTrips((prev) => [trip, ...prev]);
-  }, []);
-
   return {
     trips,
     visibleTrips,
@@ -114,6 +109,5 @@ export const useTrips = (): UseTripsReturn => {
     isLoading,
     error,
     cancelTrip,
-    addDraftTrip,
   };
 };

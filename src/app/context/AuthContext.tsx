@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
+import axios from 'axios';
 import type { User } from '../../types/index';
 import { authApi, mapStaffEmployeeToUser, AUTH_KIND_STORAGE_KEY } from '../../features/auth/api/authApi';
 import type { AuthKind } from '../../features/auth/api/authApi';
@@ -38,24 +39,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [accessToken, setAccessToken] = useState<string | null>(stored?.accessToken ?? null);
   const [refreshToken, setRefreshToken] = useState<string | null>(stored?.refreshToken ?? null);
 
-  // Staff sessions: re-fetch the profile so the role is always current
-  // (e.g. role changed by the system admin since the last login).
-  useEffect(() => {
-    if (stored?.kind !== 'staff') {
-      return;
-    }
-    authApi
-      .me()
-      .then((employee) => {
-        const freshUser = mapStaffEmployeeToUser(employee);
-        setUser(freshUser);
-        localStorage.setItem('user', JSON.stringify(freshUser));
-      })
-      .catch(() => {
-        // 401s are handled by the axios interceptor; ignore other failures.
-      });
-  }, [stored]);
-
   const login = (userData: User, authAccessToken: string, authRefreshToken: string, kind: AuthKind) => {
     setUser(userData);
     setAccessToken(authAccessToken);
@@ -67,7 +50,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem(AUTH_KIND_STORAGE_KEY, kind);
   };
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null);
     setAccessToken(null);
     setRefreshToken(null);
@@ -76,7 +59,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem(AUTH_KIND_STORAGE_KEY);
-  };
+  }, []);
+
+  // Re-fetch the profile on mount so the role is always current (e.g. the
+  // system admin changed it since the last login). Runs for BOTH session kinds:
+  // /admin/login and /staff/login both issue staff tokens, so /staff/me is
+  // valid either way.
+  useEffect(() => {
+    if (!stored) {
+      return;
+    }
+    authApi
+      .me()
+      .then((employee) => {
+        const freshUser = mapStaffEmployeeToUser(employee);
+        setUser(freshUser);
+        localStorage.setItem('user', JSON.stringify(freshUser));
+      })
+      .catch((error) => {
+        // A 401 here is already handled by the axios interceptor (refresh, or
+        // logout on a terminal code). A 403/404 means this token can no longer
+        // identify an employee, so the cached role is untrustworthy — drop the
+        // session rather than rendering UI the server will reject.
+        const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+        if (status === 403 || status === 404) {
+          logout();
+        }
+      });
+  }, [stored, logout]);
 
   return (
     <AuthContext.Provider

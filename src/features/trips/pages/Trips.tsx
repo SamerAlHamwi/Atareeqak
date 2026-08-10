@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMockAction } from '../../shared/useMockAction';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
 import ConfirmActionModal from '../../shared/components/ConfirmActionModal';
@@ -14,8 +13,6 @@ import { MonitoringSidebar } from '../components/MonitoringSidebar';
 
 const Trips: React.FC = () => {
   const { t } = useTranslation();
-  // Mock actions remain only for flows with no backend endpoint (draft trip, contact driver)
-  const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
   const {
     runAction: runApiAction,
     isBusy: isApiBusy,
@@ -31,53 +28,14 @@ const Trips: React.FC = () => {
     setSelectedTripId,
     selectedTrip,
     cancelTrip,
-    addDraftTrip,
     isLoading,
   } = useTrips();
 
   const { liveTrips, isLoading: isLoadingLive } = useLiveTrips();
 
-  const handleNewTrip = async () => {
-    await runAction({
-      key: 'new-trip',
-      successMessage: 'Trip draft created and queued for backend validation.',
-      errorMessage: 'Could not create trip draft.',
-      onSuccess: () => {
-        const newTrip: Trip = {
-          id: `#TR-${9000 + Math.floor(Math.random() * 1000)}`,
-          rawId: Date.now(),
-          driver: t('trips.draft_driver'),
-          driverInitial: t('trips.draft_driver_initial'),
-          from: t('trips.draft_from'),
-          to: t('trips.draft_to'),
-          timing: 'today',
-          timeDetail: t('trips.draft_time'),
-          passengers: '0/4',
-          status: 'scheduled',
-          color: 'primary',
-        };
-        addDraftTrip(newTrip);
-      },
-    });
-  };
-
-  const handleViewHistory = async (tripId: string, event: React.MouseEvent) => {
-    event.stopPropagation();
-    await runAction({
-      key: `history-${tripId}`,
-      successMessage: `${tripId} history opened.`,
-      errorMessage: 'Could not load trip history.',
-    });
-  };
-
-  const handleViewDetails = async (tripId: string, event: React.MouseEvent) => {
+  const handleViewDetails = (tripId: string, event: React.MouseEvent) => {
     event.stopPropagation();
     setSelectedTripId(tripId);
-    await runAction({
-      key: `view-${tripId}`,
-      successMessage: `${tripId} details refreshed.`,
-      errorMessage: 'Failed to load trip details.',
-    });
   };
 
   const [cancelTarget, setCancelTarget] = useState<Trip | null>(null);
@@ -100,26 +58,11 @@ const Trips: React.FC = () => {
     setCancelTarget(null);
   };
 
-  const handleContactDriver = async () => {
-    if (!selectedTrip) return;
-    await runAction({
-      key: 'contact-driver',
-      successMessage: `Contact request sent to ${selectedTrip.driver}.`,
-      errorMessage: 'Could not send contact request.',
-    });
-  };
-
   return (
     <div className="grid grid-cols-12 gap-8">
       {/* Left Column: Trips Management */}
       <div className="col-span-12 xl:col-span-8 space-y-10">
-        <ActionBanner
-          feedback={apiFeedback ?? feedback}
-          onDismiss={() => {
-            clearApiFeedback();
-            clearFeedback();
-          }}
-        />
+        <ActionBanner feedback={apiFeedback} onDismiss={clearApiFeedback} />
 
         {/* Filters Section */}
         <section className="flex flex-wrap items-center justify-between gap-4">
@@ -140,14 +83,12 @@ const Trips: React.FC = () => {
               </button>
             ))}
           </div>
-          <button
-            onClick={handleNewTrip}
-            disabled={isBusy('new-trip')}
-            className="flex items-center gap-2 bg-primary text-on-primary px-5 py-2.5 rounded-xl font-medium shadow-lg hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            <span className="material-symbols-outlined text-sm">add</span>
-            <span>{isBusy('new-trip') ? 'Creating...' : t('trips.new_trip')}</span>
-          </button>
+          {/*
+            No "create trip" action here: rides are created by drivers through
+            the end-user API (POST /rides), and the admin API has no equivalent.
+            The old button fabricated a local row that existed only in the
+            browser, so it was removed rather than left to mislead.
+          */}
         </section>
 
         {/* Loading State or Table */}
@@ -158,10 +99,9 @@ const Trips: React.FC = () => {
             trips={visibleTrips}
             selectedTripId={selectedTripId}
             onSelectTrip={setSelectedTripId}
-            onViewHistory={handleViewHistory}
             onViewDetails={handleViewDetails}
             onCancelTrip={handleCancelTrip}
-            isBusy={(key: string) => isBusy(key) || isApiBusy(key)}
+            isBusy={isApiBusy}
           />
         )}
 
@@ -170,8 +110,6 @@ const Trips: React.FC = () => {
           trip={selectedTrip}
           liveTrips={liveTrips}
           isLoadingLive={isLoadingLive}
-          onContactDriver={handleContactDriver}
-          isContacting={isBusy('contact-driver')}
         />
       </div>
 

@@ -7,10 +7,13 @@ import BroadcastAlertModal from '../components/BroadcastAlertModal';
 import { useStaff } from '../hooks/useStaff';
 import type { Employee } from '../hooks/useStaff';
 import { staffApi } from '../api/staffApi';
-import type { StaffRole, BroadcastAlertRequest } from '../api/staffApi';
+import type { StaffRole, CreatableStaffRole, BroadcastAlertRequest } from '../api/staffApi';
+import { CREATABLE_STAFF_ROLES } from '../api/staffApi';
 
 const roleBadgeClasses: Record<StaffRole, string> = {
   system_admin: 'bg-indigo-50 text-indigo-700',
+  // Financial administrator — a restricted, seeded role like system_admin
+  sycash: 'bg-violet-50 text-violet-700',
   admin: 'bg-teal-50 text-teal-700',
   support_agent: 'bg-amber-50 text-amber-700',
 };
@@ -21,7 +24,7 @@ interface NewEmployeeForm {
   first_name: string;
   last_name: string;
   email: string;
-  role: StaffRole;
+  role: CreatableStaffRole;
 }
 
 const emptyForm: NewEmployeeForm = {
@@ -356,14 +359,21 @@ const Staff: React.FC = () => {
                 className="w-full bg-surface-container-low border-none rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/30"
                 dir="ltr"
               />
+              {/*
+                Only creatable roles are offered. system_admin and sycash are
+                StaffRole::isRestricted() — seeded at deployment — and POST
+                /employees 422s with "You are not permitted to assign this role".
+              */}
               <select
                 value={form.role}
-                onChange={(e) => setForm({ ...form, role: e.target.value as StaffRole })}
+                onChange={(e) => setForm({ ...form, role: e.target.value as CreatableStaffRole })}
                 className="w-full bg-surface-container-low border-none rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/30 cursor-pointer"
               >
-                <option value="support_agent">{t('staff.roles.support_agent')}</option>
-                <option value="admin">{t('staff.roles.admin')}</option>
-                <option value="system_admin">{t('staff.roles.system_admin')}</option>
+                {CREATABLE_STAFF_ROLES.map((role) => (
+                  <option key={role} value={role}>
+                    {t(`staff.roles.${role}`)}
+                  </option>
+                ))}
               </select>
               <p className="text-[10px] text-on-surface-variant">{t('staff.form_hint')}</p>
               <button

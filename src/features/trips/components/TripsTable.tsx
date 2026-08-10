@@ -6,7 +6,6 @@ interface TripsTableProps {
   trips: Trip[];
   selectedTripId: string;
   onSelectTrip: (id: string) => void;
-  onViewHistory: (tripId: string, event: React.MouseEvent) => void;
   onViewDetails: (tripId: string, event: React.MouseEvent) => void;
   onCancelTrip: (trip: Trip, event: React.MouseEvent) => void;
   isBusy: (key: string) => boolean;
@@ -16,7 +15,6 @@ export const TripsTable: React.FC<TripsTableProps> = ({
   trips,
   selectedTripId,
   onSelectTrip,
-  onViewHistory,
   onViewDetails,
   onCancelTrip,
   isBusy,
@@ -97,34 +95,27 @@ export const TripsTable: React.FC<TripsTableProps> = ({
                 </td>
                 <td className="py-6 px-4">
                   <div className="flex items-center ltr:justify-end rtl:justify-start gap-2">
-                    {trip.status === 'completed' ? (
+                    {/*
+                      Details is available for every status. Cancellation is not:
+                      POST /staff/trips/{id}/cancel only makes sense while the
+                      ride can still be stopped.
+                    */}
+                    <button
+                      onClick={(e) => onViewDetails(trip.id, e)}
+                      className="p-2 text-on-surface-variant hover:text-primary transition-colors disabled:opacity-40"
+                      title={t('trips.view_details')}
+                    >
+                      <span className="material-symbols-outlined text-lg">visibility</span>
+                    </button>
+                    {trip.status !== 'completed' && (
                       <button
-                        onClick={(e) => onViewHistory(trip.id, e)}
-                        disabled={isBusy(`history-${trip.id}`)}
-                        className="p-2 text-on-surface-variant hover:text-primary transition-colors disabled:opacity-40"
-                        title={t('trips.view_history')}
+                        onClick={(e) => onCancelTrip(trip, e)}
+                        disabled={isBusy(`cancel-${trip.id}`) || trip.status === 'cancelled'}
+                        className="p-2 text-on-surface-variant hover:text-error transition-colors disabled:opacity-40"
+                        title={t('trips.cancel_trip')}
                       >
-                        <span className="material-symbols-outlined text-lg">history</span>
+                        <span className="material-symbols-outlined text-lg">cancel</span>
                       </button>
-                    ) : (
-                      <>
-                        <button
-                          onClick={(e) => onViewDetails(trip.id, e)}
-                          disabled={isBusy(`view-${trip.id}`)}
-                          className="p-2 text-on-surface-variant hover:text-primary transition-colors disabled:opacity-40"
-                          title={t('trips.view_details')}
-                        >
-                          <span className="material-symbols-outlined text-lg">visibility</span>
-                        </button>
-                        <button
-                          onClick={(e) => onCancelTrip(trip, e)}
-                          disabled={isBusy(`cancel-${trip.id}`) || trip.status === 'cancelled'}
-                          className="p-2 text-on-surface-variant hover:text-error transition-colors disabled:opacity-40"
-                          title={t('trips.cancel_trip')}
-                        >
-                          <span className="material-symbols-outlined text-lg">cancel</span>
-                        </button>
-                      </>
                     )}
                   </div>
                 </td>

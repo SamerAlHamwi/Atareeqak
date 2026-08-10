@@ -1,0 +1,1991 @@
+{
+  "generated_by": "php artisan route:list --json  (AUTHORITATIVE - Laravel itself)",
+  "source_repo": "4th_year_projects_refractored",
+  "source_commit": "3eb54ad",
+  "generated_at": "2026-08-10",
+  "notes": [
+    "Only api/* routes are kept; the \"api\" middleware alias is stripped from every entry.",
+    "artisan prints middleware as fully-qualified class names. The \"middleware\" field holds the kernel aliases used in routes/api.php; \"middleware_raw\" keeps what artisan printed.",
+    "GET rows are reported as GET|HEAD because Laravel registers HEAD implicitly.",
+    "api/documentation and api/oauth2-callback come from the l5-swagger package, not routes/api.php."
+  ],
+  "route_count": 145,
+  "routes": [
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/dashboard",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminDashboardController@dashboard",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/dashboard/cities",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminDashboardController@dashboardCities",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/dashboard/growth",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminDashboardController@dashboardGrowth",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/dashboard/recent",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminDashboardController@dashboardRecent",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/dashboard/stats",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminDashboardController@dashboardStats",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/drivers",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminDriverController@index",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/drivers/activity",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminDriverController@activity",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/drivers/dashboard",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminDriverController@dashboard",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/drivers/stats",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminDriverController@stats",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/drivers/top",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminTripController@topDrivers",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/drivers/verification-efficiency",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminDriverController@verificationEfficiency",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/drivers/{driverId}/dashboard",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminDriverController@driverDashboard",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/drivers/{driverId}/profile",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminDriverController@driverProfile",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/export/pdf",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin",
+        "staff:system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin",
+        "App\\Http\\Middleware\\StaffJwtMiddleware:system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminDashboardController@exportPdf",
+      "auth": "staff:admin,system_admin + staff:system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/admin/login",
+      "name": null,
+      "middleware": [],
+      "middleware_raw": [],
+      "action": "App\\Http\\Controllers\\API\\AdminDashboardController@login",
+      "auth": "public",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/admin/logout",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminDashboardController@logout",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/admin/passengers/{userId}/charge-wallet",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\PassengerProfileController@chargeWallet",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/passengers/{userId}/complaints",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\PassengerProfileController@complaints",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/passengers/{userId}/full-profile",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\PassengerProfileController@fullProfile",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/passengers/{userId}/monthly-trips",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\PassengerProfileController@monthlyTrips",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/passengers/{userId}/recent-trips",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\PassengerProfileController@recentTrips",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/passengers/{userId}/stats",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\PassengerProfileController@stats",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/passengers/{userId}/wallet-charges",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\PassengerProfileController@walletCharges",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/admin/photo",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminDashboardController@uploadAdminPhoto",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/admin/refresh",
+      "name": null,
+      "middleware": [],
+      "middleware_raw": [],
+      "action": "App\\Http\\Controllers\\API\\AdminDashboardController@refresh",
+      "auth": "public",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/reports",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin",
+        "staff:system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin",
+        "App\\Http\\Middleware\\StaffJwtMiddleware:system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminDashboardController@showReport",
+      "auth": "staff:admin,system_admin + staff:system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/routes/popular",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminTripController@popularRoutes",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/trips",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminTripController@index",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/trips/live",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminTripController@live",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/users",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminUserController@index",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/admin/users/{userId}/ban",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminBanController@ban",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/users/{userId}/status",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminBanController@userStatus",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/admin/users/{userId}/unban",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminBanController@unban",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/verifications",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin",
+        "staff:system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin",
+        "App\\Http\\Middleware\\StaffJwtMiddleware:system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminDashboardController@pendingVerifications",
+      "auth": "staff:admin,system_admin + staff:system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/admin/verifications/{userId}/approve",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin",
+        "staff:system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin",
+        "App\\Http\\Middleware\\StaffJwtMiddleware:system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminDashboardController@approveVerification",
+      "auth": "staff:admin,system_admin + staff:system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/admin/verifications/{userId}/reject",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin",
+        "staff:system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin",
+        "App\\Http\\Middleware\\StaffJwtMiddleware:system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminDashboardController@rejectVerification",
+      "auth": "staff:admin,system_admin + staff:system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/wallet",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminDashboardController@getAdminWallet",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/admin/wallet/charge",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin",
+        "staff:system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin",
+        "App\\Http\\Middleware\\StaffJwtMiddleware:system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminDashboardController@chargeWallet",
+      "auth": "staff:admin,system_admin + staff:system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/wallet/requests",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminWalletRequestController@index",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/admin/wallet/requests/{id}/approve",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminWalletRequestController@approve",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/admin/wallet/requests/{id}/reject",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminWalletRequestController@reject",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/wallet/{walletId}/transactions",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminDashboardController@showWalletTransactions",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/admin/wallets",
+      "name": null,
+      "middleware": [
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\AdminDashboardController@getAdminWallets",
+      "auth": "staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/auth/login",
+      "name": null,
+      "middleware": [],
+      "middleware_raw": [],
+      "action": "App\\Http\\Controllers\\API\\LoginController",
+      "auth": "public",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/auth/password/forgot",
+      "name": null,
+      "middleware": [],
+      "middleware_raw": [],
+      "action": "App\\Http\\Controllers\\API\\ForgotPasswordController",
+      "auth": "public",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/auth/password/reset",
+      "name": null,
+      "middleware": [],
+      "middleware_raw": [],
+      "action": "App\\Http\\Controllers\\API\\ResetPasswordController",
+      "auth": "public",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/auth/password/verify-otp",
+      "name": null,
+      "middleware": [],
+      "middleware_raw": [],
+      "action": "App\\Http\\Controllers\\API\\VerifyPasswordOtpController",
+      "auth": "public",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/auth/refresh",
+      "name": null,
+      "middleware": [],
+      "middleware_raw": [],
+      "action": "App\\Http\\Controllers\\API\\RefreshTokenController",
+      "auth": "public",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/auth/signup",
+      "name": null,
+      "middleware": [],
+      "middleware_raw": [],
+      "action": "App\\Http\\Controllers\\API\\SignupController@register",
+      "auth": "public",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/autocomplete",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\RideController@autocomplete",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/bookings",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\RideController@getMyBookings",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/bookings/{bookingId}/accept",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\RideController@acceptBooking",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/bookings/{bookingId}/cancel",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\RideController@cancelBooking",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/bookings/{bookingId}/cancel-seats",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\RideController@cancelPartialSeats",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/bookings/{bookingId}/passenger-confirm",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\RideController@passengerConfirmCompletion",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/bookings/{bookingId}/passenger-no-show",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\RideController@reportPassengerNoShow",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/bookings/{bookingId}/reject",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\RideController@rejectBooking",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/chat/conversations",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\ChatController@getConversations",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/chat/conversations",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\ChatController@startConversation",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/chat/conversations/{conversationId}/messages",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\ChatController@getMessages",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/chat/conversations/{conversationId}/messages",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\ChatController@sendMessage",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "DELETE",
+      "uri": "api/chat/messages/{messageId}",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\ChatController@deleteMessage",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/complaints",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\ComplaintController@index",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/complaints",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\ComplaintController@store",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/complaints/{id}",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\ComplaintController@show",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/contact",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\ContactController",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/documentation",
+      "name": "l5-swagger.default.api",
+      "middleware": [
+        "l5-swagger"
+      ],
+      "middleware_raw": [
+        "L5Swagger\\Http\\Middleware\\Config"
+      ],
+      "action": "L5Swagger\\Http\\Controllers\\SwaggerController@api",
+      "auth": "l5-swagger",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/email-verification/resend",
+      "name": null,
+      "middleware": [],
+      "middleware_raw": [],
+      "action": "App\\Http\\Controllers\\API\\EmailVerificationController@resend",
+      "auth": "public",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/email-verification/send",
+      "name": null,
+      "middleware": [],
+      "middleware_raw": [],
+      "action": "App\\Http\\Controllers\\API\\EmailVerificationController@send",
+      "auth": "public",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/email-verification/verify",
+      "name": null,
+      "middleware": [],
+      "middleware_raw": [],
+      "action": "App\\Http\\Controllers\\API\\EmailVerificationController@verify",
+      "auth": "public",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/employees",
+      "name": null,
+      "middleware": [
+        "staff:system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\EmployeeManagementController@index",
+      "auth": "staff:system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/employees",
+      "name": null,
+      "middleware": [
+        "staff:system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\EmployeeManagementController@store",
+      "auth": "staff:system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/employees/{id}",
+      "name": null,
+      "middleware": [
+        "staff:system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\EmployeeManagementController@show",
+      "auth": "staff:system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "PUT",
+      "uri": "api/employees/{id}",
+      "name": null,
+      "middleware": [
+        "staff:system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\EmployeeManagementController@update",
+      "auth": "staff:system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "PATCH",
+      "uri": "api/employees/{id}/reset-password",
+      "name": null,
+      "middleware": [
+        "staff:system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\EmployeeManagementController@resetPassword",
+      "auth": "staff:system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "PATCH",
+      "uri": "api/employees/{id}/toggle-active",
+      "name": null,
+      "middleware": [
+        "staff:system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware:system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\EmployeeManagementController@toggleActive",
+      "auth": "staff:system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/logout",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\LogoutController",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/notifications",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\NotificationController@index",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/notifications/bulk-action",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\NotificationController@bulkAction",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/notifications/categories",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\NotificationController@getCategories",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/notifications/read-all",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\NotificationController@markAllAsRead",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/notifications/unread-count",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\NotificationController@getUnreadCount",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "DELETE",
+      "uri": "api/notifications/{id}",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\NotificationController@destroy",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/notifications/{id}/read",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\NotificationController@markAsRead",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/notifications/{id}/unread",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\NotificationController@markAsUnread",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/oauth2-callback",
+      "name": "l5-swagger.default.oauth2_callback",
+      "middleware": [
+        "l5-swagger"
+      ],
+      "middleware_raw": [
+        "L5Swagger\\Http\\Middleware\\Config"
+      ],
+      "action": "L5Swagger\\Http\\Controllers\\SwaggerController@oauth2Callback",
+      "auth": "l5-swagger",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/otp/send",
+      "name": null,
+      "middleware": [],
+      "middleware_raw": [],
+      "action": "App\\Http\\Controllers\\API\\OtpController@sendOtp",
+      "auth": "public",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/otp/verify",
+      "name": null,
+      "middleware": [],
+      "middleware_raw": [],
+      "action": "App\\Http\\Controllers\\API\\OtpController@verifyOtp",
+      "auth": "public",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/profile",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\ProfileController@update",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/profile/documents",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\DocumentController@store",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/profile/verify/driver",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\VerificationController@verifyDriver",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/profile/verify/passenger",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\VerificationController@verifyPassenger",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/profile/verify/status/{userId}",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\VerificationController@status",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/profile/{userId}",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\ProfileController@show",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/profile/{userId}/comments",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\ProfileController@comment",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/profile/{userId}/rate",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\ProfileController@rateUser",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/rides",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\RideController@getRides",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/rides",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\RideController@createRide",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/rides/create-with-route",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\RideController@createRideWithRoute",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/rides/route-options",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\RideController@getRouteOptions",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/rides/search",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\RideController@searchRides",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/rides/search",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\RideController@searchRides",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/rides/{rideId}",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\RideController@getRideDetails",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/rides/{rideId}/book",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\RideController@bookRide",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "PATCH",
+      "uri": "api/rides/{rideId}/cancel",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\RideController@cancelRide",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/rides/{rideId}/driver-confirm",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\RideController@driverConfirmCompletion",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/rides/{rideId}/driver-no-show",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\RideController@reportDriverNoShow",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/rides/{rideId}/finish",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\RideController@finishRide",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/score",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\ScoreController@show",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/score/history",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\ScoreController@history",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/staff/bookings",
+      "name": "staff.bookings.index",
+      "middleware": [
+        "staff"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\StaffOperationsController@bookings",
+      "auth": "staff",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/staff/bookings/{bookingId}/cancel",
+      "name": "staff.bookings.cancel",
+      "middleware": [
+        "staff"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\StaffOperationsController@cancelBooking",
+      "auth": "staff",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/staff/complaints",
+      "name": "staff.complaints.index",
+      "middleware": [
+        "staff"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\StaffComplaintController@index",
+      "auth": "staff",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/staff/complaints/{id}",
+      "name": "staff.complaints.show",
+      "middleware": [
+        "staff"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\StaffComplaintController@show",
+      "auth": "staff",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "PATCH",
+      "uri": "api/staff/complaints/{id}/escalate",
+      "name": "staff.complaints.escalate",
+      "middleware": [
+        "staff"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\StaffComplaintController@escalate",
+      "auth": "staff",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "PATCH",
+      "uri": "api/staff/complaints/{id}/respond",
+      "name": "staff.complaints.respond",
+      "middleware": [
+        "staff"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\StaffComplaintController@respond",
+      "auth": "staff",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/staff/escalated-complaints",
+      "name": "staff.escalated-complaints.index",
+      "middleware": [
+        "staff",
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware",
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\StaffAdminController@escalatedComplaints",
+      "auth": "staff + staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "PATCH",
+      "uri": "api/staff/escalated-complaints/{id}/resolve",
+      "name": "staff.escalated-complaints.resolve",
+      "middleware": [
+        "staff",
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware",
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\StaffAdminController@resolveEscalated",
+      "auth": "staff + staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/staff/login",
+      "name": "staff.login",
+      "middleware": [],
+      "middleware_raw": [],
+      "action": "App\\Http\\Controllers\\API\\Staff\\StaffAuthController@login",
+      "auth": "public",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/staff/logout",
+      "name": "staff.logout",
+      "middleware": [
+        "staff"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\StaffAuthController@logout",
+      "auth": "staff",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/staff/me",
+      "name": "staff.me",
+      "middleware": [
+        "staff"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\StaffAuthController@me",
+      "auth": "staff",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/staff/refresh",
+      "name": "staff.refresh",
+      "middleware": [],
+      "middleware_raw": [],
+      "action": "App\\Http\\Controllers\\API\\Staff\\StaffAuthController@refresh",
+      "auth": "public",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/staff/reviews",
+      "name": "staff.reviews.index",
+      "middleware": [
+        "staff"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\StaffReviewController@index",
+      "auth": "staff",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "DELETE",
+      "uri": "api/staff/reviews/{commentId}",
+      "name": "staff.reviews.destroy",
+      "middleware": [
+        "staff"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\StaffReviewController@destroy",
+      "auth": "staff",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/staff/trips",
+      "name": "staff.trips.index",
+      "middleware": [
+        "staff"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\StaffOperationsController@trips",
+      "auth": "staff",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/staff/trips/{rideId}/cancel",
+      "name": "staff.trips.cancel",
+      "middleware": [
+        "staff"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\StaffOperationsController@cancelTrip",
+      "auth": "staff",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/staff/users",
+      "name": "staff.users.index",
+      "middleware": [
+        "staff"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\StaffOperationsController@users",
+      "auth": "staff",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/staff/users/{userId}",
+      "name": "staff.users.show",
+      "middleware": [
+        "staff"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\StaffOperationsController@userProfile",
+      "auth": "staff",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/staff/verifications/pending",
+      "name": "staff.verifications.pending",
+      "middleware": [
+        "staff",
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware",
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\StaffAdminController@pendingVerifications",
+      "auth": "staff + staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/staff/verifications/{userId}/approve",
+      "name": "staff.verifications.approve",
+      "middleware": [
+        "staff",
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware",
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\StaffAdminController@approveVerification",
+      "auth": "staff + staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/staff/verifications/{userId}/reject",
+      "name": "staff.verifications.reject",
+      "middleware": [
+        "staff",
+        "staff:admin,system_admin"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\StaffJwtMiddleware",
+        "App\\Http\\Middleware\\StaffJwtMiddleware:admin,system_admin"
+      ],
+      "action": "App\\Http\\Controllers\\API\\Staff\\StaffAdminController@rejectVerification",
+      "auth": "staff + staff:admin,system_admin",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/test",
+      "name": null,
+      "middleware": [],
+      "middleware_raw": [],
+      "action": "Closure",
+      "auth": "public",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/test-db",
+      "name": null,
+      "middleware": [],
+      "middleware_raw": [],
+      "action": "Closure",
+      "auth": "public",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/textme-otp/send",
+      "name": null,
+      "middleware": [],
+      "middleware_raw": [],
+      "action": "App\\Http\\Controllers\\API\\TextMeOtpController@sendOtp",
+      "auth": "public",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "POST",
+      "uri": "api/textme-otp/verify",
+      "name": null,
+      "middleware": [],
+      "middleware_raw": [],
+      "action": "App\\Http\\Controllers\\API\\TextMeOtpController@verifyOtp",
+      "auth": "public",
+      "system_admin_can_call": true
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/user",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "Closure",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/wallet/balance",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\WalletController@getBalance",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/wallet/initiate",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\WalletController@initiateWalletCreation",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/wallet/request-charge",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\WalletRequestController@requestCharge",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/wallet/request-withdraw",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\WalletRequestController@requestWithdraw",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/wallet/requests",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\WalletRequestController@myRequests",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/wallet/requests",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\WalletRequestController@store",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "DELETE",
+      "uri": "api/wallet/requests/{id}",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\WalletRequestController@destroy",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "GET|HEAD",
+      "uri": "api/wallet/requests/{id}",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\WalletRequestController@show",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    },
+    {
+      "method": "POST",
+      "uri": "api/wallet/verify-and-create",
+      "name": null,
+      "middleware": [
+        "jwt"
+      ],
+      "middleware_raw": [
+        "App\\Http\\Middleware\\JwtAuthMiddleware"
+      ],
+      "action": "App\\Http\\Controllers\\API\\WalletController@verifyAndCreateWallet",
+      "auth": "jwt",
+      "system_admin_can_call": false
+    }
+  ]
+}

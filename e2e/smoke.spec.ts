@@ -22,6 +22,9 @@ const ROUTES_BY_ROLE: Record<Role, string[]> = {
     '/settings',
   ],
   admin: ['/dashboard', '/trips', '/drivers', '/passengers', '/verifications', '/reviews', '/support', '/settings'],
+  // sycash passes the bare `staff` middleware but not `staff:admin,system_admin`,
+  // so it sees the same sections as a support agent (docs/api/decisions.md Q8).
+  sycash: ['/reviews', '/support'],
   support_agent: ['/reviews', '/support'],
 };
 
@@ -75,7 +78,8 @@ test('login form signs in and lands on the dashboard', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('i18nextLng', 'en'));
 
   await page.goto('/login');
-  await page.getByRole('button', { name: 'Use demo credentials' }).click();
+  await page.getByPlaceholder('example@atareeqak.com').fill('smoke');
+  await page.getByPlaceholder('••••••••').fill('secret');
   await page.getByRole('button', { name: 'Login', exact: true }).click();
 
   await expect(page).toHaveURL(/\/dashboard$/);

@@ -42,12 +42,21 @@
     "secure_connection": "Secure and encrypted 256-bit connection",
     "no_account": "Don't have an admin account?",
     "contact_support": "Contact Technical Support",
-    "invalid_credentials": "Invalid credentials. Use admin@atareeqak.com / admin",
+    "invalid_credentials": "Invalid credentials.",
     "privacy_policy": "Privacy Policy",
     "terms_of_use": "Terms of Use",
     "help_center": "Help Center",
     "copyright": "© 2024 All rights reserved",
-    "brand_name": "Atareeqak"
+    "brand_name": "Atareeqak",
+    "login_failed": "Login failed. Check your username and password.",
+    "password_help": "Employee passwords are reset by your system administrator from the Staff page.",
+    "support_help": "Employee accounts are created by your system administrator. Contact them to request access.",
+    "session_ended": {
+      "ACCOUNT_INACTIVE": "This account has been deactivated. Contact your system administrator.",
+      "TOKEN_INVALIDATED": "Your session was ended on the server. Please log in again.",
+      "EMPLOYEE_NOT_FOUND": "This account no longer exists.",
+      "default": "Your session has ended. Please log in again."
+    }
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -316,7 +325,8 @@
     "map_destination": "Destination",
     "cancel_modal_title": "Cancel trip {{id}}?",
     "cancel_modal_description": "The driver and passengers will be notified with the reason provided.",
-    "cancel_confirm": "Confirm cancellation"
+    "cancel_confirm": "Confirm cancellation",
+    "no_driver_phone": "No contact number available for this driver"
   },
   "reports": {
     "title": "Financial Management",
@@ -580,7 +590,8 @@
       "support": "Technical Support",
       "system_admin": "System Admin",
       "admin": "Admin",
-      "support_agent": "Support Agent"
+      "support_agent": "Support Agent",
+      "sycash": "Financial Admin (SyCash)"
     },
     "status": {
       "active": "Active",
@@ -637,7 +648,8 @@
   "roles": {
     "system_admin": "System Admin",
     "admin": "Admin",
-    "support_agent": "Support Agent"
+    "support_agent": "Support Agent",
+    "sycash": "Financial Admin"
   },
   "modal": {
     "reason_label": "Reason",

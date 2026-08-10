@@ -72,6 +72,84 @@ describe('api service (axios interceptors)', () => {
     expect(localStorage.getItem('auth_kind')).toBeNull();
   });
 
+  it('does not refresh a 401 whose code a refresh cannot fix', async () => {
+    // StaffJwtMiddleware returns ACCOUNT_INACTIVE / TOKEN_INVALIDATED /
+    // EMPLOYEE_NOT_FOUND for sessions that are dead server-side. Retrying just
+    // burns a round-trip before the same 401 comes back.
+    localStorage.setItem('access_token', 'valid-but-deactivated');
+    localStorage.setItem('refresh_token', 'refresh-token');
+    localStorage.setItem('user', '{"name":"Samer"}');
+    localStorage.setItem('auth_kind', 'staff');
+
+    let refreshCalled = false;
+    server.use(
+      http.get(`${API_BASE}/admin/dashboard`, () =>
+        HttpResponse.json(
+          { status: 'error', code: 'ACCOUNT_INACTIVE', message: 'This employee account has been deactivated.' },
+          { status: 401 }
+        )
+      ),
+      http.post(`${API_BASE}/staff/refresh`, () => {
+        refreshCalled = true;
+        return HttpResponse.json({});
+      })
+    );
+
+    await expect(api.get('/admin/dashboard')).rejects.toBeDefined();
+
+    expect(refreshCalled).toBe(false);
+    expect(localStorage.getItem('access_token')).toBeNull();
+    expect(localStorage.getItem('user')).toBeNull();
+  });
+
+  it('propagates a 403 without refreshing or clearing the session', async () => {
+    // 403 is a role-gate rejection (e.g. a support agent opening /admin/reports),
+    // not a session problem — the page shows it inline instead of logging out.
+    localStorage.setItem('access_token', 'valid-token');
+    localStorage.setItem('refresh_token', 'refresh-token');
+    localStorage.setItem('user', '{"name":"Samer"}');
+    localStorage.setItem('auth_kind', 'staff');
+
+    let refreshCalled = false;
+    server.use(
+      http.get(`${API_BASE}/admin/reports`, () =>
+        HttpResponse.json(
+          { status: 'error', code: 'FORBIDDEN', message: 'This action requires one of: system_admin' },
+          { status: 403 }
+        )
+      ),
+      http.post(`${API_BASE}/staff/refresh`, () => {
+        refreshCalled = true;
+        return HttpResponse.json({});
+      })
+    );
+
+    await expect(api.get('/admin/reports')).rejects.toMatchObject({
+      response: { status: 403 },
+    });
+
+    expect(refreshCalled).toBe(false);
+    expect(localStorage.getItem('access_token')).toBe('valid-token');
+    expect(localStorage.getItem('user')).toBe('{"name":"Samer"}');
+  });
+
+  it('lets an explicit Authorization header win over the stored token', async () => {
+    // Needed during login: /staff/me is called with the freshly issued token
+    // before AuthContext has committed it to localStorage.
+    localStorage.setItem('access_token', 'stale-token');
+    server.use(
+      http.get(`${API_BASE}/staff/me`, ({ request }) =>
+        HttpResponse.json({ auth: request.headers.get('Authorization') })
+      )
+    );
+
+    const response = await api.get('/staff/me', {
+      headers: { Authorization: 'Bearer brand-new-token' },
+    });
+
+    expect(response.data.auth).toBe('Bearer brand-new-token');
+  });
+
   it('does not attempt a refresh for failed login requests', async () => {
     let refreshCalled = false;
     server.use(

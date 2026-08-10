@@ -30,16 +30,34 @@ const mapEmployeeToUser = (employee: StaffEmployee): User => ({
 export const authApi = {
   /**
    * Unified login: tries /staff/login first (works for every employee role),
-   * then falls back to the legacy config-admin /admin/login. The middleware
-   * treats legacy admin tokens as system_admin, so that role is assigned here.
+   * then falls back to /admin/login (system_admin and sycash only).
+   *
+   * Both endpoints issue StaffJwtService tokens, so the resulting session is
+   * identical either way. The role is NOT taken from the login response —
+   * /admin/login returns an `admin` object with no role field, and assuming a
+   * role there mislabels sycash accounts as system_admin. It comes from
+   * /staff/me instead, which is the only authoritative source.
    */
   login: async (credentials: LoginCredentials): Promise<UnifiedLoginResult> => {
+    const resolveRole = async (fallbackUser: User, tokens: TokenPair): Promise<User> => {
+      try {
+        // The token is not in localStorage yet (AuthContext.login stores it
+        // after this resolves), so pass it explicitly.
+        return mapEmployeeToUser(await authApi.me(tokens.access_token));
+      } catch {
+        // Never block a valid login on this: fall back to whatever the login
+        // response gave us. AuthContext re-resolves the role on next mount.
+        return fallbackUser;
+      }
+    };
+
     try {
       const response = await api.post<StaffAuthResponse>(ENDPOINTS.STAFF.LOGIN, {
         identifier: credentials.email,
         password: credentials.password,
       });
       return {
+        // /staff/login already returns the employee (role included) — no extra call.
         user: mapEmployeeToUser(response.data.employee),
         tokens: response.data.tokens,
         kind: 'staff',
@@ -62,16 +80,26 @@ export const authApi = {
         throw staffError;
       }
       return {
-        user: { ...response.data.admin, role: 'system_admin' },
+        user: await resolveRole(response.data.admin, response.data.tokens),
         tokens: response.data.tokens,
         kind: 'admin',
       };
     }
   },
 
-  /** Current staff session profile (role included). Staff sessions only. */
-  me: async (): Promise<StaffEmployee> => {
-    const response = await api.get<{ status: string; employee: StaffEmployee }>(ENDPOINTS.STAFF.ME);
+  /**
+   * Current session profile — the authoritative source of the employee's role.
+   * Works for both login kinds: /admin/login and /staff/login both issue
+   * StaffJwtService tokens, which `staff` middleware accepts.
+   *
+   * @param token Use this bearer token instead of the stored one. Needed during
+   *              login, before the new token has been committed to localStorage.
+   */
+  me: async (token?: string): Promise<StaffEmployee> => {
+    const response = await api.get<{ status: string; employee: StaffEmployee }>(
+      ENDPOINTS.STAFF.ME,
+      token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+    );
     return response.data.employee;
   },
 

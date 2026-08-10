@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 
-export type Role = 'system_admin' | 'admin' | 'support_agent';
+export type Role = 'system_admin' | 'sycash' | 'admin' | 'support_agent';
 
 export const employeeFixture = (role: Role) => ({
   id: 1,

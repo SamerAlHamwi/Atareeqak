@@ -1,29 +1,19 @@
 import { useCallback, useMemo, useState } from 'react';
-import axios from 'axios';
-import type { MockFeedback } from './useMockAction';
+import { extractApiError } from '../../services/apiError';
+
+export type FeedbackTone = 'success' | 'error' | 'info';
+
+/** Banner payload rendered by ActionBanner. */
+export interface ActionFeedback {
+  tone: FeedbackTone;
+  message: string;
+}
 
 /**
- * Extracts a human-readable message from an axios/Laravel error response.
- * Laravel errors arrive as { status: 'error', message } or { errors: { field: [msg] } }.
+ * @deprecated Use `extractApiError` from services/apiError directly.
+ * Kept as a thin alias so existing call sites keep compiling.
  */
-export const getApiErrorMessage = (error: unknown, fallback: string): string => {
-  if (axios.isAxiosError(error)) {
-    const data = error.response?.data as
-      | { message?: string; errors?: Record<string, string[]> }
-      | undefined;
-    if (data?.message) {
-      return data.message;
-    }
-    const firstError = data?.errors ? Object.values(data.errors)[0] : undefined;
-    if (firstError && firstError.length > 0) {
-      return firstError[0];
-    }
-  }
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-  return fallback;
-};
+export const getApiErrorMessage = extractApiError;
 
 interface RunApiActionInput<T> {
   key: string;
@@ -35,19 +25,19 @@ interface RunApiActionInput<T> {
 
 interface UseApiActionResult {
   busyKey: string | null;
-  feedback: MockFeedback | null;
+  feedback: ActionFeedback | null;
   isBusy: (key: string) => boolean;
   clearFeedback: () => void;
   runAction: <T>(input: RunApiActionInput<T>) => Promise<void>;
 }
 
 /**
- * Real-API counterpart of useMockAction: same feedback/isBusy interface
- * (so ActionBanner keeps working) but executes an actual async call.
+ * Runs an async API call while exposing per-key busy state and a feedback
+ * banner payload, so pages get consistent pending/success/error handling.
  */
 export const useApiAction = (): UseApiActionResult => {
   const [busyKey, setBusyKey] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<MockFeedback | null>(null);
+  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
 
   const clearFeedback = useCallback(() => {
     setFeedback(null);
@@ -67,7 +57,7 @@ export const useApiAction = (): UseApiActionResult => {
             typeof successMessage === 'function' ? successMessage(result) : successMessage,
         });
       } catch (error) {
-        setFeedback({ tone: 'error', message: getApiErrorMessage(error, errorMessage) });
+        setFeedback({ tone: 'error', message: extractApiError(error, errorMessage) });
       } finally {
         setBusyKey(null);
       }

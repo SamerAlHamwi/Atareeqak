@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { isTerminalAuthError } from './apiError';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost/4th_year_project/public/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -13,8 +14,12 @@ const AUTH_URLS = ['/admin/login', '/staff/login', '/admin/refresh', '/staff/ref
 
 const isAuthUrl = (url?: string): boolean => !!url && AUTH_URLS.some((path) => url.includes(path));
 
-// The refresh endpoint must match the login flow that issued the tokens:
-// staff tokens are rejected by /admin/refresh and vice versa.
+/**
+ * Both login flows issue tokens from the backend's StaffJwtService, so the two
+ * refresh endpoints are interchangeable today. The split is kept because the
+ * routes remain distinct (`AdminDashboardController::refresh` vs
+ * `StaffAuthController::refresh`) and could diverge again.
+ */
 const refreshEndpoint = (): string =>
   localStorage.getItem('auth_kind') === 'staff' ? '/staff/refresh' : '/admin/refresh';
 
@@ -25,9 +30,25 @@ const clearSession = (): void => {
   localStorage.removeItem('auth_kind');
 };
 
+/**
+ * Ends the session and sends the user back to the login screen.
+ * `reason` surfaces as `?reason=` so Login can explain why (e.g. a deactivated
+ * account) instead of looking like a random logout.
+ */
+const endSession = (reason?: string): void => {
+  clearSession();
+  const query = reason ? `?reason=${encodeURIComponent(reason)}` : '';
+  window.location.href = `/login${query}`;
+};
+
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
+    // An Authorization header set by the caller wins — that is how a freshly
+    // issued token can be used before it has been committed to localStorage.
+    if (config.headers?.Authorization) {
+      return config;
+    }
     const token = localStorage.getItem('access_token');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -45,12 +66,26 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // 403 is a role-gate rejection, not a session problem. Let the page render
+    // it inline — redirecting would throw the user out for visiting one page
+    // their role cannot see.
+    if (error.response?.status === 403) {
+      return Promise.reject(error);
+    }
+
     if (
       error.response &&
       error.response.status === 401 &&
       !originalRequest._retry &&
       !isAuthUrl(originalRequest.url)
     ) {
+      // A refresh cannot fix a deleted/deactivated employee or a revoked token
+      // family — go straight to logout instead of spending a round-trip.
+      if (isTerminalAuthError(error)) {
+        endSession(error.response.data?.code);
+        return Promise.reject(error);
+      }
+
       originalRequest._retry = true;
 
       try {
@@ -71,11 +106,9 @@ api.interceptors.response.use(
           }
         }
 
-        clearSession();
-        window.location.href = '/login';
+        endSession();
       } catch (refreshError) {
-        clearSession();
-        window.location.href = '/login';
+        endSession();
         return Promise.reject(refreshError);
       }
     }

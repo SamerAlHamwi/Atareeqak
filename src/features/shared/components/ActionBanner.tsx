@@ -1,9 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { MockFeedback } from '../useMockAction';
+import type { ActionFeedback } from '../useApiAction';
 
 interface ActionBannerProps {
-  feedback: MockFeedback | null;
+  feedback: ActionFeedback | null;
   onDismiss?: () => void;
   dismissLabel?: string;
   className?: string;
@@ -11,13 +11,13 @@ interface ActionBannerProps {
   showDismiss?: boolean;
 }
 
-const defaultToneClasses: Record<MockFeedback['tone'], string> = {
+const defaultToneClasses: Record<ActionFeedback['tone'], string> = {
   success: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   error: 'bg-red-50 text-red-700 border-red-200',
   info: 'bg-indigo-50 text-indigo-700 border-indigo-200',
 };
 
-const compactToneClasses: Record<MockFeedback['tone'], string> = {
+const compactToneClasses: Record<ActionFeedback['tone'], string> = {
   success: 'bg-secondary-container/20 text-secondary',
   error: 'bg-error-container text-error',
   info: 'bg-surface-container-high text-on-surface',

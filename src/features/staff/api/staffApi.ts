@@ -1,7 +1,21 @@
 import api from '../../../services/api';
 import { ENDPOINTS } from '../../../services/endpoints';
 
-export type StaffRole = 'system_admin' | 'admin' | 'support_agent';
+import type { StaffRole } from '../../../types/index';
+
+export type { StaffRole };
+
+/**
+ * Roles a system_admin may assign via POST /employees.
+ *
+ * The backend derives its `role|in:` rule from StaffRole::creatableRoles():
+ * system_admin can create admin + support_agent, admin can create
+ * support_agent, and `system_admin`/`sycash` are `isRestricted()` — seeded at
+ * deployment and never creatable through the API.
+ */
+export type CreatableStaffRole = 'admin' | 'support_agent';
+
+export const CREATABLE_STAFF_ROLES: CreatableStaffRole[] = ['admin', 'support_agent'];
 
 export interface EmployeeResponse {
   id: number;
@@ -23,7 +37,8 @@ export interface CreateEmployeeRequest {
   password: string;
   first_name: string;
   last_name: string;
-  role: StaffRole;
+  /** Restricted to creatable roles — the API 422s on system_admin / sycash. */
+  role: CreatableStaffRole;
   email?: string;
 }
 

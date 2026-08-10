@@ -1,4 +1,9 @@
-export type StaffRole = 'system_admin' | 'admin' | 'support_agent';
+/**
+ * Mirrors App\Enums\StaffRole on the backend. Ordered by privilege level.
+ * `system_admin` and `sycash` are "restricted": seeded at deployment, and the
+ * employee-management API refuses to create or delete them.
+ */
+export type StaffRole = 'system_admin' | 'sycash' | 'admin' | 'support_agent';
 
 export type User = {
   id?: string | number;

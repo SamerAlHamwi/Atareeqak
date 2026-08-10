@@ -1,16 +1,31 @@
 import React, { useState } from 'react';
-import { isAxiosError } from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../app/context/useAuth';
 import { useTranslation } from 'react-i18next';
-import { useMockAction } from '../../shared/useMockAction';
+import i18next from 'i18next';
 import ActionBanner from '../../shared/components/ActionBanner';
+import type { ActionFeedback } from '../../shared/useApiAction';
+import { extractApiError } from '../../../services/apiError';
 import { authApi } from '../api/authApi';
 import { defaultRouteForRole } from '../../../app/roles';
 
+/** Auth failure codes the axios interceptor forwards as ?reason= on logout. */
+const SESSION_END_REASONS = ['ACCOUNT_INACTIVE', 'TOKEN_INVALIDATED', 'EMPLOYEE_NOT_FOUND'];
+
 const Login: React.FC = () => {
   const { t } = useTranslation();
-  const { runAction, isBusy, feedback, clearFeedback } = useMockAction();
+  // The interceptor ends the session with ?reason=<code> for failures a token
+  // refresh cannot fix. Read it once at mount — Login is reached by a full page
+  // navigation, so the initializer sees the final URL — and let it be dismissed
+  // like any other banner.
+  const [feedback, setFeedback] = useState<ActionFeedback | null>(() => {
+    const reason = new URLSearchParams(window.location.search).get('reason');
+    if (!reason) {
+      return null;
+    }
+    const key = SESSION_END_REASONS.includes(reason) ? reason : 'default';
+    return { tone: 'info', message: i18next.t(`auth.session_ended.${key}`) };
+  });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -35,9 +50,7 @@ const Login: React.FC = () => {
       const target = from !== '/' ? from : defaultRouteForRole(user.role);
       navigate(target, { replace: true });
     } catch (err) {
-      const apiMessage = isAxiosError(err) ? err.response?.data?.message : undefined;
-      const errorMessage = apiMessage || (err instanceof Error ? err.message : 'Login failed');
-      setError(errorMessage);
+      setError(extractApiError(err, t('auth.login_failed')));
     } finally {
       setIsLoading(false);
     }
@@ -57,20 +70,9 @@ const Login: React.FC = () => {
 
       <div className="w-full bg-white rounded-[32px] shadow-ambient p-12">
         <form className="space-y-8" onSubmit={handleSubmit}>
-          <ActionBanner feedback={feedback} onDismiss={clearFeedback} variant="compact" />
+          <ActionBanner feedback={feedback} onDismiss={() => setFeedback(null)} variant="compact" />
 
           {error && <div className="text-error text-sm bg-error-container p-4 rounded-xl text-center font-medium">{error}</div>}
-
-          <button
-            type="button"
-            onClick={() => {
-              setEmail('primary@admin.com');
-              setPassword('admin_password');
-            }}
-            className="text-xs font-semibold text-primary underline underline-offset-4"
-          >
-            Use demo credentials
-          </button>
 
           <div>
             <label className="text-sm font-medium text-on-surface-variant mb-3 block">
@@ -93,17 +95,16 @@ const Login: React.FC = () => {
 
           <div>
             <div className="flex justify-between mb-3">
+              {/*
+                There is no self-service password reset for employees. The only
+                reset paths are the system admin using PATCH /employees/{id}/reset-password
+                or the `admin:rotate-password` artisan command, so this explains
+                the real process instead of pretending to send an email.
+              */}
               <button
                 type="button"
-                onClick={async () => {
-                  await runAction({
-                    key: 'forgot-password',
-                    successMessage: email ? `Password reset link sent to ${email}.` : 'Enter email first to request a reset link.',
-                    errorMessage: 'Could not send reset link.',
-                  });
-                }}
-                disabled={isBusy('forgot-password')}
-                className="text-sm font-bold text-secondary hover:underline transition-all disabled:opacity-50"
+                onClick={() => setFeedback({ tone: 'info', message: t('auth.password_help') })}
+                className="text-sm font-bold text-secondary hover:underline transition-all"
               >
                 {t('auth.forgot_password')}
               </button>
@@ -165,12 +166,11 @@ const Login: React.FC = () => {
 
       <p className="mt-10 text-on-surface-variant">
         {t('auth.no_account')}{' '}
+        {/* Employee accounts are created only by a system admin (POST /employees). */}
         <button
-          onClick={async () => {
-            await runAction({ key: 'contact-support', successMessage: 'Support request submitted.', errorMessage: 'Could not contact support.' });
-          }}
-          disabled={isBusy('contact-support')}
-          className="text-secondary font-bold hover:underline disabled:opacity-50"
+          type="button"
+          onClick={() => setFeedback({ tone: 'info', message: t('auth.support_help') })}
+          className="text-secondary font-bold hover:underline"
         >
           {t('auth.contact_support')}
         </button>
