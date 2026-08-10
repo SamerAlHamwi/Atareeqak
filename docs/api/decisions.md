@@ -27,16 +27,17 @@ Phases 7, 10 and 11 now have a confirmed fact base; what they still need is a ye
 | Q1 | Is `GET/POST /admin/settings` planned? | **RESOLVED (absent)** · intent pending | backend dev | — | Phase 11 option (b): delete the Settings page, keep only the client-side language toggle |
 | Q2 | Is `POST /admin/broadcast-alert` planned? | **RESOLVED (absent)** · intent pending | backend dev | — | Hide the broadcast button behind a feature flag (Phase 10) |
 | Q3 | Can `GET /staff/complaints/metrics` be added? **Must be registered before `GET /staff/complaints/{id}`** or Laravel will route `"metrics"` into `{id}` | **RESOLVED (absent)** · intent pending | backend dev | — | Phase 7 option (b): derive what's derivable from `counts`, delete the avg-response-time card |
-| Q4 | Is employee deletion intentionally absent — is `toggle-active` the final answer? | **RESOLVED (absent)** · intent pending | backend dev | — | Confirmed: `/employees` exposes exactly `index, store, show, update, toggle-active, reset-password`. Replace Delete with Deactivate |
+| Q4 | Is employee deletion intentionally absent — is `toggle-active` the final answer? | **RESOLVED (route absent)** · intent pending — **new evidence** | backend dev | — | `EmployeeManagementService::delete()` **exists and is fully implemented** (line 275); only the route is missing, so this looks forgotten rather than deliberate ([BUG-4](./backend-issues.md)). Until confirmed, replace Delete with Deactivate |
 | Q5 | Do `/staff/complaints/{id}/open`, `/resolve`, `/close`, `/notes` exist? | **RESOLVED — they do not** | — | — | Use `PATCH /respond` with `status: in_review\|resolved\|closed`, which already covers open/resolve/close. The Postman collection is ahead of the code |
 | Q6 | `GET /admin/users` reads `$request->user()?->id` for `admin_photo`, which is `null` under `StaffJwtMiddleware` (the employee is on `$request->attributes`). Bug or intentional? | **PENDING** | backend dev | — | Render the initials-avatar fallback; do not work around it client-side |
 | Q7 | Does verification approve require `national_id` now that the column exists? Postman sends it; the route list doesn't say | **PENDING** | backend dev | — | Send it when the UI has it, omit otherwise; handle 422 |
 | Q8 | Should `sycash` reach dashboard/trips/drivers? `isAdminRole()` is true for it, but those groups are `staff:admin,system_admin`, which excludes it | **PENDING** | backend dev | — | Treat `sycash` as finance-only; grant it no sections beyond what the middleware allows |
 | Q9 | Will `http://localhost:5173` be added to `config/cors.php`? | **PENDING** | backend dev | — | Keep using the Vite proxy — no CORS needed |
-| Q10 | `vite.config.ts`/`vercel.json` target `https://api.onwayride.me/api`, which is **not the Laravel app** (see probe-results §1). Where should the dashboard point? | **BLOCKED** | backend dev | — | Point at local Docker `http://localhost:8080/api` for development |
+| Q10 | `vite.config.ts`/`vercel.json` target `https://api.onwayride.me/api`, which is **not the Laravel app** (see probe-results §1). Where should the dashboard point? | **RESOLVED** | user | — | Confirmed by the user: no live server exists and that host serves a different backend. Local dev now runs at **`http://127.0.0.1:8000/api`** ([`local-backend.md`](./local-backend.md)). `vercel.json` still needs a production answer |
+| Q11 | Six `/employees` endpoints, two migrations, and `admin_photo` are broken server-side ([`backend-issues.md`](./backend-issues.md)) | **OPEN — new** | backend dev | — | Phase 10 (Staff page) cannot be verified until BUG-1 is fixed; the frontend work can still be written |
 
-> **Q10 is the one that blocks everything.** Until there is a reachable backend, no phase can be
-> verified end-to-end — only written.
+> **Q10 is answered — a backend now runs locally**, so phases can be verified end-to-end.
+> **Q11 is the new blocker**, but only for Phase 10.
 
 ---
 
@@ -104,3 +105,4 @@ reference only.
 |---|---|
 | 2026-08-10 | Register created. Section B resolved from source. Section A raised. Q10 added after the live probe found `api.onwayride.me` is not the Laravel app. |
 | 2026-08-10 | PHP 8.2 + Composer installed locally and `php artisan route:list --json` run against the checkout. `route-list.json` replaced with Laravel's own route table (145 `api/*` routes). **Q1–Q5 resolved on fact: none of the disputed endpoints exist.** Sections C and D upgraded from inference to confirmation. |
+| 2026-08-10 | **Backend now runs locally** (MySQL 8 portable + `artisan serve` on `:8000`), seeded with `system_admin` and `sycash`. Q10 resolved. `verify-auth.sh` run against it: **20/21 pass**. Section B confirmed live — including B1 (tokens interchangeable) and Q8 (sycash really is 403'd by `/admin/*`). Five backend defects found and filed as [`backend-issues.md`](./backend-issues.md); Q11 raised. |
