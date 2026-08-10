@@ -33,13 +33,19 @@ export const authApi = {
    * then falls back to /admin/login (system_admin and sycash only).
    *
    * Both endpoints issue StaffJwtService tokens, so the resulting session is
-   * identical either way. The role is NOT taken from the login response —
-   * /admin/login returns an `admin` object with no role field, and assuming a
-   * role there mislabels sycash accounts as system_admin. It comes from
-   * /staff/me instead, which is the only authoritative source.
+   * identical either way.
+   *
+   * The role always comes from the server, never from a constant. /admin/login
+   * does return `admin.role` (verified against the running backend), so that is
+   * used directly; /staff/me is only consulted if it is somehow absent. The old
+   * code hardcoded `role: 'system_admin'` here, which overrode the real value
+   * and mislabelled sycash accounts.
    */
   login: async (credentials: LoginCredentials): Promise<UnifiedLoginResult> => {
-    const resolveRole = async (fallbackUser: User, tokens: TokenPair): Promise<User> => {
+    const resolveRole = async (admin: User, tokens: TokenPair): Promise<User> => {
+      if (admin.role) {
+        return admin;
+      }
       try {
         // The token is not in localStorage yet (AuthContext.login stores it
         // after this resolves), so pass it explicitly.
@@ -47,7 +53,7 @@ export const authApi = {
       } catch {
         // Never block a valid login on this: fall back to whatever the login
         // response gave us. AuthContext re-resolves the role on next mount.
-        return fallbackUser;
+        return admin;
       }
     };
 

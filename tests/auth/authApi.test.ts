@@ -48,10 +48,43 @@ describe('authApi.login', () => {
     expect(meCalls).toBe(0);
   });
 
-  it('resolves the role from /staff/me on the /admin/login path', async () => {
-    // Regression: the old code hardcoded role: 'system_admin' here, which
-    // mislabelled sycash accounts. /admin/login admits system_admin AND sycash,
-    // and its `admin` payload carries no role field at all.
+  it('uses the real role from the /admin/login payload, not a hardcoded one', async () => {
+    // Regression: the old code did `{ ...admin, role: 'system_admin' }`, which
+    // overrode the server's value and mislabelled sycash accounts. The live
+    // backend does return admin.role, so no extra round-trip is needed.
+    let meCalls = 0;
+    server.use(
+      staffLoginRejects(),
+      http.post(`${API_BASE}/admin/login`, () =>
+        HttpResponse.json({
+          status: 'success',
+          message: 'Login successful',
+          admin: {
+            id: 7,
+            username: 'sycash',
+            email: 'sycash@admin.com',
+            first_name: 'SyCash',
+            last_name: 'Admin',
+            role: 'sycash',
+            role_label: 'Financial Administrator (SyCash)',
+          },
+          tokens: TOKENS,
+        })
+      ),
+      http.get(`${API_BASE}/staff/me`, () => {
+        meCalls += 1;
+        return HttpResponse.json({ status: 'success', employee: employee('sycash', 'x') });
+      })
+    );
+
+    const result = await authApi.login({ email: 'sycash', password: 'secret' });
+
+    expect(result.kind).toBe('admin');
+    expect(result.user.role).toBe('sycash');
+    expect(meCalls).toBe(0);
+  });
+
+  it('falls back to /staff/me when the admin payload carries no role', async () => {
     server.use(
       staffLoginRejects(),
       http.post(`${API_BASE}/admin/login`, () =>
@@ -74,7 +107,6 @@ describe('authApi.login', () => {
 
     const result = await authApi.login({ email: 'samer', password: 'secret' });
 
-    expect(result.kind).toBe('admin');
     expect(result.user.role).toBe('sycash');
     expect(result.user.roleLabel).toBe('Financial Administrator (SyCash)');
   });

@@ -33,6 +33,21 @@ either the username or the email.
 Matches production: nginx load-balancing three Octane/RoadRunner nodes, plus MySQL, Redis, a queue
 worker, and phpMyAdmin.
 
+> ⚠️ **Docker Desktop is not installed yet — it needs one elevated command.** The unattended install
+> was attempted and stopped at a UAC prompt:
+> `[ProcessEnvironmentDetector][I] Not run as admin, relaunching with UAC prompt`
+> (`%LOCALAPPDATA%\Docker\install-log.txt`). The 596 MB installer is already downloaded and
+> extracted to `C:\Program Files\Docker\Docker.staging`.
+>
+> **In an Administrator PowerShell:**
+> ```powershell
+> winget install --id Docker.DockerDesktop --accept-package-agreements --accept-source-agreements
+> ```
+> It targets the **WSL2 backend**, and WSL currently has **no distro installed**, so you may also need
+> `wsl --install` and a reboot. Virtualization is enabled in firmware, so the hardware side is fine.
+>
+> Until then, use **Option C**, which needs no admin rights.
+
 ```console
 cd ../4th_year_projects_refractored
 
@@ -82,6 +97,41 @@ DB_HOST=127.0.0.1 DB_PASSWORD=secret CACHE_DRIVER=file \
 ```
 
 `artisan serve` puts routes under `http://localhost:8080/api/...`, same as nginx does.
+
+## Option C — portable MySQL + `artisan serve` (no admin rights needed)
+
+What is running today. MySQL 8 from the ZIP archive needs no installer and no elevation, and
+`artisan serve` needs no web server.
+
+> **SQLite is not an option.** `2025_05_19_135630_create_rides_table` declares a **spatial index**,
+> and Laravel's SQLite grammar throws `The database driver in use does not support spatial indexes.`
+> MySQL (or MariaDB ≥ 10.2.2) is genuinely required.
+
+```console
+# one-time: unpack + initialise a data directory
+#   MYSQL_HOME = wherever mysql-8.0.40-winx64 was extracted
+"$MYSQL_HOME/bin/mysqld" --initialize-insecure --basedir="$MYSQL_HOME" --datadir="$MYSQL_HOME/data"
+
+# start the server (leave it running)
+"$MYSQL_HOME/bin/mysqld" --console --basedir="$MYSQL_HOME" --datadir="$MYSQL_HOME/data" --port=3306
+
+# create the schema
+"$MYSQL_HOME/bin/mysql" -u root --skip-password -e "CREATE DATABASE IF NOT EXISTS 4th_year_project_db"
+```
+
+Then, from the backend checkout — the env vars override `.env`, which points at the Docker
+service names (`DB_HOST=mysql`, `REDIS_HOST=redis`):
+
+```console
+export DB_HOST=127.0.0.1 DB_USERNAME=root DB_PASSWORD= CACHE_DRIVER=file
+
+php artisan migrate --force
+php artisan db:seed --class=SpecialAccountSeeder --force
+php artisan serve --port=8080
+```
+
+`CACHE_DRIVER=file` matters: `.env` sets `redis`, and without a Redis server every cached
+dashboard endpoint would fail.
 
 ---
 

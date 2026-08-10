@@ -51,9 +51,11 @@ AL=$(post /admin/login '{"email":"primary@admin.com","password":"admin"}')
 ATOKEN=$(jget "$AL" "d['tokens']['access_token']")
 AROLE=$(jget "$AL" "d.get('admin',{}).get('role','<absent>')")
 [ -n "$ATOKEN" ] && ok "access_token issued" || bad "no access_token"
-[ "$AROLE" = "<absent>" ] \
-  && ok "admin payload carries NO role — confirms Phase 1.3: role must come from /staff/me" \
-  || bad "admin payload has role='$AROLE' (unexpected; revisit authApi)"
+# authApi reads this directly; /staff/me is only a fallback. What must never
+# happen is the client substituting a constant, as the pre-Phase-1 code did.
+[ "$AROLE" = "system_admin" ] \
+  && ok "admin payload carries the real role ($AROLE) — authApi uses it, no extra round-trip" \
+  || bad "admin payload role = '$AROLE' (expected system_admin)"
 
 section "3. the /admin/login token is accepted by /staff/me (tokens are interchangeable)"
 [ "$(getc /staff/me "$ATOKEN")" = "200" ] \
@@ -96,13 +98,25 @@ case "$CODE" in
 esac
 
 section "8. both refresh endpoints accept a token pair from either login"
-SREFRESH=$(jget "$SL" "d['tokens']['refresh_token']")
+# Refresh tokens ROTATE — each one is single-use, so every endpoint needs a
+# freshly issued token. Reusing one across both endpoints fails the second.
 for ep in /staff/refresh /admin/refresh; do
-  T=$(post "$ep" "{\"refresh_token\":\"$SREFRESH\"}")
+  FRESH=$(jget "$(post /staff/login '{"identifier":"system_admin","password":"admin"}')" \
+               "d['tokens']['refresh_token']")
+  T=$(post "$ep" "{\"refresh_token\":\"$FRESH\"}")
   [ -n "$(jget "$T" "d['tokens']['access_token']")" ] \
-    && ok "$ep issued a new access_token" \
+    && ok "$ep issued a new access_token from a /staff/login refresh token" \
     || bad "$ep did not return tokens"
 done
+
+section "9. refresh tokens are single-use (rotation)"
+FRESH=$(jget "$(post /staff/login '{"identifier":"system_admin","password":"admin"}')" \
+             "d['tokens']['refresh_token']")
+post /staff/refresh "{\"refresh_token\":\"$FRESH\"}" >/dev/null
+REPLAY=$(post /staff/refresh "{\"refresh_token\":\"$FRESH\"}")
+[ "$(jget "$REPLAY" "d.get('code','')")" = "REFRESH_TOKEN_INVALID" ] \
+  && ok "a consumed refresh token is rejected — the client must store the rotated one" \
+  || bad "a consumed refresh token was accepted (expected REFRESH_TOKEN_INVALID)"
 
 printf '\n\033[1m%d passed, %d failed\033[0m\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

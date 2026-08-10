@@ -9,7 +9,9 @@ record what was actually verified, and what is still an open question.
 | [`decisions.md`](./decisions.md) | **The tiebreaker.** One row per disputed endpoint: the decision, the evidence, the owner | authoritative — read this first |
 | [`route-list.json`](./route-list.json) | Every `api/*` route, from **Laravel's own route table**: method, URI, name, middleware, controller action, and whether a `system_admin` can call it | **authoritative** |
 | [`probe-results.md`](./probe-results.md) | What happened when the configured API host was probed | authoritative — and the answer is "there is no reachable backend" |
+| [`local-backend.md`](./local-backend.md) | **How to run the backend locally** + the seeded `system_admin` / `sycash` credentials | — |
 | [`probe.sh`](./probe.sh) | Re-runnable existence probe. Run it the moment a backend host exists | — |
+| [`verify-auth.sh`](./verify-auth.sh) | Phase 1 acceptance check against a running backend — proves the auth assumptions the code was built on | — |
 | [`build-route-list.py`](./build-route-list.py) | Turns raw `artisan route:list --json` into the shape above | — |
 | [`parse-routes.py`](./parse-routes.py) | Fallback generator that parses `routes/api.php` directly, for when PHP is unavailable | superseded, kept as a backstop |
 
