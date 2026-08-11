@@ -8,6 +8,8 @@ interface LiveTripsMapProps {
   trips: LiveTrip[];
   selectedTripId: number | null;
   isLoading: boolean;
+  /** Timestamp of the last successful /admin/trips/live poll. */
+  updatedAt?: Date | null;
 }
 
 // Palette hexes mirror tailwind.config.js (primary / secondary / error) —
@@ -26,9 +28,17 @@ const DEFAULT_ZOOM = 7;
 const escapeHtml = (value: string): string =>
   value.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
 
-export const LiveTripsMap: React.FC<LiveTripsMapProps> = ({ trips, selectedTripId, isLoading }) => {
+export const LiveTripsMap: React.FC<LiveTripsMapProps> = ({
+  trips,
+  selectedTripId,
+  isLoading,
+  updatedAt = null,
+}) => {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language.startsWith('ar');
+  const updatedLabel = updatedAt
+    ? updatedAt.toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' })
+    : null;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layerGroupRef = useRef<L.LayerGroup | null>(null);
@@ -129,17 +139,26 @@ export const LiveTripsMap: React.FC<LiveTripsMapProps> = ({ trips, selectedTripI
     <div className="relative w-full h-full min-h-[280px]">
       <div ref={containerRef} className="absolute inset-0 z-0" />
 
-      {/* Live badge */}
-      <div className="absolute top-4 start-4 z-[500] pointer-events-none">
+      {/* Live badge + last-poll timestamp */}
+      <div className="absolute top-4 start-4 z-[500] pointer-events-none flex flex-col items-start gap-2">
         <div className="flex items-center gap-2 bg-surface-container-lowest/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-md">
           <span className="relative flex w-2.5 h-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-error opacity-75"></span>
             <span className="relative inline-flex rounded-full w-2.5 h-2.5 bg-error"></span>
           </span>
-          <span className="text-xs font-bold text-on-surface">
+          <span data-testid="live-trips-badge" className="text-xs font-bold text-on-surface">
             {t('trips.live_now', { count: trips.length })}
           </span>
         </div>
+        {updatedLabel && (
+          <div
+            data-testid="live-updated-at"
+            className="bg-surface-container-lowest/90 backdrop-blur-sm px-3 py-1 rounded-full shadow-md text-[10px] font-bold text-on-surface-variant"
+            title={t('trips.map_update_freq')}
+          >
+            {t('trips.updated_at', { time: updatedLabel })}
+          </div>
+        )}
       </div>
 
       {/* Legend */}

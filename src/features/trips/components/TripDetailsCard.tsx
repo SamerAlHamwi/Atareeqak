@@ -8,12 +8,14 @@ interface TripDetailsCardProps {
   trip: Trip | null;
   liveTrips: LiveTrip[];
   isLoadingLive: boolean;
+  liveUpdatedAt?: Date | null;
 }
 
 export const TripDetailsCard: React.FC<TripDetailsCardProps> = ({
   trip,
   liveTrips,
   isLoadingLive,
+  liveUpdatedAt = null,
 }) => {
   const { t } = useTranslation();
 
@@ -108,6 +110,7 @@ export const TripDetailsCard: React.FC<TripDetailsCardProps> = ({
           trips={liveTrips}
           selectedTripId={selectedRawId}
           isLoading={isLoadingLive}
+          updatedAt={liveUpdatedAt}
         />
       </div>
     </section>

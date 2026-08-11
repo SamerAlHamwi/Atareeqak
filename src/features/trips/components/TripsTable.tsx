@@ -1,6 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import TableSkeleton from '../../shared/components/TableSkeleton';
 import type { Trip } from '../hooks/useTrips';
+import { isCancellableTrip } from '../hooks/useTrips';
+
+const TRIPS_TABLE_COLS = 7;
 
 interface TripsTableProps {
   trips: Trip[];
@@ -9,6 +13,9 @@ interface TripsTableProps {
   onViewDetails: (tripId: string, event: React.MouseEvent) => void;
   onCancelTrip: (trip: Trip, event: React.MouseEvent) => void;
   isBusy: (key: string) => boolean;
+  isLoading?: boolean;
+  /** Pagination footer, rendered inside the table card. */
+  footer?: React.ReactNode;
 }
 
 export const TripsTable: React.FC<TripsTableProps> = ({
@@ -18,12 +25,14 @@ export const TripsTable: React.FC<TripsTableProps> = ({
   onViewDetails,
   onCancelTrip,
   isBusy,
+  isLoading = false,
+  footer,
 }) => {
   const { t } = useTranslation();
 
   return (
-    <section className="bg-surface-container-lowest rounded-[2rem] p-8 shadow-ambient border border-outline-variant/10">
-      <div className="overflow-x-auto">
+    <section className="bg-surface-container-lowest rounded-[2rem] shadow-ambient border border-outline-variant/10 overflow-hidden">
+      <div className="overflow-x-auto p-8 pb-0">
         <table className="w-full border-collapse">
           <thead>
             <tr className="text-start border-b border-outline-variant/10">
@@ -37,7 +46,19 @@ export const TripsTable: React.FC<TripsTableProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-outline-variant/5">
-            {trips.map((trip) => (
+            {isLoading && <TableSkeleton cols={TRIPS_TABLE_COLS} />}
+            {!isLoading && trips.length === 0 && (
+              <tr>
+                <td colSpan={TRIPS_TABLE_COLS} className="py-16 text-center">
+                  <span className="material-symbols-outlined text-4xl text-outline block mb-2">
+                    explore_off
+                  </span>
+                  <p className="text-sm font-bold text-on-surface-variant">{t('trips.empty_title')}</p>
+                  <p className="text-xs text-on-surface-variant/70 mt-1">{t('trips.empty_hint')}</p>
+                </td>
+              </tr>
+            )}
+            {!isLoading && trips.map((trip) => (
               <tr
                 key={trip.id}
                 onClick={() => onSelectTrip(trip.id)}
@@ -87,6 +108,10 @@ export const TripsTable: React.FC<TripsTableProps> = ({
                         ? 'bg-secondary-container text-on-secondary-container'
                         : trip.status === 'scheduled'
                         ? 'bg-tertiary-fixed text-on-tertiary-fixed-variant'
+                        : trip.status === 'awaiting'
+                        ? 'bg-primary-container text-on-primary-container'
+                        : trip.status === 'cancelled'
+                        ? 'bg-error-container text-on-error-container'
                         : 'bg-surface-container text-on-surface-variant'
                     }`}
                   >
@@ -97,8 +122,9 @@ export const TripsTable: React.FC<TripsTableProps> = ({
                   <div className="flex items-center ltr:justify-end rtl:justify-start gap-2">
                     {/*
                       Details is available for every status. Cancellation is not:
-                      POST /staff/trips/{id}/cancel only makes sense while the
-                      ride can still be stopped.
+                      POST /staff/trips/{id}/cancel 422s unless the underlying
+                      ride is still active/full/awaiting_confirmation, so the
+                      button is hidden rather than shown-and-rejected.
                     */}
                     <button
                       onClick={(e) => onViewDetails(trip.id, e)}
@@ -107,10 +133,10 @@ export const TripsTable: React.FC<TripsTableProps> = ({
                     >
                       <span className="material-symbols-outlined text-lg">visibility</span>
                     </button>
-                    {trip.status !== 'completed' && (
+                    {isCancellableTrip(trip) && (
                       <button
                         onClick={(e) => onCancelTrip(trip, e)}
-                        disabled={isBusy(`cancel-${trip.id}`) || trip.status === 'cancelled'}
+                        disabled={isBusy(`cancel-${trip.id}`)}
                         className="p-2 text-on-surface-variant hover:text-error transition-colors disabled:opacity-40"
                         title={t('trips.cancel_trip')}
                       >
@@ -124,6 +150,7 @@ export const TripsTable: React.FC<TripsTableProps> = ({
           </tbody>
         </table>
       </div>
+      {footer}
     </section>
   );
 };

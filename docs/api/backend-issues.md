@@ -194,6 +194,70 @@ Low severity — the dashboard renders an initials-avatar fallback — but the f
 
 ---
 
+## 🟢 REQ-1 — `recent_activities` has no `user_id`, so dashboard rows cannot link to a profile
+
+Not a bug — a small enhancement request.
+
+`AdminReportService::getRecentActivities()` returns each row's user as:
+
+```php
+'user' => [
+    'name'   => trim("{$booking->user?->first_name} {$booking->user?->last_name}"),
+    'number' => 'XXX-XXX-' . substr($booking->communication_number ?? '', -4),
+],
+```
+
+The dashboard's "Recent Activities" table is the natural jumping-off point into a passenger's
+profile (`/passengers/{id}`, backed by `GET /admin/passengers/{id}/full-profile`), but with no
+identifier in the payload there is nothing to link to. The name is not unique and the phone number
+is deliberately masked.
+
+**Requested:** add `'id' => $booking->user?->id` alongside `name` and `number`. The relation is
+already eager-loaded (`'user:id,first_name,last_name'`), so this costs nothing.
+
+`booking_id` is present, but there is no booking-detail page to link it to.
+
+Until this lands, the dashboard renders the rows without links rather than guessing.
+
+---
+
+## 🟢 REQ-2 — `GET /staff/bookings` returns no `counts` block, so the bookings tabs cannot show badges
+
+Found while building the Bookings UI (integration plan, Phase 3).
+
+`GET /admin/trips` returns a `counts` block alongside `meta`, which lets the trips filter tabs show a
+real per-status total (`all 71 · scheduled 33 · active 15 · completed 14 · cancelled 5 · awaiting 4`)
+regardless of which page is on screen:
+
+```json
+"meta":   { "current_page": 1, "last_page": 5, "per_page": 15, "total": 71, "filter": "all" },
+"counts": { "all": 71, "scheduled": 33, "active": 15, "completed": 14, "cancelled": 5, "awaiting": 4 }
+```
+
+`GET /staff/bookings` (`StaffOperationsController::bookings`) returns **only `status`, `data` and
+`meta`** — no `counts`. `meta.total` describes just the requested status, so the six booking filter
+tabs (`all|pending|confirmed|cancelled|completed|no_show`) have no per-status figure available. The
+dashboard would have to fire six requests to populate six badges.
+
+**The bookings tabs therefore ship without badges.** No number was invented, and no N+1 request fan-out
+was added.
+
+**Requested:** mirror the trips endpoint and add a `counts` block. The verified live figures are
+`pending 3 · confirmed 24 · cancelled 10 · completed 14 · no_show 7` (58 total), so it is a single
+grouped query:
+
+```php
+'counts' => Booking::selectRaw('status, COUNT(*) as total')
+    ->groupBy('status')
+    ->pluck('total', 'status')
+    ->put('all', Booking::count()),
+```
+
+Once it lands, the frontend change is one line — `useBookings` already threads `meta` through, and
+`FilterTabs` renders a badge whenever a `count` is supplied.
+
+---
+
 ## ℹ️ NOTE-1 — Refresh tokens rotate (single-use). This is correct; documenting it.
 
 Verified live: a refresh token is consumed on use and a new one returned. Replaying a consumed token

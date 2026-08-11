@@ -89,14 +89,14 @@ either source until you have probed the live host.
 - `GET /admin/wallet/{walletId}/transactions` — `walletApi.getWalletTransactions()` exists but is never called from any component.
 - `GET /admin/passengers/{id}/stats | monthly-trips | recent-trips | complaints | wallet-charges` — only the BFF `full-profile` is used; the per-section refresh endpoints are unused.
 - `GET /admin/drivers/stats`, `GET /admin/drivers/activity`, `GET /admin/drivers/verification-efficiency` — covered by the `drivers/dashboard` BFF, so these are only needed if you add per-widget refresh.
-- `GET /staff/bookings` and `POST /staff/bookings/{bookingId}/cancel` — **no UI exists**. Bookings are a first-class backend concept with zero dashboard surface.
+- ~~`GET /staff/bookings` and `POST /staff/bookings/{bookingId}/cancel` — **no UI exists**.~~ ✅ Built in Phase 3 as the Bookings tab on the Trips page.
 - `GET /employees/{id}` — no consumer (the list carries everything today).
 - `POST /admin/photo` — admin avatar upload; `MainLayout` still renders a hardcoded Unsplash photo.
 - `GET /admin/users/{id}/status` — `usersApi.getUserStatus()` exists, never called (useful for the ban-state banner).
 
 ### 1.6 Smaller mismatches worth fixing while you are in there
 
-- `useTrips.ts:49` calls `tripsApi.getAllTrips(1, activeFilter)` — **page is hardcoded to 1**. The backend paginates (`meta.last_page`) and the table has no pager.
+- ~~`useTrips.ts:49` calls `tripsApi.getAllTrips(1, activeFilter)` — **page is hardcoded to 1**.~~ ✅ Fixed in Phase 3: `getAllTrips({page, filter, per_page})` with a real pager.
 - Ban is always sent as `type: 'permanent'` from the details pages. The backend supports
   `type: 'temporary'` + `expires_at` (`AdminBanController`) and the list pages already pass a full
   `BanRequest` — the details pages are the inconsistent ones.
@@ -120,11 +120,12 @@ Legend: ✅ wired & endpoint exists · ⚠️ wired but mismatched/incomplete ·
 | `AuthContext` | `GET /staff/me` | ⚠️ only refreshes role for `kind === 'staff'` |
 | `services/api.ts` refresh | `POST /admin/refresh` \| `POST /staff/refresh` | ⚠️ redundant split |
 | `dashboard/pages/Dashboard` | `GET /admin/dashboard` (BFF) | ⚠️ growth `1.2%` hardcoded; sub-endpoints unused |
-| `trips/pages/Trips` + `TripsTable` | `GET /admin/trips` | ⚠️ page pinned to 1, no pager |
-| `trips/LiveTripsMap` | `GET /admin/trips/live` | ✅ |
+| `trips/pages/Trips` + `TripsTable` | `GET /admin/trips` | ✅ paged, `counts`-driven badges, `per_page` |
+| `trips/LiveTripsMap` | `GET /admin/trips/live` | ✅ 30 s poll, paused when hidden, "updated HH:MM" |
 | `trips/MonitoringSidebar` | `GET /admin/routes/popular`, `GET /admin/drivers/top` | ✅ |
-| `trips` cancel | `POST /staff/trips/{rideId}/cancel` | ✅ |
-| `trips` "draft trip" / "contact driver" buttons | — | ❌ mock (`useMockAction`) |
+| `trips` cancel | `POST /staff/trips/{rideId}/cancel` | ✅ hidden for non-cancellable states |
+| `trips/BookingsTable` | `GET /staff/bookings`, `POST /staff/bookings/{id}/cancel` | ✅ (no `counts` — [REQ-2](docs/api/backend-issues.md)) |
+| `trips` "draft trip" / "contact driver" buttons | — | ✅ resolved in Phase 1.5 |
 | `drivers/pages/Drivers` | `GET /admin/drivers/dashboard`, `GET /admin/drivers` | ✅ |
 | `drivers/pages/DriverDetails` | `GET /admin/drivers/{id}/dashboard` | ✅ |
 | drivers ban/unban | `POST /admin/users/{id}/ban|unban` | ⚠️ permanent-only |
@@ -147,7 +148,7 @@ Legend: ✅ wired & endpoint exists · ⚠️ wired but mismatched/incomplete ·
 | `home/pages/Home` | — | ❌ two mock buttons |
 | `MainLayout` header search | — | 🆕 non-functional input |
 | `MainLayout` admin avatar | `POST /admin/photo` | 🆕 hardcoded Unsplash image |
-| — | `GET /staff/bookings`, `POST /staff/bookings/{id}/cancel` | 🆕 no UI at all |
+| ~~— | `GET /staff/bookings`, `POST /staff/bookings/{id}/cancel`~~ | ✅ built in Phase 3 (Bookings tab) |
 | — | `GET /admin/wallet`, `GET /admin/wallet/{id}/transactions` | 🆕 no UI |
 
 ---
@@ -290,34 +291,79 @@ Cheapest first; any one of these unblocks the rest of the plan:
 
 ---
 
-## Phase 2 — Dashboard page
+## Phase 2 — Dashboard page — ✅ **DONE & VERIFIED AGAINST THE LIVE BACKEND**
 
-Endpoint: `GET /admin/dashboard` → `{status, data:{stats, growth_chart:{period,data}, city_distribution, recent_activities}}` (server-cached 5 min).
+Endpoints: `GET /admin/dashboard` (BFF, server-cached 5 min) · `GET /admin/dashboard/growth?months=N`.
 
-- [ ] Replace the hardcoded `growth: '1.2%'` in `Dashboard.tsx:57` with a real delta. If the payload has no growth delta, compute it from `growth_chart.data` (last vs previous bucket) and label it accordingly — do not invent a number.
-- [ ] Wire the period selector (`periodLabel` state is currently decorative) to `GET /admin/dashboard/growth?months=N`, `N ∈ 1..12` (backend clamps).
-- [ ] Add a manual **Refresh** control that re-fetches; note in the UI that figures are cached for up to 5 minutes server-side.
-- [ ] Extract the fetch into `src/features/dashboard/hooks/useDashboard.ts` following the `useFetchEffect` pattern used by every other feature — `Dashboard.tsx` is the only page still calling the API inline.
-- [ ] Empty/error states: `TableSkeleton` for the activity list, `ErrorBanner` on failure.
-- [ ] Make the recent-activity rows link through (`user_id` → `/passengers/:id`).
+- [x] **Hardcoded `growth: '1.2%'` removed.** Deltas are computed from `growth_chart.data` (last vs previous bucket). A jump from 0 is reported as an absolute count (`+35`), not `+3500%`, and when there is no previous bucket the badge is **omitted** rather than faked.
+- [x] **Period selector is real** — 3 / 6 / 12 months, refetching `GET /admin/dashboard/growth?months=N`. It replaces a button that only toggled its own label. Changing it refetches *only* the growth series, not the whole BFF payload.
+- [x] **Refresh control** added, with "updated HH:MM · server-cached for up to 5 minutes" so an unchanged figure doesn't read as a bug.
+- [x] **Extracted to `hooks/useDashboard.ts`** on the `useFetchEffect` pattern; `Dashboard.tsx` was the last page calling the API inline. Page split into `StatCards`, `GrowthChart`, `CityDistributionCard`, `RecentActivityTable`.
+- [x] Loading skeletons (cards, chart, `TableSkeleton`), `ErrorBanner` with retry, and empty states for all three collections.
+- [x] **Chart scaling bug fixed.** Bar heights were `value / 250` and `value / 850` — hardcoded divisors. With real data (`new_users: 35`, `completed_trips: 7`) that rendered a 14% bar and a 0.8% sliver. Heights are now a share of the tallest value in either series.
+- [x] **City names now respect the locale.** The payload carries `city` (Arabic) and `city_en`; the page always showed English even though Arabic is the default language. Also shows the user count per city.
+- [x] **Booking statuses are translated.** `confirmed` and `pending` were rendered raw and fell through the colour map to grey; all six statuses now have labels and colours in both languages.
+- [x] **Dates are localised.** The backend builds `date.human` in English (`"Today, 09:33"`); the row now formats `date.raw` for the active locale.
+- [x] Side stat cards link to `/support` and `/verifications`; the activity avatar placeholder is now real initials.
+- [x] Raw hex values (`#000666`, `#212396`, `#006a6a`) replaced with palette tokens per the frontend conventions.
+- [x] 10 new tests in `tests/hooks/useDashboard.test.ts` (**67 total, up from 57**).
 
-**DoD:** every card, both charts, and the activity feed change when backend data changes; no literal numbers remain in the file.
+### ⚠️ One planned item was dropped — the payload cannot support it
+
+- [x] ~~Make the recent-activity rows link through (`user_id` → `/passengers/:id`)~~ — **not possible.**
+      `AdminReportService::getRecentActivities()` returns only `user.name` and a masked
+      `user.number` (`XXX-XXX-7214`); there is **no `user_id`** in the payload. Filed as a backend
+      request ([REQ-1](docs/api/backend-issues.md)). No fake link was added.
+
+### Verified
+
+Against MySQL seeded with 35 users / 71 rides / 58 bookings: stats `35 / 48 / 14`, growth
+`Jul: 7 trips → Aug: 7 trips, 35 new users`, six cities with Arabic + English names, and ten
+booking rows across `confirmed` / `pending` / `cancelled`.
 
 ---
 
-## Phase 3 — Trips
+## Phase 3 — Trips — ✅ **DONE & VERIFIED AGAINST THE LIVE BACKEND 2026-08-11**
 
-Endpoints: `GET /admin/trips?filter&per_page&page` → `{data, meta{current_page,last_page,per_page,total,filter}, counts{all,scheduled,active,completed,cancelled,awaiting}}` · `GET /admin/trips/live` · `GET /admin/routes/popular?limit` · `GET /admin/drivers/top?limit` · `POST /staff/trips/{rideId}/cancel {reason ≥10 chars}`.
+Endpoints: `GET /admin/trips?filter&per_page&page` → `{data, meta{current_page,last_page,per_page,total,filter}, counts{all,scheduled,active,completed,cancelled,awaiting}}` · `GET /admin/trips/live` · `GET /admin/routes/popular?limit` · `GET /admin/drivers/top?limit` · `POST /staff/trips/{rideId}/cancel {reason ≥10 chars}` · `GET /staff/bookings?status&per_page&page` · `POST /staff/bookings/{bookingId}/cancel {reason ≥10 chars}`.
 
-- [ ] **Fix pagination.** `useTrips.ts:49` hardcodes page 1. Add `page` state, pass it through `tripsApi.getAllTrips(page, filter)`, store `meta.last_page`/`meta.total`, and render the existing `TablePagination` under `TripsTable`.
-- [ ] Reset `page` to 1 whenever `filter` changes (same pattern as `useSupport.setStatusFilter`).
-- [ ] Drive the filter tab badges from `counts` instead of client-side length.
-- [ ] Add `per_page` (backend allows 1–50, default 15).
-- [ ] Live map: add a polling interval (30–60 s) with pause-when-tab-hidden, and show "updated HH:MM".
-- [ ] Resolve the two mock buttons ("draft trip", "contact driver"): either remove them or, if the driver payload carries `communication_number` (it does, on `LiveTripResponse.driver`), turn "contact driver" into a `tel:` link.
-- [ ] 🆕 **Bookings.** `GET /staff/bookings?status&per_page` and `POST /staff/bookings/{id}/cancel {reason}` have no UI. Add a *Bookings* tab on the Trips page: table + cancel action reusing `ConfirmActionModal` with the 10-char reason rule.
+> `npx tsc -b` clean · `npm run lint` clean · `npm test` **92 passing, up from 67**.
+>
+> **Verified end-to-end** by [`docs/api/verify-trips.mjs`](docs/api/verify-trips.mjs) — drives the real
+> page in Chromium in **both `en` and `ar`** against MySQL + `artisan serve` on `:8000`:
+> **85 assertions, 0 failures** (`node docs/api/verify-trips.mjs --mutate`).
 
-**DoD:** paging through >1 page of trips works; tab badges match `counts`; a booking can be cancelled and the row updates.
+- [x] **Pagination fixed.** `useTrips` now owns `page` state and threads `meta.last_page`/`meta.total` through; `TablePagination` renders in the `TripsTable` footer with a "showing x–y of z" label. *Verified: the next-page control issues `page=2` and the rendered rows swap from `#TR-16` to `#TR-45`.*
+- [x] **`page` resets to 1 on every filter change** (and on `per_page` change), mirroring `useSupport.setStatusFilter`. *Verified: after paging to 3, selecting `cancelled` requests `filter=cancelled&page=1`.*
+- [x] **Tab badges come from `counts`.** *Verified: with 15 rows on screen the "all" badge reads **71**, cancelled **5**, awaiting **4** — matching the live payload, which client-side length could not produce.*
+- [x] **`per_page` exposed** via a `PerPageSelect` (10/15/25/50, inside the backend's 1–50 rule; default 15).
+- [x] **Live map polling confirmed and improved.** The 30 s poll was already wired through `useFetchEffect`; it now **pauses while the tab is hidden** and refetches immediately on re-show (implemented once in `useFetchEffect`, so every poller benefits). `useLiveTrips` exposes `updatedAt`, rendered as an "updated HH:MM" badge on the map.
+- [x] **`awaiting` is now a first-class status.** `useTrips` used to remap `awaiting` → `scheduled`, which hid a real backend filter value and made the `counts.awaiting` badge unreachable. It is now its own tab, status badge and filter.
+- [x] **Cancel actions match the backend's state rules.** `POST /staff/trips/{id}/cancel` only accepts `active|full|awaiting_confirmation` rides and `POST /staff/bookings/{id}/cancel` only `pending|confirmed` bookings — both 422 otherwise. The buttons are hidden for terminal rows instead of being shown and rejected (`isCancellableTrip` / `isCancellableBooking`, both unit-tested). *Verified: no cancel control renders on `no_show` rows.*
+- [x] The two mock buttons were already resolved in Phase 1.5 — "new trip" removed, "contact driver" is a real `tel:` link off `driver.communication_number`.
+- [x] 🆕 **Bookings tab shipped.** New `useBookings` hook + `BookingsTable`, with the six-value status filter, paging, `per_page`, a `tel:` link per passenger, and cancellation through `ConfirmActionModal` enforcing the 10-char reason. *Verified: a real booking was cancelled in each language — the row flipped to "Cancelled"/"ملغى" and `GET /staff/bookings?status=cancelled` confirmed it server-side.*
+- [x] Loading skeletons (`TableSkeleton`), `ErrorBanner` with retry, and empty states on **both** tables.
+- [x] i18n: every new key in `ar` **and** `en`. Arabic count-bearing keys carry all six CLDR forms (`_zero/_one/_two/_few/_many/_other`) — including the pre-existing `trips.live_now`, `current_trips`, `current_passengers`, `eta_value`, `distance_value` and `modal.reason_*`, which previously shipped a single ungrammatical form. *Verified: no raw key leaks in either language.*
+- [x] New tests: `tests/hooks/useTrips.test.ts` rewritten (8 cases: paging, filter reset, `per_page`, no client-side filtering, refetch-after-cancel) and `tests/hooks/useBookings.test.ts` added (9 cases).
+
+### ⚠️ One planned item was dropped — the payload cannot support it
+
+- [x] ~~Badges on the Bookings filter tabs~~ — **not possible.** Unlike `/admin/trips`, `GET /staff/bookings`
+      returns **no `counts` block**; `meta.total` only describes the requested status. Six badges would
+      mean six requests. The tabs ship without badges and the gap is filed as
+      [REQ-2](docs/api/backend-issues.md) with the one-line frontend change ready for when it lands.
+
+### Notes for later phases
+
+- `useFetchEffect` now pauses polling on `visibilitychange`. Any hook that passes a poll interval
+  inherits this — no per-hook change needed.
+- `TablePagination` gained `data-testid="pagination-prev|next"`, and the live map badge/timestamp
+  carry testids, so verification scripts do not depend on CSS classes.
+- Client-side re-filtering was **removed** from `useTrips` (`visibleTrips` is gone). Filtering is
+  server-side; re-filtering a page would have blanked the table whenever a row's UI status did not
+  literally equal the filter name. Phase 7's `useSupport.visibleComplaints` has the same latent bug.
+
+**DoD:** ✅ paging through >1 page of trips works; ✅ tab badges match `counts`; ✅ a booking can be cancelled and the row updates.
 
 ---
 
@@ -477,7 +523,7 @@ Apply uniformly across every page touched above:
 - [ ] **Loading** — `TableSkeleton` for tables, spinners for cards. No layout shift on load.
 - [ ] **Errors** — `ErrorBanner` with a Retry that calls the hook's `refetch`. Use the shared `extractApiError` from 1.4 so 422 field errors read as field errors, not "Request failed with status code 422".
 - [ ] **Empty states** — every table needs one; several currently render an empty `<tbody>`.
-- [ ] **Pagination** — `TablePagination` on every list backed by `meta` (trips is the known gap; audit drivers, users, reviews, complaints, wallet requests).
+- [ ] **Pagination** — `TablePagination` on every list backed by `meta` (~~trips is the known gap~~ ✅ trips + bookings done in Phase 3; audit drivers, users, reviews, complaints, wallet requests).
 - [ ] **Concurrency** — an in-flight request must be cancelled/ignored when filters change (a stale response currently overwrites fresh state in the `useFetchEffect` hooks). Use an `AbortController` or a request-sequence guard.
 - [ ] **Single-flight token refresh** — refresh tokens are single-use and rotate (verified live). If two requests 401 at the same time, both call `/refresh`; the second replays a consumed token and the user is logged out. The interceptor needs to share one in-flight refresh promise across all queued requests. Pages that fire several parallel fetches on mount (Dashboard, Reports, Trips) make this easy to hit.
 - [ ] **403 handling** — `RoleRoute` blocks navigation, but a role change mid-session can still produce a 403. Show the "no permission" panel instead of an error banner.
@@ -494,7 +540,7 @@ Existing: `tests/{auth,hooks,services}` (vitest + msw), `e2e/smoke.spec.ts` + `e
 - [ ] Update `tests/testServer.ts` msw handlers to the confirmed contract — including the removed endpoints, so a regression that re-introduces `/admin/settings` fails loudly.
 - [ ] `tests/services/api.test.ts` — the three refresh/403 cases from 1.4.
 - [ ] `tests/auth/AuthContext.test.tsx` — role comes from `/staff/me`, not from the login response; `sycash` renders correctly.
-- [ ] Hook tests for the newly-wired params: `useTrips` (paging), `useUsers` (date filter), `useSupport` (type filter + escalated view never sending `status=escalated` to `index`).
+- [x] ~~`useTrips` (paging)~~ ✅ done in Phase 3 (`tests/hooks/useTrips.test.ts`, `useBookings.test.ts`). Still to do: `useUsers` (date filter), `useSupport` (type filter + escalated view never sending `status=escalated` to `index`).
 - [ ] Extend `e2e/apiStubs.ts` for a full `system_admin` walkthrough: login → dashboard → trips (page 2) → ban a user → approve a verification → resolve a complaint → approve a wallet request → create an employee.
 - [ ] `npm run lint && npm run test && npm run build` clean before each phase is called done.
 
@@ -586,8 +632,8 @@ All paths are relative to `VITE_API_BASE_URL`. Auth header: `Authorization: Bear
 |---|---|---|
 | 0 — Contract reconciliation | — | 🟡 done 2026-08-10; awaiting Q1–Q5 + **Q10** |
 | 1 — Foundation (auth, roles, axios) | 0 | ✅ done 2026-08-10 |
-| 2 — Dashboard | 1 | 0.5 d |
-| 3 — Trips (+ bookings) | 1 | 1.5 d |
+| 2 — Dashboard | 1 | ✅ done 2026-08-10 |
+| 3 — Trips (+ bookings) | 1 | ✅ done 2026-08-11 |
 | 4 — Drivers | 1 | 1 d |
 | 5 — Passengers | 1 | 1 d |
 | 6 — Verifications | 1 | 0.5 d |

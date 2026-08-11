@@ -26,6 +26,7 @@ const TablePagination: React.FC<TablePaginationProps> = ({
       <span className="text-xs text-on-surface-variant">{info ?? ''}</span>
       <div className="flex gap-2 items-center">
         <button
+          data-testid="pagination-prev"
           onClick={() => onPageChange(Math.max(1, page - 1))}
           disabled={page <= 1 || isLoading}
           className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high text-on-surface-variant disabled:opacity-40"
@@ -36,6 +37,7 @@ const TablePagination: React.FC<TablePaginationProps> = ({
           {page} / {Math.max(lastPage, 1)}
         </span>
         <button
+          data-testid="pagination-next"
           onClick={() => onPageChange(Math.min(lastPage, page + 1))}
           disabled={page >= lastPage || isLoading}
           className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high text-on-surface-variant disabled:opacity-40"

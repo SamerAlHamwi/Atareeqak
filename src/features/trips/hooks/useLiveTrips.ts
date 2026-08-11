@@ -64,6 +64,9 @@ interface UseLiveTripsReturn {
   liveTrips: LiveTrip[];
   isLoading: boolean;
   error: Error | null;
+  /** When the currently-displayed data was fetched; null before the first success. */
+  updatedAt: Date | null;
+  refreshIntervalMs: number;
   refresh: () => Promise<void>;
 }
 
@@ -72,6 +75,7 @@ export const useLiveTrips = (): UseLiveTripsReturn => {
   const [liveTrips, setLiveTrips] = useState<LiveTrip[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const hasLoadedRef = useRef(false);
 
   const fetchLiveTrips = useCallback(async () => {
@@ -82,6 +86,7 @@ export const useLiveTrips = (): UseLiveTripsReturn => {
       const trips = await tripsApi.getLiveTrips();
       setLiveTrips((trips || []).map((trip) => mapLiveTrip(trip, t)));
       setError(null);
+      setUpdatedAt(new Date());
       hasLoadedRef.current = true;
     } catch (err) {
       const fetchError = err instanceof Error ? err : new Error('Failed to load live trips');
@@ -92,7 +97,15 @@ export const useLiveTrips = (): UseLiveTripsReturn => {
     }
   }, [t]);
 
+  // Polls every 30s; useFetchEffect pauses the interval while the tab is hidden.
   useFetchEffect(fetchLiveTrips, REFRESH_INTERVAL_MS);
 
-  return { liveTrips, isLoading, error, refresh: fetchLiveTrips };
+  return {
+    liveTrips,
+    isLoading,
+    error,
+    updatedAt,
+    refreshIntervalMs: REFRESH_INTERVAL_MS,
+    refresh: fetchLiveTrips,
+  };
 };

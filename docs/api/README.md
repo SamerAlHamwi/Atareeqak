@@ -12,6 +12,8 @@ record what was actually verified, and what is still an open question.
 | [`local-backend.md`](./local-backend.md) | **How to run the backend locally** + the seeded `system_admin` / `sycash` credentials | — |
 | [`probe.sh`](./probe.sh) | Re-runnable existence probe. Run it the moment a backend host exists | — |
 | [`verify-auth.sh`](./verify-auth.sh) | Phase 1 acceptance check against a running backend — proves the auth assumptions the code was built on | — |
+| [`verify-dashboard.mjs`](./verify-dashboard.mjs) | Phase 2 acceptance check — drives the real Dashboard in Chromium and asserts the rendered UI matches the live payload, in both languages | — |
+| [`backend-issues.md`](./backend-issues.md) | Defects and requests found while wiring the dashboard — **hand this to the backend developer** | — |
 | [`build-route-list.py`](./build-route-list.py) | Turns raw `artisan route:list --json` into the shape above | — |
 | [`parse-routes.py`](./parse-routes.py) | Fallback generator that parses `routes/api.php` directly, for when PHP is unavailable | superseded, kept as a backstop |
 
