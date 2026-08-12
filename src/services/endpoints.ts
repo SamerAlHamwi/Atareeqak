@@ -52,11 +52,13 @@ export const ENDPOINTS = {
     REJECT_REQUEST: (id: string | number) => `/admin/wallet/requests/${id}/reject`,
     CHARGE: '/admin/wallet/charge',
   },
-  VERIFICATIONS: {
-    PENDING: '/admin/verifications',
-    APPROVE: (id: string | number) => `/admin/verifications/${id}/approve`,
-    REJECT: (id: string | number) => `/admin/verifications/${id}/reject`,
-  },
+  // `/admin/verifications` + `{userId}/approve|reject` (AdminDashboardController)
+  // are deliberately NOT listed here. They are system_admin-only twins of the
+  // STAFF.* routes below and return a strictly thinner payload: no `total`, and
+  // no `gender`/`address`/`profile_photo` on each row. The staff routes are
+  // callable by admin **and** system_admin, so they are the correct target for
+  // every role that can reach this page. Same reasoning as DRIVERS.PROFILE in
+  // Phase 4 — a constant with no consumer is deleted, not kept "just in case".
   STAFF: {
     LOGIN: '/staff/login',
     REFRESH: '/staff/refresh',

@@ -15,8 +15,13 @@ interface ConfirmActionModalProps {
   /** Adds the ban-type selector (permanent/temporary) + expiry date picker. */
   showBanOptions?: boolean;
   isBusy?: boolean;
-  /** Backend validators require min 10 chars for ban/cancel/escalate reasons. */
+  /**
+   * Backend validators require min 10 chars for ban/cancel/escalate reasons.
+   * Verification rejection is `nullable|string|max:500` instead, so it passes 1.
+   */
   minReasonLength?: number;
+  /** Server-side cap, when the endpoint declares one (e.g. reject: max:500). */
+  maxReasonLength?: number;
   onConfirm: (payload: ConfirmActionPayload) => void | Promise<void>;
   onClose: () => void;
 }
@@ -31,6 +36,7 @@ const ModalForm: React.FC<ModalFormProps> = ({
   showBanOptions = false,
   isBusy = false,
   minReasonLength = 10,
+  maxReasonLength,
   onConfirm,
   onClose,
 }) => {
@@ -46,7 +52,12 @@ const ModalForm: React.FC<ModalFormProps> = ({
   const handleConfirm = async () => {
     const trimmedReason = reason.trim();
     if (trimmedReason.length < minReasonLength) {
-      setValidationError(t('modal.reason_too_short', { count: minReasonLength }));
+      setValidationError(
+        // "at least 1 character" is a clumsy way to say "this field is required".
+        minReasonLength <= 1
+          ? t('modal.reason_required')
+          : t('modal.reason_too_short', { count: minReasonLength })
+      );
       return;
     }
     if (showBanOptions && banType === 'temporary' && !expiresAt) {
@@ -97,12 +108,23 @@ const ModalForm: React.FC<ModalFormProps> = ({
                 {t('modal.reason_label')}
               </label>
               <textarea
+                data-testid="confirm-action-reason"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 rows={3}
+                maxLength={maxReasonLength}
                 className="w-full bg-surface-container-low border-none rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
-                placeholder={t('modal.reason_placeholder', { count: minReasonLength })}
+                placeholder={
+                  minReasonLength <= 1
+                    ? t('modal.reason_placeholder_any')
+                    : t('modal.reason_placeholder', { count: minReasonLength })
+                }
               />
+              {maxReasonLength !== undefined && (
+                <p className="text-[11px] text-on-surface-variant mt-2 text-end ltr:font-mono">
+                  {reason.length}/{maxReasonLength}
+                </p>
+              )}
             </div>
 
             {showBanOptions && (
@@ -140,6 +162,7 @@ const ModalForm: React.FC<ModalFormProps> = ({
 
           <div className="flex gap-3 pt-2">
             <button
+              data-testid="confirm-action-submit"
               onClick={() => void handleConfirm()}
               disabled={isBusy}
               className="flex-1 bg-error text-on-error py-3 rounded-2xl font-bold text-sm hover:opacity-90 transition-all disabled:opacity-50"
