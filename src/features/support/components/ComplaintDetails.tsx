@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Complaint } from '../hooks/useSupport';
+import Avatar from '../../shared/components/Avatar';
 
 interface ComplaintDetailsProps {
   complaint: Complaint | null;
@@ -51,10 +52,11 @@ export const ComplaintDetails: React.FC<ComplaintDetailsProps> = ({
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <img
-              className="w-12 h-12 rounded-full border-2 border-secondary object-cover"
-              src={complaint.userAvatar}
-              alt={complaint.user}
+            <Avatar
+              name={complaint.user}
+              photo={complaint.userPhoto}
+              size="md"
+              className="border-2 border-secondary"
             />
             <div className="text-start">
               <p className="font-bold text-sm">{complaint.user}</p>

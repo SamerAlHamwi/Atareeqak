@@ -1,10 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import ActionBanner from '../../shared/components/ActionBanner';
+import Avatar from '../../shared/components/Avatar';
+import ConfirmActionModal from '../../shared/components/ConfirmActionModal';
+import type { ConfirmActionPayload } from '../../shared/components/ConfirmActionModal';
+import ErrorBanner from '../../shared/components/ErrorBanner';
 import { useApiAction } from '../../shared/useApiAction';
 import { useDriverDetails } from '../hooks/useDriverDetails';
+import BanStatusBanner from '../../shared/components/BanStatusBanner';
 
 const documentLabelKeys: Record<string, string> = {
   face_id: 'common.documents.face_id',
@@ -31,21 +36,42 @@ const DriverDetails: React.FC = () => {
   const { driverId } = useParams();
   const navigate = useNavigate();
   const { runAction, isBusy, feedback, clearFeedback } = useApiAction();
-  const { driver, isLoading, error, banDriver, unbanDriver } = useDriverDetails(driverId);
+  const { driver, status, isLoading, error, banDriver, unbanDriver } = useDriverDetails(driverId);
+  const [isBanModalOpen, setIsBanModalOpen] = useState(false);
 
   const isRtl = i18n.language.startsWith('ar');
+  // Authoritative: the driver payload's own `status` never reflects a ban.
+  const isBanned = status?.ban != null;
 
-  const handleToggleBan = async () => {
+  const handleUnban = async () => {
     if (!driver) return;
-    const isSuspended = driver.status === 'suspended';
     await runAction({
       key: 'toggle-freeze-driver',
-      action: () => (isSuspended ? unbanDriver() : banDriver(t('drivers.ban_reason_default'))),
-      successMessage: isSuspended
-        ? t('drivers.unban_success', { name: driver.name })
-        : t('drivers.ban_success', { name: driver.name }),
+      action: () => unbanDriver(),
+      successMessage: t('drivers.unban_success', { name: driver.name }),
       errorMessage: t('drivers.status_update_failed'),
     });
+  };
+
+  /**
+   * Sends the real ban type and expiry the modal collected. This used to send
+   * `type: 'permanent'` unconditionally, so a temporary ban was impossible from
+   * this page even though `AdminBanController` accepts one.
+   */
+  const handleConfirmBan = async ({ reason, banType, expiresAt }: ConfirmActionPayload) => {
+    if (!driver) return;
+    await runAction({
+      key: 'toggle-freeze-driver',
+      action: () =>
+        banDriver({
+          reason,
+          type: banType ?? 'permanent',
+          ...(banType === 'temporary' && expiresAt ? { expires_at: expiresAt } : {}),
+        }),
+      successMessage: t('drivers.ban_success', { name: driver.name }),
+      errorMessage: t('drivers.status_update_failed'),
+    });
+    setIsBanModalOpen(false);
   };
 
   if (isLoading) {
@@ -65,18 +91,17 @@ const DriverDetails: React.FC = () => {
           <span className="material-symbols-outlined text-base">arrow_back</span>
           {t('drivers.back_to_list')}
         </button>
-        <div className="bg-error-container text-on-error-container px-6 py-4 rounded-2xl">
-          {t('common.load_failed')}
-        </div>
+        <ErrorBanner message={error ?? undefined} />
       </div>
     );
   }
 
-  const isSuspended = driver.status === 'suspended';
-
   return (
     <div className="space-y-8" dir={isRtl ? 'rtl' : 'ltr'}>
       <ActionBanner feedback={feedback} onDismiss={clearFeedback} />
+
+      {/* Live account state from GET /admin/users/{id}/status */}
+      <BanStatusBanner status={status} />
 
       <div className="flex items-center justify-between">
         <button
@@ -93,7 +118,7 @@ const DriverDetails: React.FC = () => {
       <section className="bg-surface-container-lowest rounded-xl p-8 flex flex-col md:flex-row items-start md:items-center gap-8 border border-outline-variant/20">
         <div className="relative shrink-0">
           <div className="h-28 w-28 md:h-32 md:w-32 rounded-full overflow-hidden border-4 border-secondary-container ring-4 ring-primary/5">
-            <img alt={driver.name} className="w-full h-full object-cover" src={driver.photo} />
+            <Avatar name={driver.name} photo={driver.photo} size="xl" className="rounded-none" />
           </div>
           {driver.isVerified && (
             <div className="absolute bottom-1 right-1 bg-secondary text-white h-8 w-8 rounded-full flex items-center justify-center border-2 border-white">
@@ -105,7 +130,7 @@ const DriverDetails: React.FC = () => {
         <div className="flex-1 text-right space-y-2">
           <div className="flex flex-wrap items-center gap-4 justify-end">
             <h2 className="text-2xl md:text-3xl font-extrabold text-primary font-headline">{driver.name}</h2>
-            <span className={`px-3 py-1 rounded-full text-xs font-bold ${isSuspended ? 'bg-error-container text-on-error-container' : 'bg-secondary-container text-on-secondary-container'}`}>
+            <span className={`px-3 py-1 rounded-full text-xs font-bold ${isBanned ? 'bg-error-container text-on-error-container' : 'bg-secondary-container text-on-secondary-container'}`}>
               {t(`drivers.status_${driver.status}`)}
             </span>
           </div>
@@ -125,19 +150,32 @@ const DriverDetails: React.FC = () => {
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
-            onClick={handleToggleBan}
+            data-testid="driver-ban-toggle"
+            onClick={() => (isBanned ? void handleUnban() : setIsBanModalOpen(true))}
             disabled={isBusy('toggle-freeze-driver')}
             className="bg-error-container text-error px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:opacity-90 transition-all disabled:opacity-50"
           >
-            <span className="material-symbols-outlined">{isSuspended ? 'undo' : 'block'}</span>
+            <span className="material-symbols-outlined">{isBanned ? 'undo' : 'block'}</span>
             {isBusy('toggle-freeze-driver')
               ? t('common.loading')
-              : isSuspended
-              ? t('users.approve')
-              : t('users.block')}
+              : isBanned
+              ? t('drivers.unban_action')
+              : t('drivers.ban_action')}
           </button>
         </div>
       </section>
+
+      {/* Reason (≥10 chars) + permanent/temporary + expiry, per AdminBanController */}
+      <ConfirmActionModal
+        open={isBanModalOpen}
+        title={t('drivers.ban_modal_title', { name: driver.name })}
+        description={t('drivers.ban_modal_description')}
+        confirmLabel={t('drivers.ban_confirm')}
+        showBanOptions
+        isBusy={isBusy('toggle-freeze-driver')}
+        onConfirm={handleConfirmBan}
+        onClose={() => setIsBanModalOpen(false)}
+      />
 
       <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <div className="bg-surface-container-lowest p-6 rounded-xl space-y-3">

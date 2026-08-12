@@ -1,13 +1,25 @@
 import api from '../../../services/api';
 import { ENDPOINTS } from '../../../services/endpoints';
 
+/**
+ * The five values `AdminUserService::resolveUserStatus()` can return.
+ *
+ * `rejected` and `unverified` are **not** valid `status=` filter values
+ * (`in:all,verified,pending,suspended`), so those rows are reachable in the
+ * "all" tab but cannot be filtered for — same gap the drivers list has.
+ *
+ * ⚠️ `suspended` here means `users.status == 0` (logged out), **not** banned
+ * (`-1`). See BUG-6: the list mislabels ban state in both directions.
+ */
+export type UserRowStatus = 'verified' | 'pending' | 'suspended' | 'rejected' | 'unverified';
+
 export interface UserRowResponse {
   id: number;
   full_name: string;
   email: string | null;
   profile_photo: string | null;
   type: 'driver' | 'passenger';
-  status: 'verified' | 'pending' | 'suspended';
+  status: UserRowStatus;
   joined_at: string;
   joined_label: string;
 }
@@ -17,12 +29,30 @@ export interface UsersStatsResponse {
   active_drivers: number;
   pending_drivers: number;
   passengers: number;
+  /** `COUNT(status = 0)` — logged-out accounts, not banned ones (BUG-6). */
   suspended_users: number;
 }
 
+export type UserTypeFilterValue = 'all' | 'driver' | 'passenger';
+export type UserStatusFilterValue = 'all' | 'verified' | 'pending' | 'suspended';
+export type UserDateFilterValue =
+  | 'all'
+  | 'last_30_days'
+  | 'last_3_months'
+  | 'last_6_months'
+  | 'last_12_months';
+
+/**
+ * Note the whole payload is nested under `data` — unlike `/admin/drivers`,
+ * where `data` is the row array and `meta` is a sibling.
+ *
+ * There is **no `counts` block** (verified live), so the filter tabs ship
+ * without badges — see REQ-2.
+ */
 export interface UsersListResponse {
   status: string;
   data: {
+    /** Always null today — see BUG-5. `<Avatar>` renders the initials fallback. */
     admin_photo: string | null;
     stats: UsersStatsResponse;
     users: UserRowResponse[];
@@ -31,14 +61,21 @@ export interface UsersListResponse {
       last_page: number;
       per_page: number;
       total: number;
+      /** Echo of the applied filters — note the plural key, unlike trips/drivers. */
+      filters: {
+        type: UserTypeFilterValue;
+        status: UserStatusFilterValue;
+        date: UserDateFilterValue;
+      };
     };
   };
 }
 
 export interface UsersListParams {
-  type?: 'all' | 'driver' | 'passenger';
-  status?: 'all' | 'verified' | 'pending' | 'suspended';
-  date?: 'all' | 'last_30_days' | 'last_3_months' | 'last_6_months' | 'last_12_months';
+  type?: UserTypeFilterValue;
+  status?: UserStatusFilterValue;
+  date?: UserDateFilterValue;
+  /** Backend validates 1–50; its own default is 10. */
   per_page?: number;
   page?: number;
   search?: string;
@@ -47,7 +84,180 @@ export interface UsersListParams {
 export interface BanRequest {
   reason: string; // min 10 chars
   type: 'permanent' | 'temporary';
-  expires_at?: string; // required when type=temporary
+  /** Required when type=temporary. "Y-m-d H:i:s", validated `after:now`. */
+  expires_at?: string;
+}
+
+/**
+ * `AdminBanController::formatUserStatus()`.
+ *
+ * `status_code` is the authoritative tri-state: -1 banned · 0 logged_out ·
+ * 1 active. Note an **unban lands on 0, not 1** — the backend forces a fresh
+ * login — so "not banned" must be tested as `ban === null`, never as
+ * `account_status === 'active'`.
+ */
+export interface UserStatusResponse {
+  user_id: number;
+  name: string;
+  email: string | null;
+  account_status: 'banned' | 'logged_out' | 'active' | 'unknown';
+  status_code: -1 | 0 | 1;
+  ban: {
+    reason: string | null;
+    type: 'permanent' | 'temporary' | null;
+    banned_at: string | null;
+    expires_at: string | null;
+    is_expired: boolean;
+    /** Always null today — see BUG-5 in docs/api/backend-issues.md. */
+    banned_by: { id: number; name: string } | null;
+  } | null;
+}
+
+// ---------------------------------------------------------------------------
+// Passenger profile — the BFF and the five per-section endpoints
+// ---------------------------------------------------------------------------
+
+export interface PassengerStatsResponse {
+  total_rides: number;
+  total_spending: number;
+  avg_rating: number;
+  /** 0 both when the balance is zero and when the user has no wallet row. */
+  wallet_balance: number;
+}
+
+export interface PassengerMonthlyTripResponse {
+  month: string;
+  month_key: string;
+  trips: number;
+  total_cost: number;
+}
+
+export interface PassengerRecentTripResponse {
+  id: number;
+  date: string;
+  route_from: string | null;
+  route_to: string | null;
+  driver: string | null;
+  seats: number;
+  price_per_seat: number;
+  total_cost: number;
+  status: string;
+  departure_time: string | null;
+}
+
+export interface PassengerComplaintResponse {
+  id: number;
+  type: string;
+  type_label: string;
+  status: string;
+  created_at: string;
+  assigned_to: string | null;
+}
+
+export interface PassengerWalletChargeResponse {
+  id: number;
+  transaction_id: string;
+  amount: number;
+  previous_balance: number;
+  new_balance: number;
+  status: string;
+  notes: string | null;
+  date: string;
+  created_at?: string;
+  /** Always null today — same `$request->user()` root cause as BUG-5. */
+  processed_by_name: string | null;
+}
+
+export interface PassengerFullProfileResponse {
+  user: {
+    id: number;
+    full_name: string;
+    email: string | null;
+    phone: string | null;
+    address: string | null;
+    gender: string | null;
+    joined_at: string;
+    profile_photo: string | null;
+    verification_status: string | null;
+    is_verified_passenger: boolean;
+    account_status: string;
+    ban: {
+      reason: string;
+      type: string;
+      expires_at: string | null;
+      banned_at: string | null;
+    } | null;
+  };
+  stats: PassengerStatsResponse;
+  monthly_trips: PassengerMonthlyTripResponse[];
+  recent_trips: PassengerRecentTripResponse[];
+  complaints: PassengerComplaintResponse[];
+  wallet_charges: PassengerWalletChargeResponse[];
+}
+
+export interface PaginationMeta {
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+}
+
+export interface PassengerComplaintsResponse {
+  status: string;
+  data: PassengerComplaintResponse[];
+  meta: PaginationMeta;
+  /** Per-status totals for this user — this endpoint *does* carry counts. */
+  counts: {
+    all: number;
+    pending: number;
+    in_review: number;
+    escalated: number;
+    resolved: number;
+    closed: number;
+  };
+}
+
+export interface PassengerWalletChargesResponse {
+  status: string;
+  data: PassengerWalletChargeResponse[];
+  meta: PaginationMeta | Record<string, never>;
+}
+
+/** `status` accepted by `GET /admin/passengers/{id}/complaints`. */
+export type PassengerComplaintFilter =
+  | 'all'
+  | 'pending'
+  | 'in_review'
+  | 'resolved'
+  | 'closed'
+  | 'escalated';
+
+/**
+ * `PassengerProfileController::chargeWallet()` validation:
+ * `amount` → `required|numeric|min:1|max:10000000`,
+ * `admin_notes` → `nullable|string|max:500`.
+ *
+ * Mirrored client-side so an out-of-range amount is disabled rather than
+ * submitted and 422'd.
+ */
+export const CHARGE_AMOUNT_MIN = 1;
+export const CHARGE_AMOUNT_MAX = 10_000_000;
+export const CHARGE_NOTES_MAX = 500;
+
+/**
+ * What the charge endpoint actually returns — **`{status, message, new_balance}`
+ * only**, verified live.
+ *
+ * It does *not* return `previous_balance` or `transaction_id`; that richer shape
+ * belongs to the unrelated `POST /admin/wallet/charge` (Phase 9). Filed as
+ * REQ-3. Callers that need the full record read it back from
+ * `GET /admin/passengers/{id}/wallet-charges`, whose top row is the transaction
+ * just written (the charge busts the profile cache first).
+ */
+export interface ChargeWalletResponse {
+  status: string;
+  message: string;
+  new_balance: number;
 }
 
 export const usersApi = {
@@ -55,27 +265,84 @@ export const usersApi = {
     const response = await api.get(ENDPOINTS.USERS.ALL, { params });
     return response.data;
   },
-  banUser: async (id: string | number, ban: BanRequest) => {
+  // ban/unban both return the freshly-formatted status, so callers get the new
+  // ban state without a follow-up request.
+  banUser: async (
+    id: string | number,
+    ban: BanRequest
+  ): Promise<{ status: string; message: string; data: UserStatusResponse }> => {
     const response = await api.post(ENDPOINTS.USERS.BAN(id), ban);
     return response.data;
   },
-  unbanUser: async (id: string | number, adminNotes?: string) => {
+  unbanUser: async (
+    id: string | number,
+    adminNotes?: string
+  ): Promise<{ status: string; message: string; data: UserStatusResponse }> => {
     const response = await api.post(
       ENDPOINTS.USERS.UNBAN(id),
       adminNotes ? { admin_notes: adminNotes } : {}
     );
     return response.data;
   },
-  getUserStatus: async (id: string | number) => {
+  /** Server-cached 5 min, but busted immediately by ban/unban. */
+  getUserStatus: async (
+    id: string | number
+  ): Promise<{ status: string; data: UserStatusResponse }> => {
     const response = await api.get(ENDPOINTS.USERS.STATUS(id));
     return response.data;
   },
-  // BFF endpoint: whole passenger profile page in one call
-  getPassengerFullProfile: async (id: string | number) => {
+  // BFF endpoint: whole passenger profile page in one call (server-cached 5 min)
+  getPassengerFullProfile: async (
+    id: string | number
+  ): Promise<{ status: string; data: PassengerFullProfileResponse }> => {
     const response = await api.get(ENDPOINTS.PASSENGERS.FULL_PROFILE(id));
     return response.data;
   },
-  chargePassengerWallet: async (id: string | number, amount: number, adminNotes?: string) => {
+  // ---- per-section refresh: reloads one card without re-fetching the BFF ----
+  /** Cached 5 min server-side; busted by a wallet charge. */
+  getPassengerStats: async (
+    id: string | number
+  ): Promise<{ status: string; data: PassengerStatsResponse }> => {
+    const response = await api.get(ENDPOINTS.PASSENGERS.STATS(id));
+    return response.data;
+  },
+  /** `months` is clamped server-side to 1–12 (default 6); cached 15 min. */
+  getPassengerMonthlyTrips: async (
+    id: string | number,
+    months = 6
+  ): Promise<{ status: string; data: PassengerMonthlyTripResponse[] }> => {
+    const response = await api.get(ENDPOINTS.PASSENGERS.MONTHLY_TRIPS(id), { params: { months } });
+    return response.data;
+  },
+  /** `limit` is clamped server-side to 1–50 (default 10); cached 3 min. */
+  getPassengerRecentTrips: async (
+    id: string | number,
+    limit = 10
+  ): Promise<{ status: string; data: PassengerRecentTripResponse[] }> => {
+    const response = await api.get(ENDPOINTS.PASSENGERS.RECENT_TRIPS(id), { params: { limit } });
+    return response.data;
+  },
+  /** Not cached — filtered and paginated server-side, and carries `counts`. */
+  getPassengerComplaints: async (
+    id: string | number,
+    params: { status?: PassengerComplaintFilter; per_page?: number; page?: number } = {}
+  ): Promise<PassengerComplaintsResponse> => {
+    const response = await api.get(ENDPOINTS.PASSENGERS.COMPLAINTS(id), { params });
+    return response.data;
+  },
+  /** Not cached — financial data, mutated by charge-wallet. */
+  getPassengerWalletCharges: async (
+    id: string | number,
+    params: { per_page?: number; page?: number } = {}
+  ): Promise<PassengerWalletChargesResponse> => {
+    const response = await api.get(ENDPOINTS.PASSENGERS.WALLET_CHARGES(id), { params });
+    return response.data;
+  },
+  chargePassengerWallet: async (
+    id: string | number,
+    amount: number,
+    adminNotes?: string
+  ): Promise<ChargeWalletResponse> => {
     const response = await api.post(ENDPOINTS.PASSENGERS.CHARGE_WALLET(id), {
       amount,
       ...(adminNotes ? { admin_notes: adminNotes } : {}),

@@ -12,7 +12,8 @@ export interface Employee {
   roleLabel: string;
   isActive: boolean;
   lastLogin: string;
-  avatar: string;
+  /** No employee photo endpoint exists; the initials <Avatar> renders instead. */
+  photo: null;
 }
 
 interface UseStaffReturn {
@@ -37,7 +38,7 @@ const mapEmployee = (e: EmployeeResponse): Employee => ({
   roleLabel: e.role_label,
   isActive: e.is_active,
   lastLogin: e.last_login_at ? new Date(e.last_login_at).toLocaleString('ar-SY') : '—',
-  avatar: `https://i.pravatar.cc/100?u=employee-${e.id}`,
+  photo: null,
 });
 
 export const useStaff = (): UseStaffReturn => {

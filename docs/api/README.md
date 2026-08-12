@@ -13,6 +13,9 @@ record what was actually verified, and what is still an open question.
 | [`probe.sh`](./probe.sh) | Re-runnable existence probe. Run it the moment a backend host exists | — |
 | [`verify-auth.sh`](./verify-auth.sh) | Phase 1 acceptance check against a running backend — proves the auth assumptions the code was built on | — |
 | [`verify-dashboard.mjs`](./verify-dashboard.mjs) | Phase 2 acceptance check — drives the real Dashboard in Chromium and asserts the rendered UI matches the live payload, in both languages | — |
+| [`verify-trips.mjs`](./verify-trips.mjs) | Phase 3 acceptance check — Trips + Bookings: paging, filters, `counts` badges, live map, cancellation. `--mutate` cancels a real booking | 85 assertions |
+| [`verify-drivers.mjs`](./verify-drivers.mjs) | Phase 4 acceptance check — Drivers + details: paging, `per_page`, search, filters, the efficiency period switch, and the ban banner. `--mutate` performs a real temporary ban **and unbans it again** | 94 read-only / 125 with `--mutate` |
+| [`verify-users.mjs`](./verify-users.mjs) | Phase 5 acceptance check — Users + passenger details: all four filters (incl. `date`), paging, `per_page`, search, the five per-section refresh endpoints, and the wallet amount rules. `--mutate` performs a real temporary ban + unban **and a real wallet charge, which it reports as irreversible** | 137 read-only / 185 with `--mutate` |
 | [`backend-issues.md`](./backend-issues.md) | Defects and requests found while wiring the dashboard — **hand this to the backend developer** | — |
 | [`build-route-list.py`](./build-route-list.py) | Turns raw `artisan route:list --json` into the shape above | — |
 | [`parse-routes.py`](./parse-routes.py) | Fallback generator that parses `routes/api.php` directly, for when PHP is unavailable | superseded, kept as a backstop |

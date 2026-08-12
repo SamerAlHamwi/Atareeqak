@@ -1,14 +1,45 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
+import Avatar from '../../shared/components/Avatar';
 import ConfirmActionModal from '../../shared/components/ConfirmActionModal';
 import type { ConfirmActionPayload } from '../../shared/components/ConfirmActionModal';
 import ErrorBanner from '../../shared/components/ErrorBanner';
+import FilterTabs from '../../shared/components/FilterTabs';
+import type { FilterTabItem } from '../../shared/components/FilterTabs';
+import PerPageSelect from '../../shared/components/PerPageSelect';
+import TablePagination from '../../shared/components/TablePagination';
 import TableSkeleton from '../../shared/components/TableSkeleton';
-import { useUsers } from '../hooks/useUsers';
-import type { UserRow } from '../hooks/useUsers';
+import {
+  useUsers,
+  isBannedUser,
+  USER_TYPE_FILTERS,
+  USER_STATUS_FILTERS,
+  USER_DATE_FILTERS,
+  USERS_PER_PAGE_OPTIONS,
+} from '../hooks/useUsers';
+import type { UserRow, UserStatusFilter } from '../hooks/useUsers';
+
+/**
+ * Five statuses, not three: `AdminUserService::resolveUserStatus()` also returns
+ * `rejected` and `unverified`, which previously fell through the badge map and
+ * rendered a raw i18n key.
+ */
+const statusBadgeClasses = (status: UserRow['status']): string => {
+  switch (status) {
+    case 'verified':
+      return 'bg-tertiary-fixed text-on-tertiary-fixed-variant';
+    case 'pending':
+      return 'bg-surface-container-high text-on-surface-variant';
+    case 'suspended':
+    case 'rejected':
+      return 'bg-error-container text-error';
+    default:
+      return 'bg-surface-container-high text-on-surface-variant';
+  }
+};
 
 const Users: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -21,17 +52,21 @@ const Users: React.FC = () => {
   const {
     users,
     stats,
+    adminPhoto,
     typeFilter,
     setTypeFilter,
     statusFilter,
     setStatusFilter,
+    dateFilter,
+    setDateFilter,
     search,
     setSearch,
     page,
     setPage,
+    perPage,
+    setPerPage,
     lastPage,
     total,
-    perPage,
     isLoading,
     error,
     refetch,
@@ -39,7 +74,23 @@ const Users: React.FC = () => {
     unbanUser,
   } = useUsers();
 
+  /**
+   * No count badges: `GET /admin/users` returns no `counts` block (verified
+   * live) and `meta.total` only describes the requested filter, so four badges
+   * would mean four extra requests — filed as REQ-2.
+   */
+  const statusTabs = useMemo<FilterTabItem<UserStatusFilter>[]>(
+    () =>
+      USER_STATUS_FILTERS.map((filter) => ({
+        value: filter,
+        label: t(`users.filter_status_${filter}`),
+      })),
+    [t]
+  );
+
   const closePanel = () => setSelectedUser(null);
+
+  const statusLabel = (status: UserRow['status']) => t(`users.status_${status}`);
 
   const handleUnban = async (user: UserRow) => {
     await runAction({
@@ -47,16 +98,11 @@ const Users: React.FC = () => {
       action: () => unbanUser(user),
       successMessage: t('users.unban_success', { name: user.name }),
       errorMessage: t('users.status_update_failed'),
-      onSuccess: () => {
-        setSelectedUser((prev) =>
-          prev && prev.id === user.id ? { ...prev, status: 'verified' } : prev
-        );
-      },
     });
   };
 
   const handleToggleStatus = async (user: UserRow) => {
-    if (user.status === 'suspended') {
+    if (isBannedUser(user)) {
       await handleUnban(user);
     } else {
       setBanTarget(user);
@@ -76,37 +122,51 @@ const Users: React.FC = () => {
         }),
       successMessage: t('users.ban_success', { name: user.name }),
       errorMessage: t('users.status_update_failed'),
-      onSuccess: () => {
-        setSelectedUser((prev) =>
-          prev && prev.id === user.id ? { ...prev, status: 'suspended' } : prev
-        );
-      },
     });
     // Close either way — success and error feedback both show in the page banner
     setBanTarget(null);
   };
 
-  const paginationStart = total === 0 ? 0 : (page - 1) * perPage + 1;
-  const paginationEnd = Math.min(page * perPage, total);
+  const rangeInfo = (): string => {
+    if (total === 0) return '';
+    const from = (page - 1) * perPage + 1;
+    const to = Math.min(page * perPage, total);
+    // `count` drives the Arabic plural category, so it must be the total.
+    return t('common.showing_range', { from, to, count: total });
+  };
 
-  const statusLabel = (status: UserRow['status']) =>
-    status === 'pending'
-      ? t('users.pending_review')
-      : status === 'verified'
-      ? t('users.verified')
-      : t('users.blocked');
+  /** The panel's copy of the row is stale after a ban; re-read it from the list. */
+  const panelUser = selectedUser
+    ? users.find((entry) => entry.id === selectedUser.id) ?? selectedUser
+    : null;
 
   return (
     <div className="space-y-8 relative">
       <ActionBanner feedback={feedback} onDismiss={clearFeedback} />
 
-      {error && <ErrorBanner onRetry={() => void refetch()} />}
+      {error && <ErrorBanner message={error} onRetry={() => void refetch()} />}
 
       {/* Page Header */}
       <section className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div className="space-y-1">
-          <h3 className="text-3xl font-extrabold font-headline tracking-tight text-primary">{t('users.active_users')}</h3>
-          <p className="text-on-surface-variant text-sm">{t('users.subtitle')}</p>
+        <div className="flex items-center gap-4">
+          {/*
+            `admin_photo` is null on every response (BUG-5): the controller reads
+            `$request->user()?->id`, which StaffJwtMiddleware never populates.
+            Rendered through the Avatar fallback rather than worked around, so
+            it lights up on its own once the backend is fixed.
+          */}
+          <Avatar
+            name={t('users.admin_avatar_alt')}
+            photo={adminPhoto}
+            size="md"
+            className="hidden md:flex"
+          />
+          <div className="space-y-1">
+            <h3 className="text-3xl font-extrabold font-headline tracking-tight text-primary">
+              {t('users.active_users')}
+            </h3>
+            <p className="text-on-surface-variant text-sm">{t('users.subtitle')}</p>
+          </div>
         </div>
         <div className="relative w-full md:max-w-xs">
           <span className={`absolute inset-y-0 ${isRtl ? 'right-0 pr-4' : 'left-0 pl-4'} flex items-center pointer-events-none text-on-surface-variant`}>
@@ -122,57 +182,89 @@ const Users: React.FC = () => {
         </div>
       </section>
 
-      {/* Filters Bento Grid */}
+      {/* Stats + filters */}
       <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-surface-container-lowest p-4 rounded-2xl flex flex-col gap-2 border border-outline-variant/10">
-          <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">{t('users.filter_type')}</label>
-          <select
-            value={typeFilter}
-            onChange={(event) => setTypeFilter(event.target.value as typeof typeFilter)}
-            className="bg-transparent border-none text-on-surface font-medium focus:ring-0 p-0 cursor-pointer"
+          <label
+            htmlFor="users-type-filter"
+            className="text-xs font-bold text-on-surface-variant uppercase tracking-wider"
           >
-            <option value="all">{t('users.all')}</option>
-            <option value="driver">{t('users.driver')}</option>
-            <option value="passenger">{t('users.passenger')}</option>
+            {t('users.filter_type')}
+          </label>
+          <select
+            id="users-type-filter"
+            value={typeFilter}
+            disabled={isLoading}
+            onChange={(event) => setTypeFilter(event.target.value as typeof typeFilter)}
+            className="bg-transparent border-none text-on-surface font-medium focus:ring-0 p-0 cursor-pointer disabled:opacity-50"
+          >
+            {USER_TYPE_FILTERS.map((filter) => (
+              <option key={filter} value={filter}>
+                {t(`users.filter_type_${filter}`)}
+              </option>
+            ))}
+          </select>
+        </div>
+        {/* `date` was typed in UsersListParams but never exposed until Phase 5. */}
+        <div className="bg-surface-container-lowest p-4 rounded-2xl flex flex-col gap-2 border border-outline-variant/10">
+          <label
+            htmlFor="users-date-filter"
+            className="text-xs font-bold text-on-surface-variant uppercase tracking-wider"
+          >
+            {t('users.filter_date')}
+          </label>
+          <select
+            id="users-date-filter"
+            value={dateFilter}
+            disabled={isLoading}
+            onChange={(event) => setDateFilter(event.target.value as typeof dateFilter)}
+            className="bg-transparent border-none text-on-surface font-medium focus:ring-0 p-0 cursor-pointer disabled:opacity-50"
+          >
+            {USER_DATE_FILTERS.map((filter) => (
+              <option key={filter} value={filter}>
+                {t(`users.filter_date_${filter}`)}
+              </option>
+            ))}
           </select>
         </div>
         <div className="bg-surface-container-lowest p-4 rounded-2xl flex flex-col gap-2 border border-outline-variant/10">
-          <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">{t('users.filter_status')}</label>
-          <div className="flex gap-2 mt-1">
-            <button
-              onClick={() => setStatusFilter(statusFilter === 'verified' ? 'all' : 'verified')}
-              className={`px-3 py-1 text-xs font-bold rounded-full transition-colors ${statusFilter === 'verified' ? 'bg-secondary text-white' : 'bg-secondary/10 text-secondary hover:bg-secondary hover:text-white'}`}
-            >
-              {t('users.verified')}
-            </button>
-            <button
-              onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
-              className={`px-3 py-1 text-xs font-bold rounded-full transition-colors ${statusFilter === 'pending' ? 'bg-primary text-white' : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'}`}
-            >
-              {t('users.pending_review')}
-            </button>
-            <button
-              onClick={() => setStatusFilter(statusFilter === 'suspended' ? 'all' : 'suspended')}
-              className={`px-3 py-1 text-xs font-bold rounded-full transition-colors ${statusFilter === 'suspended' ? 'bg-error text-white' : 'bg-error-container text-error'}`}
-            >
-              {t('users.blocked')}
-            </button>
-          </div>
-        </div>
-        <div className="bg-surface-container-lowest p-4 rounded-2xl flex flex-col gap-2 border border-outline-variant/10">
-          <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">{t('users.suspended_users')}</label>
+          {/*
+            `suspended_users` counts `status = 0` (logged out), not banned
+            accounts — the label says so rather than implying a ban count.
+          */}
+          <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+            {t('users.suspended_users')}
+          </label>
           <p className="text-2xl font-bold font-headline text-error">
-            {stats ? stats.suspended_users.toLocaleString() : '—'}
+            {stats ? stats.suspended_users.toLocaleString(i18n.language) : '—'}
           </p>
         </div>
         <div className="bg-primary-container p-4 rounded-2xl flex items-center justify-between text-on-primary-container shadow-lg shadow-primary/10">
           <div>
             <p className="text-xs opacity-70">{t('users.total_registered')}</p>
             <p className="text-2xl font-bold font-headline">
-              {stats ? stats.total_registered.toLocaleString() : '—'}
+              {stats ? stats.total_registered.toLocaleString(i18n.language) : '—'}
             </p>
           </div>
           <span className="material-symbols-outlined text-3xl opacity-30">group</span>
+        </div>
+      </section>
+
+      <section className="flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div className="flex items-center gap-3 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto">
+          <FilterTabs
+            items={statusTabs}
+            active={statusFilter}
+            onChange={setStatusFilter}
+            disabled={isLoading}
+            aria-label={t('users.filter_status')}
+          />
+          <PerPageSelect
+            value={perPage}
+            options={USERS_PER_PAGE_OPTIONS}
+            onChange={setPerPage}
+            disabled={isLoading}
+          />
         </div>
       </section>
 
@@ -195,7 +287,7 @@ const Users: React.FC = () => {
               ) : users.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-8 py-10 text-center text-on-surface-variant font-medium">
-                    {t('common.no_data')}
+                    {search ? t('users.no_results', { term: search }) : t('common.no_data')}
                   </td>
                 </tr>
               ) : (
@@ -208,9 +300,9 @@ const Users: React.FC = () => {
                     <td className="px-8 py-4">
                       <div className="flex items-center gap-3">
                         <div className="relative">
-                          <img className="h-10 w-10 rounded-full object-cover" src={user.avatar} alt={user.name} />
+                          <Avatar name={user.name} photo={user.photo} size="sm" />
                           {user.status === 'verified' && (
-                            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
+                            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-secondary border-2 border-surface-container-lowest rounded-full"></div>
                           )}
                         </div>
                         <div>
@@ -229,20 +321,30 @@ const Users: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-sm text-on-surface-variant">{user.joinDate}</td>
                     <td className="px-6 py-4">
-                      <span
-                        className={`px-3 py-1 text-xs font-bold rounded-full ${
-                          user.status === 'verified'
-                            ? 'bg-tertiary-fixed text-on-tertiary-fixed-variant'
-                            : user.status === 'pending'
-                            ? 'bg-surface-container-high text-on-surface-variant'
-                            : 'bg-error-container text-error'
-                        }`}
-                      >
-                        {statusLabel(user.status)}
-                      </span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span
+                          className={`px-3 py-1 text-xs font-bold rounded-full ${statusBadgeClasses(user.status)}`}
+                        >
+                          {statusLabel(user.status)}
+                        </span>
+                        {/*
+                          Shown only for rows whose ban state we actually know —
+                          i.e. ones banned in this session. The list payload
+                          reports ban state backwards (BUG-6), so absence of
+                          this chip means "unknown", never "not banned".
+                        */}
+                        {isBannedUser(user) && (
+                          <span
+                            data-testid={`user-banned-${user.id}`}
+                            className="px-3 py-1 rounded-full text-xs font-bold bg-error text-on-error"
+                          >
+                            {t('users.account_banned')}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center ltr:justify-end rtl:justify-start gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center ltr:justify-end rtl:justify-start gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                         <button
                           onClick={(event) => {
                             event.stopPropagation();
@@ -254,20 +356,21 @@ const Users: React.FC = () => {
                           <span className="material-symbols-outlined">visibility</span>
                         </button>
                         <button
+                          data-testid={`user-ban-toggle-${user.id}`}
                           onClick={async (event) => {
                             event.stopPropagation();
                             await handleToggleStatus(user);
                           }}
                           disabled={isBusy(`status-${user.id}`)}
                           className={`p-2 rounded-lg disabled:opacity-40 ${
-                            user.status === 'suspended'
+                            isBannedUser(user)
                               ? 'hover:bg-secondary/10 text-secondary'
                               : 'hover:bg-error-container text-error'
                           }`}
-                          title={user.status === 'suspended' ? t('users.approve') : t('users.block')}
+                          title={isBannedUser(user) ? t('users.unban_action') : t('users.ban_action')}
                         >
                           <span className="material-symbols-outlined">
-                            {user.status === 'suspended' ? 'undo' : 'block'}
+                            {isBannedUser(user) ? 'undo' : 'block'}
                           </span>
                         </button>
                       </div>
@@ -278,31 +381,13 @@ const Users: React.FC = () => {
             </tbody>
           </table>
         </div>
-        {/* Pagination */}
-        <div className="bg-surface-container-low px-8 py-4 flex items-center justify-between border-t border-outline-variant/10">
-          <span className="text-xs text-on-surface-variant">
-            {t('users.pagination_info', { start: paginationStart, end: paginationEnd, total })}
-          </span>
-          <div className="flex gap-2 items-center">
-            <button
-              onClick={() => setPage(Math.max(1, page - 1))}
-              disabled={page <= 1}
-              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high text-on-surface-variant disabled:opacity-40"
-            >
-              <span className="material-symbols-outlined text-sm">{isRtl ? 'chevron_right' : 'chevron_left'}</span>
-            </button>
-            <span className="text-xs font-bold text-on-surface px-2">
-              {page} / {lastPage}
-            </span>
-            <button
-              onClick={() => setPage(Math.min(lastPage, page + 1))}
-              disabled={page >= lastPage}
-              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high text-on-surface-variant disabled:opacity-40"
-            >
-              <span className="material-symbols-outlined text-sm">{isRtl ? 'chevron_left' : 'chevron_right'}</span>
-            </button>
-          </div>
-        </div>
+        <TablePagination
+          page={page}
+          lastPage={lastPage}
+          onPageChange={setPage}
+          info={rangeInfo()}
+          isLoading={isLoading}
+        />
       </section>
 
       {/* Ban confirmation modal (reason + permanent/temporary + expiry) */}
@@ -318,11 +403,11 @@ const Users: React.FC = () => {
       />
 
       {/* User Quick View (Side Panel) */}
-      {selectedUser && (
+      {panelUser && (
         <>
           <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[55]" onClick={closePanel}></div>
           <div
-            className={`fixed top-0 ${isRtl ? 'left-0 border-r' : 'right-0 border-l'} h-full w-full max-w-[400px] bg-white/70 backdrop-blur-3xl z-[60] shadow-2xl flex flex-col border-outline-variant/20 overflow-y-auto animate-in slide-in-from-${isRtl ? 'left' : 'right'} duration-300`}
+            className={`fixed top-0 ${isRtl ? 'left-0 border-r' : 'right-0 border-l'} h-full w-full max-w-[400px] bg-surface-container-lowest/90 backdrop-blur-3xl z-[60] shadow-2xl flex flex-col border-outline-variant/20 overflow-y-auto`}
           >
             <div className="p-8 space-y-8">
               <div className="flex justify-between items-start">
@@ -334,9 +419,9 @@ const Users: React.FC = () => {
 
               <div className="text-center space-y-4">
                 <div className="relative inline-block">
-                  <img className="h-28 w-28 rounded-full object-cover border-4 border-white shadow-lg mx-auto" src={selectedUser.avatar} alt={selectedUser.name} />
-                  {selectedUser.status === 'verified' && (
-                    <div className="absolute bottom-1 right-1 p-1.5 bg-secondary text-white rounded-full border-2 border-white">
+                  <Avatar name={panelUser.name} photo={panelUser.photo} size="lg" className="h-28 w-28 text-3xl border-4 border-surface-container-lowest shadow-lg mx-auto" />
+                  {panelUser.status === 'verified' && (
+                    <div className="absolute bottom-1 right-1 p-1.5 bg-secondary text-white rounded-full border-2 border-surface-container-lowest">
                       <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
                         verified
                       </span>
@@ -344,8 +429,8 @@ const Users: React.FC = () => {
                   )}
                 </div>
                 <div>
-                  <h4 className="text-2xl font-extrabold font-headline text-primary">{selectedUser.name}</h4>
-                  <p className="text-on-surface-variant">{t('users.member_since', { date: selectedUser.joinDate })}</p>
+                  <h4 className="text-2xl font-extrabold font-headline text-primary">{panelUser.name}</h4>
+                  <p className="text-on-surface-variant">{t('users.member_since', { date: panelUser.joinDate })}</p>
                 </div>
               </div>
 
@@ -355,34 +440,36 @@ const Users: React.FC = () => {
                 <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl divide-y divide-outline-variant/10 shadow-sm">
                   <div className="p-4 flex justify-between items-center">
                     <span className="text-sm text-on-surface-variant">{t('users.table_type')}</span>
-                    <span className="text-sm font-bold">{t(`users.${selectedUser.type}`)}</span>
+                    <span className="text-sm font-bold">{t(`users.${panelUser.type}`)}</span>
                   </div>
                   <div className="p-4 flex justify-between items-center">
                     <span className="text-sm text-on-surface-variant">{t('users.table_status')}</span>
-                    <span className="text-sm font-bold">{statusLabel(selectedUser.status)}</span>
+                    <span className="text-sm font-bold">
+                      {isBannedUser(panelUser) ? t('users.account_banned') : statusLabel(panelUser.status)}
+                    </span>
                   </div>
                   <div className="p-4 flex justify-between items-center">
                     <span className="text-sm text-on-surface-variant">{t('auth.email')}</span>
-                    <span className="text-sm font-bold">{selectedUser.email || '--'}</span>
+                    <span className="text-sm font-bold">{panelUser.email || '--'}</span>
                   </div>
                 </div>
               </div>
 
               <div className="flex gap-3 pt-4">
                 <button
-                  onClick={() => navigate(`/passengers/${selectedUser.id}`)}
+                  onClick={() => navigate(`/passengers/${panelUser.id}`)}
                   className="flex-1 bg-secondary text-white py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-md"
                 >
                   {t('users.open_profile')}
                 </button>
                 <button
-                  onClick={() => void handleToggleStatus(selectedUser)}
-                  disabled={isBusy(`status-${selectedUser.id}`)}
+                  onClick={() => void handleToggleStatus(panelUser)}
+                  disabled={isBusy(`status-${panelUser.id}`)}
                   className="px-4 py-3 border border-error text-error rounded-xl hover:bg-error-container transition-all disabled:opacity-50"
-                  title={selectedUser.status === 'suspended' ? t('users.approve') : t('users.block')}
+                  title={isBannedUser(panelUser) ? t('users.unban_action') : t('users.ban_action')}
                 >
                   <span className="material-symbols-outlined">
-                    {selectedUser.status === 'suspended' ? 'undo' : 'block'}
+                    {isBannedUser(panelUser) ? 'undo' : 'block'}
                   </span>
                 </button>
               </div>

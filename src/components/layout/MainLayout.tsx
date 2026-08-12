@@ -4,6 +4,7 @@ import { useAuth } from '../../app/context/useAuth';
 import { canAccess } from '../../app/roles';
 import type { AppSection } from '../../app/roles';
 import { useTranslation } from 'react-i18next';
+import Avatar from '../../features/shared/components/Avatar';
 
 interface NavItem {
   to: string;
@@ -143,11 +144,17 @@ const MainLayout: React.FC = () => {
                   {user?.roleLabel || (role ? t(`roles.${role}`) : t('header.admin_role'))}
                 </p>
               </div>
-              <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-slate-200 overflow-hidden border-2 lg:border-4 border-white shadow-md">
-                <img
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                    src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+              {/*
+                Was a hardcoded Unsplash portrait of an unrelated person. The
+                logged-in employee has no photo endpoint yet (`POST /admin/photo`
+                is unbuilt on this page — Phase 12), so initials it is.
+              */}
+              <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full overflow-hidden border-2 lg:border-4 border-surface-container-lowest shadow-md">
+                <Avatar
+                  name={user?.name || t('header.admin_name')}
+                  photo={null}
+                  size="xl"
+                  className="rounded-none"
                 />
               </div>
             </div>

@@ -9,6 +9,7 @@ import type { Employee } from '../hooks/useStaff';
 import { staffApi } from '../api/staffApi';
 import type { StaffRole, CreatableStaffRole, BroadcastAlertRequest } from '../api/staffApi';
 import { CREATABLE_STAFF_ROLES } from '../api/staffApi';
+import Avatar from '../../shared/components/Avatar';
 
 const roleBadgeClasses: Record<StaffRole, string> = {
   system_admin: 'bg-indigo-50 text-indigo-700',
@@ -252,7 +253,7 @@ const Staff: React.FC = () => {
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full border-2 border-white shadow-sm overflow-hidden shrink-0">
-                            <img className="w-full h-full object-cover" src={emp.avatar} alt={emp.name} />
+                            <Avatar name={emp.name} photo={emp.photo} size="xl" className="rounded-none" />
                           </div>
                           <div className="text-start">
                             <p className="font-bold text-sm text-primary">{emp.name}</p>
@@ -389,7 +390,7 @@ const Staff: React.FC = () => {
           {selectedEmployee && (
             <div className="bg-surface-container-lowest rounded-3xl p-8 shadow-sm space-y-6 border border-outline-variant/10">
               <div className="flex items-center gap-3 p-4 bg-surface-container-low rounded-2xl">
-                <img className="w-10 h-10 rounded-full object-cover shrink-0" src={selectedEmployee.avatar} alt={selectedEmployee.name} />
+                <Avatar name={selectedEmployee.name} photo={selectedEmployee.photo} size="sm" />
                 <div className="text-start">
                   <p className="text-sm font-bold text-primary">{selectedEmployee.name}</p>
                   <p className="text-[10px] text-on-surface-variant">

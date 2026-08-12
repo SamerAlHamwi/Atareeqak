@@ -45,7 +45,10 @@ const ActionBanner: React.FC<ActionBannerProps> = ({
     : 'rounded-xl px-4 py-3 text-sm font-semibold border';
 
   return (
-    <div className={`${baseClasses} ${toneClasses[feedback.tone]} ${className}`.trim()}>
+    <div
+      data-testid="action-banner"
+      className={`${baseClasses} ${toneClasses[feedback.tone]} ${className}`.trim()}
+    >
       <div className="flex items-center justify-between gap-3">
         <span>{feedback.message}</span>
         {showDismiss && onDismiss && (

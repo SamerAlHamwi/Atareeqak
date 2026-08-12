@@ -17,7 +17,8 @@ export interface Complaint {
   rawId: number;
   user: string;
   userEmail: string;
-  userAvatar: string;
+  /** The complaint payload carries no photo; the initials <Avatar> renders instead. */
+  userPhoto: null;
   category: string;
   date: string;
   status: 'pending' | 'in_review' | 'resolved' | 'closed' | 'escalated';
@@ -34,7 +35,7 @@ const mapComplaint = (c: ComplaintResponse, t: TFunction): Complaint => ({
   rawId: c.id,
   user: c.user?.name || t('common.unknown_user'),
   userEmail: c.user?.email || '',
-  userAvatar: `https://i.pravatar.cc/100?u=${c.user?.id ?? c.id}`,
+  userPhoto: null,
   category: c.type_label || c.title || t('common.general_complaint'),
   date: c.created_at ? new Date(c.created_at).toLocaleDateString('ar-SY') : '',
   status: c.status,

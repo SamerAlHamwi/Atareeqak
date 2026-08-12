@@ -12,6 +12,7 @@ import { useSupport } from '../hooks/useSupport';
 import type { StatusFilter, SupportView } from '../hooks/useSupport';
 import { SupportStats } from '../components/SupportStats';
 import { ComplaintDetails } from '../components/ComplaintDetails';
+import Avatar from '../../shared/components/Avatar';
 
 const statusBadgeClasses: Record<string, string> = {
   pending: 'bg-amber-100 text-amber-700',
@@ -225,7 +226,7 @@ const Support: React.FC = () => {
                       <td className="py-4">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden">
-                            <img className="w-full h-full object-cover" src={cmp.userAvatar} alt={cmp.user} />
+                            <Avatar name={cmp.user} photo={cmp.userPhoto} size="xl" className="rounded-none" />
                           </div>
                           <div>
                             <p className="text-xs font-bold text-start">{cmp.user}</p>

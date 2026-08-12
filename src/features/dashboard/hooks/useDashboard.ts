@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
+import { initialsOf } from '../../shared/initials';
 import { extractApiError } from '../../../services/apiError';
 import { dashboardApi } from '../api/dashboardApi';
 import type {
@@ -102,15 +103,6 @@ export interface DashboardActivityRow {
   status: string;
   value: string;
 }
-
-const initialsOf = (name: string): string =>
-  name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase() || '?';
 
 export const useDashboard = () => {
   const { t, i18n } = useTranslation();

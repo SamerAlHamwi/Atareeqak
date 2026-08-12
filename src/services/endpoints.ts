@@ -24,7 +24,8 @@ export const ENDPOINTS = {
     TOP: '/admin/drivers/top',
     DASHBOARD: '/admin/drivers/dashboard',
     VERIFICATION_EFFICIENCY: '/admin/drivers/verification-efficiency',
-    PROFILE: (id: string | number) => `/admin/drivers/${id}/profile`,
+    // `/admin/drivers/{id}/profile` exists server-side but has no consumer: the
+    // details page is driven by `{id}/dashboard`, which is a superset of it.
     DRIVER_DASHBOARD: (id: string | number) => `/admin/drivers/${id}/dashboard`,
   },
   USERS: {

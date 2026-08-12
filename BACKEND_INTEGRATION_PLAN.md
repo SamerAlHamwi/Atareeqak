@@ -87,26 +87,24 @@ either source until you have probed the live host.
 
 - `GET /admin/wallet` — the admin's own wallet (balance card).
 - `GET /admin/wallet/{walletId}/transactions` — `walletApi.getWalletTransactions()` exists but is never called from any component.
-- `GET /admin/passengers/{id}/stats | monthly-trips | recent-trips | complaints | wallet-charges` — only the BFF `full-profile` is used; the per-section refresh endpoints are unused.
-- `GET /admin/drivers/stats`, `GET /admin/drivers/activity`, `GET /admin/drivers/verification-efficiency` — covered by the `drivers/dashboard` BFF, so these are only needed if you add per-widget refresh.
+- ~~`GET /admin/passengers/{id}/stats | monthly-trips | recent-trips | complaints | wallet-charges`~~ ✅ all five wired in Phase 5 as per-section refresh controls (window/limit/status selectors + a reload button each).
+- `GET /admin/drivers/stats`, `GET /admin/drivers/activity` — covered by the `drivers/dashboard` BFF, so these are only needed if you add per-widget refresh. ~~`GET /admin/drivers/verification-efficiency`~~ ✅ wired in Phase 4 (period switch). `GET /admin/drivers/{id}/profile` has **no consumer by design** — Phase 4 deleted the wrapper; `{id}/dashboard` is a superset.
 - ~~`GET /staff/bookings` and `POST /staff/bookings/{bookingId}/cancel` — **no UI exists**.~~ ✅ Built in Phase 3 as the Bookings tab on the Trips page.
 - `GET /employees/{id}` — no consumer (the list carries everything today).
 - `POST /admin/photo` — admin avatar upload; `MainLayout` still renders a hardcoded Unsplash photo.
-- `GET /admin/users/{id}/status` — `usersApi.getUserStatus()` exists, never called (useful for the ban-state banner).
+- ~~`GET /admin/users/{id}/status`~~ ✅ Wired in Phase 4 (driver ban banner) and Phase 5 (passenger ban banner) through the now-shared `BanStatusBanner`.
 
 ### 1.6 Smaller mismatches worth fixing while you are in there
 
 - ~~`useTrips.ts:49` calls `tripsApi.getAllTrips(1, activeFilter)` — **page is hardcoded to 1**.~~ ✅ Fixed in Phase 3: `getAllTrips({page, filter, per_page})` with a real pager.
-- Ban is always sent as `type: 'permanent'` from the details pages. The backend supports
-  `type: 'temporary'` + `expires_at` (`AdminBanController`) and the list pages already pass a full
-  `BanRequest` — the details pages are the inconsistent ones.
+- ~~Ban is always sent as `type: 'permanent'` from the details pages.~~ ✅ Fixed for **drivers** in Phase 4 and for **passengers** in Phase 5; both use `ConfirmActionModal` with `showBanOptions`.
 - `verificationsApi.rejectVerification(userId)` is called with no `reason`; the backend accepts one
   and forwards it into the user's notification.
-- `GET /admin/users` builds `admin_photo` from `$request->user()?->id`, which is **null** under
-  `StaffJwtMiddleware` (the employee lives in `$request->attributes`, not `$request->user()`).
-  Expect `admin_photo: null` — flag it to the backend dev rather than working around it.
-- Avatars fall back to `i.pravatar.cc` in 5 hooks and `MainLayout` uses a hardcoded Unsplash URL.
-  These are external network calls in a product surface; replace with a local initials avatar.
+- ~~`GET /admin/users` builds `admin_photo` from `$request->user()?->id`, which is **null** under
+  `StaffJwtMiddleware`.~~ ✅ Confirmed live in Phase 5 and rendered through the `<Avatar>` fallback;
+  filed as [BUG-5](docs/api/backend-issues.md), which Phase 5 extended to a **third** site
+  (`chargeWallet` writes `user_id = null`, so no wallet charge records which admin made it).
+- ~~Avatars fall back to `i.pravatar.cc` in 5 hooks and `MainLayout` uses a hardcoded Unsplash URL.~~ ✅ Done in Phase 4: shared `<Avatar name photo />` + `initialsOf`; all 7 pravatar sites and the Unsplash URL removed.
 
 ---
 
@@ -126,11 +124,11 @@ Legend: ✅ wired & endpoint exists · ⚠️ wired but mismatched/incomplete ·
 | `trips` cancel | `POST /staff/trips/{rideId}/cancel` | ✅ hidden for non-cancellable states |
 | `trips/BookingsTable` | `GET /staff/bookings`, `POST /staff/bookings/{id}/cancel` | ✅ (no `counts` — [REQ-2](docs/api/backend-issues.md)) |
 | `trips` "draft trip" / "contact driver" buttons | — | ✅ resolved in Phase 1.5 |
-| `drivers/pages/Drivers` | `GET /admin/drivers/dashboard`, `GET /admin/drivers` | ✅ |
-| `drivers/pages/DriverDetails` | `GET /admin/drivers/{id}/dashboard` | ✅ |
-| drivers ban/unban | `POST /admin/users/{id}/ban|unban` | ⚠️ permanent-only |
-| `users/pages/Users` | `GET /admin/users` | ✅ |
-| `users/pages/UserDetails` | `GET /admin/passengers/{id}/full-profile`, `POST .../charge-wallet` | ✅ |
+| `drivers/pages/Drivers` | `GET /admin/drivers/dashboard`, `GET /admin/drivers`, `GET /admin/drivers/verification-efficiency` | ✅ paged, `per_page`, search, period switch (no `counts` — [REQ-2](docs/api/backend-issues.md)) |
+| `drivers/pages/DriverDetails` | `GET /admin/drivers/{id}/dashboard`, `GET /admin/users/{id}/status` | ✅ + ban-state banner |
+| drivers ban/unban | `POST /admin/users/{id}/ban|unban` | ✅ permanent + temporary with expiry |
+| `users/pages/Users` | `GET /admin/users` | ✅ paged, `per_page`, type + status + **date** + search (no `counts` — [REQ-2](docs/api/backend-issues.md)) |
+| `users/pages/UserDetails` | `GET /admin/passengers/{id}/full-profile` + `stats`/`monthly-trips`/`recent-trips`/`complaints`/`wallet-charges`, `POST .../charge-wallet`, `GET /admin/users/{id}/status` | ✅ + per-section refresh, ban banner, temporary bans |
 | `verification/pages/Verifications` | `GET /staff/verifications/pending`, `POST .../approve|reject` | ⚠️ no reject reason |
 | `verification/VerificationDocuments` | documents from the pending payload | ✅ |
 | `support/pages/Support` (inbox) | `GET /staff/complaints`, `GET /staff/complaints/{id}`, `PATCH .../respond`, `PATCH .../escalate` | ✅ |
@@ -367,35 +365,115 @@ Endpoints: `GET /admin/trips?filter&per_page&page` → `{data, meta{current_page
 
 ---
 
-## Phase 4 — Drivers
+## Phase 4 — Drivers — ✅ **DONE & VERIFIED AGAINST THE LIVE BACKEND 2026-08-12**
 
-Endpoints: `GET /admin/drivers/dashboard` (BFF: `admin_photo`, `stats`, `recent_activity`, `verification_efficiency`) · `GET /admin/drivers?filter&per_page&page&search` · `GET /admin/drivers/{id}/dashboard` · `GET /admin/drivers/{id}/profile` · `POST /admin/users/{id}/ban|unban`.
+Endpoints: `GET /admin/drivers/dashboard` (BFF: `admin_photo`, `stats`, `recent_activity`, `verification_efficiency`) · `GET /admin/drivers?filter&per_page&page&search` → `{data, meta{current_page,last_page,per_page,total,filter}}` (**no `counts`**) · `GET /admin/drivers/verification-efficiency?period=day|week|month` · `GET /admin/drivers/{id}/dashboard` · `POST /admin/users/{id}/ban {reason ≥10, type, expires_at?}` · `POST /admin/users/{id}/unban {admin_notes?}` · `GET /admin/users/{id}/status`.
 
-- [ ] Confirm the drivers table paginates against `meta` (`useDrivers.ts:98` already passes params — verify `page` is state-driven, not fixed).
-- [ ] Wire the `search` param to the search box (`Drivers.tsx:205`) with a ~300 ms debounce.
-- [ ] Wire the `verification_efficiency` widget's period switch to `GET /admin/drivers/verification-efficiency?period=day|week|month`.
-- [ ] **Temporary bans.** `useDriverDetails.ts:121` sends `type: 'permanent'` unconditionally. Extend `ConfirmActionModal` (or add a `BanUserModal`) with: reason (≥10 chars), type radio, and `expires_at` datetime required when `type === 'temporary'` — matching `AdminBanController`.
-- [ ] After ban/unban, refetch `GET /admin/users/{id}/status` and show the resulting ban state (reason, expiry, who banned) as a banner on the details page. `usersApi.getUserStatus()` already exists and is unused.
-- [ ] Replace the `i.pravatar.cc` fallback (`useDrivers.ts:58`, `useDriverDetails.ts:68`) with a local initials avatar component.
-- [ ] Document why `GET /admin/drivers/{id}/profile` is unused, or delete `driversApi.getDriverProfile`.
+> `npx tsc -b` clean · `npm run lint` clean · `npm test` **121 passing, up from 92**.
+>
+> **Verified end-to-end** by [`docs/api/verify-drivers.mjs`](docs/api/verify-drivers.mjs) — drives the
+> real pages in Chromium in **both `en` and `ar`** against MySQL + `artisan serve` on `:8000`:
+> **94 assertions read-only, 125 with `--mutate`, 0 failures.**
 
-**DoD:** a temporary ban with an expiry round-trips and the status banner reflects it after reload.
+### Corrections to this plan's earlier Phase 4 text
+
+Three items were listed as to-do but had already landed in Phase 3; two others were wrong:
+
+- ~~"verify `page` is state-driven"~~ — it already was, and `meta.last_page`/`total` were already threaded.
+- ~~"wire `search` with a ~300 ms debounce"~~ — already wired, at 400 ms.
+- ~~"`driversApi.getVerificationEfficiency` needs adding"~~ — it already existed and accepted day|week|month.
+- The endpoint list omitted that **`GET /admin/drivers` returns no `counts` block** — see the dropped item below.
+- "show … who banned" is **not possible**: `ban.banned_by` is always `null` ([BUG-5](docs/api/backend-issues.md)).
+
+### Done
+
+- [x] **Hand-rolled pager replaced** with the shared `TablePagination` + a `PerPageSelect`. The list never sent `per_page` at all and rode on the backend's default of 10; it now sends it explicitly. *Verified: the next control issues `page=2` carrying `per_page`, and the rows swap from `#DR-10` to `#DR-3`.*
+- [x] **`per_page` options are `5 / 10 / 25 / 50`** (default 10, inside the backend's 1–50 rule). 5 is deliberate: with ten seeded drivers, every option ≥10 collapses the list to a single page and makes the pager unreachable.
+- [x] **Client-side re-filter removed** (`visibleDrivers` is gone) — same bug class as `useTrips` in Phase 3, and *not* hypothetical here: a banned driver still reports `status: "verified"` (BUG-6), so the old memo blanked the table on the `suspended` tab. *Verified: all 10 server-filtered rows render.*
+- [x] **Filter tabs moved to the shared `FilterTabs`** — consistent `role="tab"` semantics, disabled during load, and badge-ready for when REQ-2 lands.
+- [x] **Verification-efficiency period switch is real** — day/week/month refetching `GET /admin/drivers/verification-efficiency?period=N`, replacing a widget that could only ever show the week. *Verified: switching requests `period=month` and **does not** refetch the drivers list.*
+- [x] **The efficiency delta is rendered from the payload**, not hardcoded — derived from `comparison.delta` + `current.processed/total_incoming/pending`. The backend's `comparison.text` and `previous.label` are **English-only** ("Same as last week"), so rendering them directly leaked English into the Arabic UI; they are now translated client-side from `comparison.delta`. *Verified in both languages.*
+- [x] **Temporary bans work.** `useDriverDetails` sent `type: 'permanent'` unconditionally; the details page now opens `ConfirmActionModal` with `showBanOptions` and sends the real `type` + `expires_at`. *Verified with `--mutate`: a real temporary ban round-tripped in each language and the server confirmed `type: temporary` with an expiry.*
+- [x] **Ban-state banner** on the details page, from `GET /admin/users/{id}/status` — previously defined in `usersApi` and never called. Fetched on load and refetched after every ban/unban. *Verified: the banner appears with the typed reason and expiry, and **survives a page reload**, proving it is server-sourced.*
+- [x] The banner handles all three `status_code` values. **An unban lands on `0` (`logged_out`), not `1` (`active`)** — the backend forces a fresh login — so "not banned" is tested as `ban === null`, never as `account_status === 'active'`.
+- [x] **Ban/unban actions are hidden-not-422'd**, per the Phase 3 pattern: `isBannedDriver()` drives ban-vs-unban off the authoritative status rather than the untrustworthy row status.
+- [x] **Shared `<Avatar name photo />`** in `src/features/shared/components/`, with an `initialsOf` helper in `src/features/shared/initials.ts`. **All seven `i.pravatar.cc` fallbacks and the hardcoded Unsplash portrait in `MainLayout` are gone** (`useDrivers`, `useDriverDetails`, `useUsers`, `useUserDetails`, `useStaff`, `useSupport`, `MainLayout`). `grep -r "pravatar\|unsplash" src` → nothing. It also degrades to initials when a photo URL fails, which the seed makes routine ([BUG-7](docs/api/backend-issues.md)). *Verified: the broken seeded photo renders as "DT".*
+- [x] **`driversApi.getDriverProfile` deleted**, along with `ENDPOINTS.DRIVERS.PROFILE`. `GET /admin/drivers/{id}/profile` is a strict subset of `{id}/dashboard` for everything the page renders — it lacks `price_per_seat`, earnings, `cancel_rate` and `favorite_destination`, and adds only `bookings_count`, which nothing displays. A comment records why at both sites.
+- [x] **`DriverStatus` widened to the five values the backend actually returns.** `resolveDriverStatus()` can return `rejected` and `unverified`; the union claimed three, so such a row fell through the badge map and rendered a **raw i18n key**. Both now have labels in `ar` and `en`.
+- [x] Loading skeletons, `ErrorBanner` with retry, and empty states (including a distinct "no drivers match X" for a search miss). Both hooks moved to `extractApiError` so a 422/500 reads as its real message.
+- [x] Dates on the details page were pinned to `'ar-SY'` regardless of language; they now follow the active locale.
+- [x] i18n: every new key in `ar` **and** `en`. Arabic count-bearing keys carry all six CLDR forms — including the pre-existing `drivers.completed_rides`, `cancelled_rides` and `visit_count`, which shipped a single ungrammatical form. 11 dead keys removed. *Verified: no raw key leaks in either language, on either page.*
+- [x] New tests: `tests/hooks/useDrivers.test.ts` (14 cases), `tests/hooks/useDriverDetails.test.ts` (7), `tests/components/Avatar.test.tsx` (8).
+- [x] **Fixed a latent test-infra bug:** `globals` is off in `vitest.config.ts`, so RTL's auto-cleanup never registered and rendered trees leaked between tests. `cleanup()` now runs in `tests/setup.ts`.
+
+### ⚠️ Two planned items were dropped — the payload cannot support them
+
+- [x] ~~Badges on the driver filter tabs~~ — **not possible.** `GET /admin/drivers` returns **no `counts` block**; `meta.total` describes only the requested filter, so four badges would mean four requests. Filed by **extending [REQ-2](docs/api/backend-issues.md)** (now covering both `/staff/bookings` and `/admin/drivers`) rather than inventing per-status requests. The `suspended` badge is additionally blocked on BUG-6.
+- [x] ~~Show **who** banned a user in the banner~~ — **not possible.** `AdminBanController` writes `banned_by` from `$request->user()?->id`, which is always `null` under `StaffJwtMiddleware` — the same root cause as the `admin_photo` bug. Verified live: a real ban returned `"banned_by": null`. The banner omits the row rather than printing "Unknown". Filed as an extension of [BUG-5](docs/api/backend-issues.md).
+
+### 🔴 New backend defect found and filed
+
+- [x] **[BUG-6](docs/api/backend-issues.md) — the drivers list reports ban state backwards.** `resolveDriverStatus()` only tests `status == 0`, so a **banned** driver (`-1`) is reported as `verified` and is absent from `filter=suspended`; after an **unban** (`status = 0`) the same driver reads as `suspended`. Verified live in both directions. Consequence: no truthful ban signal exists in the list payload, so the page does not fake one — it renders a "banned" chip only for rows whose authoritative status it actually holds (from the ban/unban response), and drives the details page from `/admin/users/{id}/status`.
+- [x] **[BUG-7](docs/api/backend-issues.md)** — seeded `/storage/...` URLs 404 (no files written, no `storage:link`). Cosmetic here thanks to the Avatar fallback, but it means **the verification document viewer has nothing to show** — relevant to Phase 6.
+
+**DoD:** ✅ a temporary ban with an expiry round-trips and the status banner reflects it after reload; ✅ paging through >1 page of drivers works; ✅ the period switch refetches only its own widget.
 
 ---
 
-## Phase 5 — Passengers (Users)
+## Phase 5 — Passengers (Users) — ✅ **DONE & VERIFIED AGAINST THE LIVE BACKEND 2026-08-12**
 
-Endpoints: `GET /admin/users?type&status&date&per_page&page&search` → `{data:{admin_photo, stats, users, meta}}` · `GET /admin/passengers/{id}/full-profile` · `POST /admin/passengers/{id}/charge-wallet {amount, admin_notes?}` · ban/unban/status.
+Endpoints: `GET /admin/users?type&status&date&per_page&page&search` → `{data:{admin_photo, stats, users, meta{…,filters{type,status,date}}}}` (**no `counts`**, everything nested under `data`) · `GET /admin/passengers/{id}/full-profile` · `/stats` · `/monthly-trips?months` · `/recent-trips?limit` · `/complaints?status&per_page&page` (**does** carry `counts`) · `/wallet-charges?per_page&page` · `POST /admin/passengers/{id}/charge-wallet {amount 1–10 000 000, admin_notes? ≤500}` → `{status, message, new_balance}` · `POST /admin/users/{id}/ban|unban` · `GET /admin/users/{id}/status`.
 
-- [ ] Wire all four filters the backend accepts — `type`, `status`, **`date`** (`all|last_30_days|last_3_months|last_6_months|last_12_months`), and `search`. `UsersListParams` already types them; confirm the UI exposes `date`.
-- [ ] Same temporary-ban modal as Phase 4.
-- [ ] Charge wallet: show the returned new balance in the success banner and refetch the profile; surface 422 field errors (amount rules live in `PassengerProfileController`).
-- [ ] 🆕 Add per-section refresh buttons using the endpoints that exist but are unused:
-      `stats`, `monthly-trips?months=6`, `recent-trips?limit=10`, `complaints`, `wallet-charges` —
-      so a section can reload without re-fetching the whole BFF payload.
-- [ ] `admin_photo` will be `null` (see §1.6). Render the fallback avatar and report the bug upstream rather than patching around it.
+> `npx tsc -b` clean · `npm run lint` clean · `npm test` **145 passing, up from 121**.
+>
+> **Verified end-to-end** by [`docs/api/verify-users.mjs`](docs/api/verify-users.mjs) — drives the real
+> pages in Chromium in **both `en` and `ar`** against MySQL + `artisan serve` on `:8000`:
+> **137 assertions read-only, 185 with `--mutate`, 0 failures.** `verify-drivers.mjs` was re-run
+> afterwards (**94/94**) to prove the shared-component move did not regress Phase 4.
 
-**DoD:** every filter changes the result set; a wallet charge updates the balance without a full page reload.
+### Done
+
+- [x] **All four filters are wired.** `type` (select), `status` (shared `FilterTabs`), **`date`** (select: `all|last_30_days|last_3_months|last_6_months|last_12_months`) and debounced `search`. `date` was typed in `UsersListParams` since Phase 0 but had **no UI at all**. *Verified: each change issues the matching query param and resets `page=1`.*
+- [x] **`per_page` is sent explicitly** (options 5/10/25/50, default 10 — the backend's own default, which the list used to ride on implicitly) with the shared `PerPageSelect`, and the hand-rolled pager was replaced by `TablePagination`. With 35 seeded users the default already spans 4 pages. *Verified: next requests `page=2` carrying `per_page`, the rows swap, and `per_page=5` renders exactly 5 rows.*
+- [x] **`useUsers` had no client-side re-filter** — audited, confirmed absent, and a comment now records why one must not be added (the `visibleTrips`/`visibleDrivers` bug class). A test asserts every server-returned row renders. **The passenger *details* page did have one**: complaints were filtered in a `useMemo` over the BFF's 20-row snapshot. That memo is gone; the complaints tabs now drive `GET /admin/passengers/{id}/complaints?status=` and render its `counts`.
+- [x] **Temporary bans + the status banner.** The details page previously sent `type: 'permanent'` unconditionally and had no banner; it now opens `ConfirmActionModal` with `showBanOptions` and renders the promoted `BanStatusBanner`. *Verified with `--mutate`: a real temporary ban round-tripped in each language, the server confirmed `type: temporary` with an expiry, and the banner **survived a page reload**.*
+- [x] **`BanStatusBanner` promoted** from `features/drivers/components/` to `features/shared/components/`, with its i18n keys moved `drivers.*` → `common.*` in both locales. Both details pages use the one component; `verify-drivers.mjs` was updated to read the new key path and still passes.
+- [x] **Ban/unban actions are hidden-not-422'd**, driven by the authoritative `GET /admin/users/{id}/status`, never by the row status.
+- [x] **Charge wallet rebuilt.** Amount rules are mirrored from `PassengerProfileController` (`numeric|min:1|max:10000000`) and **disable** the confirm button instead of submitting and 422'ing; an optional `admin_notes` field enforces the 500-char cap; a real 422 is surfaced per field via `getFieldErrors`. The confirmation shows **previous → new balance and the transaction id**, and the profile is refetched so the balance card updates without a reload. *Verified with `--mutate`: two real charges, one per language, each confirmed against the server's own figures.*
+- [x] 🆕 **Per-section refresh shipped** for all five previously-unused endpoints (`stats`, `monthly-trips`, `recent-trips`, `complaints`, `wallet-charges`), plus a months window (3/6/12), a trip-limit selector (5/10/25) and the server-side complaint filter. *Verified: each control calls its own endpoint and **none of them refetches the `full-profile` BFF**.*
+- [x] **Five row statuses, not three.** `resolveUserStatus()` also returns `rejected` and `unverified` — both present in the seed — which fell through the badge map and rendered a **raw i18n key**. `UserRowStatus` was widened and all five have labels in `ar` and `en`.
+- [x] **`admin_photo` is null (BUG-5)** — rendered through the shared `<Avatar>` fallback in the page header rather than patched around, so it lights up on its own once the backend is fixed. *Verified: `admin_photo === null` on every response.*
+- [x] Loading skeletons (list + a details-page skeleton replacing the "جاري التحميل..." text), `ErrorBanner` with retry carrying the **real** message via `extractApiError` (both hooks moved to `error: string | null`, matching `useDashboard` and the drivers hooks), and distinct empty states for trips, complaints, wallet charges and a search miss.
+- [x] Dates on the details page were pinned to `'ar-SY'`; they now follow the active locale.
+- [x] i18n: every new key in `ar` **and** `en`, with all six CLDR forms for the four count-bearing ones (`months_window`, `charge_amount_min`, `charge_amount_max`, `charge_notes_max`). **16 dead keys removed** — including `users.pagination_info`, which took `{{total}}` with a single ungrammatical Arabic form and is replaced by the plural-correct shared `common.showing_range`. *Verified: no raw key leaks in either language, on either page.*
+- [x] New tests: `tests/hooks/useUsers.test.ts` rewritten (13 cases) and `tests/hooks/useUserDetails.test.ts` added (16 cases), covering the date filter, the temporary-ban payload, the charge-wallet response shape and all five section refreshes.
+
+### ⚠️ Three planned items could not be done as written — the payload cannot support them
+
+- [x] ~~Badges on the user filter tabs~~ — **not possible.** `GET /admin/users` returns **no `counts` block** (verified live) and `meta.total` describes only the requested filter. Filed by **extending [REQ-2](docs/api/backend-issues.md) a second time** (now `/staff/bookings`, `/admin/drivers` and `/admin/users`). The `suspended` badge is additionally blocked on BUG-6.
+- [x] ~~Show `previous_balance` and `transaction_id` **from the charge response**~~ — **not possible.** `POST /admin/passengers/{id}/charge-wallet` returns **only** `{status, message, new_balance}`; the richer shape the plan assumed belongs to the unrelated `POST /admin/wallet/charge` (Phase 9). Rather than computing a "previous balance" client-side and presenting it as server truth, the hook reads the transaction back from `GET /admin/passengers/{id}/wallet-charges` and reports `null` for both fields if the read-back does not line up. Filed as **[REQ-3](docs/api/backend-issues.md)**.
+- [x] ~~Show **who** processed each wallet charge~~ — **not possible.** `chargeWallet()` writes `'user_id' => $request->user()?->id`, always null under `StaffJwtMiddleware`, so `processed_by_name` is null for every row — the same root cause as `admin_photo` and `banned_by`. The column now renders the balance movement (`previous → new`) instead of "Unknown" on every row. Filed as a third site under [BUG-5](docs/api/backend-issues.md).
+
+### 🔴 Backend defect confirmed on a second endpoint
+
+- [x] **[BUG-6](docs/api/backend-issues.md) also affects `GET /admin/users`** — same code shape, verified live on **passenger id 30** and again on id 18 by `verify-users.mjs --mutate`: a **banned** user (`status = -1`) still reports `"verified"` and is absent from `status=suspended`; after an **unban** (`status = 0`) the same user reports `"suspended"` and `stats.suspended_users` counts it. The row payload carries no `ban`/`is_banned` field at all. The page therefore never optimistically flips a row status, renders a "banned" chip only for rows it holds authoritative status for, and drives the details page from `/admin/users/{id}/status`. The KPI card is labelled "signed-out accounts", which is what that number actually counts.
+
+### Note on the `date` filter and this seed
+
+Every seeded user was created on the same day, so **all five date windows return the same 35 rows**.
+The filter is verified by the param reaching the API, by `meta.filters.date` echoing it, and by
+`date=bogus` returning 422 — not by a differing row count. `verify-users.mjs` prints this as a NOTE
+so a future reader does not mistake it for an untested path.
+
+### Seed state after this phase
+
+`--mutate` was run in both languages (4 bans/unbans on passengers 18 and 30, 5 wallet charges of 25).
+**All of it was rolled back in SQL** — `users.status` restored to 1, both wallet balances restored,
+all five `ADM-*` transactions deleted, `cache:clear` run — and `verify-drivers.mjs` re-run at 94/94 to
+confirm the driver seed is still pristine. A wallet charge is **not** reversible through the API; the
+script says so and prints the delta rather than implying it cleaned up after itself.
+
+**DoD:** ✅ every filter reaches the server and changes the request (row count where the seed permits); ✅ a wallet charge updates the balance without a full page reload; ✅ a temporary ban round-trips and the banner survives a reload.
 
 ---
 
@@ -523,13 +601,13 @@ Apply uniformly across every page touched above:
 - [ ] **Loading** — `TableSkeleton` for tables, spinners for cards. No layout shift on load.
 - [ ] **Errors** — `ErrorBanner` with a Retry that calls the hook's `refetch`. Use the shared `extractApiError` from 1.4 so 422 field errors read as field errors, not "Request failed with status code 422".
 - [ ] **Empty states** — every table needs one; several currently render an empty `<tbody>`.
-- [ ] **Pagination** — `TablePagination` on every list backed by `meta` (~~trips is the known gap~~ ✅ trips + bookings done in Phase 3; audit drivers, users, reviews, complaints, wallet requests).
+- [ ] **Pagination** — `TablePagination` on every list backed by `meta` (✅ trips + bookings in Phase 3, ✅ drivers in Phase 4, ✅ users in Phase 5; audit reviews, complaints, wallet requests).
 - [ ] **Concurrency** — an in-flight request must be cancelled/ignored when filters change (a stale response currently overwrites fresh state in the `useFetchEffect` hooks). Use an `AbortController` or a request-sequence guard.
 - [ ] **Single-flight token refresh** — refresh tokens are single-use and rotate (verified live). If two requests 401 at the same time, both call `/refresh`; the second replays a consumed token and the user is logged out. The interceptor needs to share one in-flight refresh promise across all queued requests. Pages that fire several parallel fetches on mount (Dashboard, Reports, Trips) make this easy to hit.
 - [ ] **403 handling** — `RoleRoute` blocks navigation, but a role change mid-session can still produce a 403. Show the "no permission" panel instead of an error banner.
 - [ ] **i18n** — every new string goes in both `src/locales/en/translation.json` and `src/locales/ar/translation.json`. Check RTL for new tables/modals.
 - [ ] **Dates** — several hooks call `toLocaleDateString('ar-SY')` unconditionally. Format by active locale.
-- [ ] **Avatars** — one shared `<Avatar name photo />` with initials fallback; remove all `i.pravatar.cc` and Unsplash URLs.
+- [x] ~~**Avatars** — one shared `<Avatar name photo />` with initials fallback; remove all `i.pravatar.cc` and Unsplash URLs.~~ ✅ done in Phase 4.
 
 ---
 
@@ -540,7 +618,7 @@ Existing: `tests/{auth,hooks,services}` (vitest + msw), `e2e/smoke.spec.ts` + `e
 - [ ] Update `tests/testServer.ts` msw handlers to the confirmed contract — including the removed endpoints, so a regression that re-introduces `/admin/settings` fails loudly.
 - [ ] `tests/services/api.test.ts` — the three refresh/403 cases from 1.4.
 - [ ] `tests/auth/AuthContext.test.tsx` — role comes from `/staff/me`, not from the login response; `sycash` renders correctly.
-- [x] ~~`useTrips` (paging)~~ ✅ done in Phase 3 (`tests/hooks/useTrips.test.ts`, `useBookings.test.ts`). Still to do: `useUsers` (date filter), `useSupport` (type filter + escalated view never sending `status=escalated` to `index`).
+- [x] ~~`useTrips` (paging)~~ ✅ done in Phase 3 (`tests/hooks/useTrips.test.ts`, `useBookings.test.ts`); ✅ `useDrivers` / `useDriverDetails` / `Avatar` in Phase 4; ✅ `useUsers` (date filter) / `useUserDetails` in Phase 5. Still to do: `useSupport` (type filter + escalated view never sending `status=escalated` to `index`).
 - [ ] Extend `e2e/apiStubs.ts` for a full `system_admin` walkthrough: login → dashboard → trips (page 2) → ban a user → approve a verification → resolve a complaint → approve a wallet request → create an employee.
 - [ ] `npm run lint && npm run test && npm run build` clean before each phase is called done.
 
@@ -634,8 +712,8 @@ All paths are relative to `VITE_API_BASE_URL`. Auth header: `Authorization: Bear
 | 1 — Foundation (auth, roles, axios) | 0 | ✅ done 2026-08-10 |
 | 2 — Dashboard | 1 | ✅ done 2026-08-10 |
 | 3 — Trips (+ bookings) | 1 | ✅ done 2026-08-11 |
-| 4 — Drivers | 1 | 1 d |
-| 5 — Passengers | 1 | 1 d |
+| 4 — Drivers | 1 | ✅ done 2026-08-12 |
+| 5 — Passengers | 1 | ✅ done 2026-08-12 |
 | 6 — Verifications | 1 | 0.5 d |
 | 7 — Support | 0, 1 | 1 d |
 | 8 — Reviews | 1 | 0.5 d |

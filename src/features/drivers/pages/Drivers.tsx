@@ -1,14 +1,39 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
+import Avatar from '../../shared/components/Avatar';
 import ConfirmActionModal from '../../shared/components/ConfirmActionModal';
 import type { ConfirmActionPayload } from '../../shared/components/ConfirmActionModal';
 import ErrorBanner from '../../shared/components/ErrorBanner';
+import FilterTabs from '../../shared/components/FilterTabs';
+import type { FilterTabItem } from '../../shared/components/FilterTabs';
+import PerPageSelect from '../../shared/components/PerPageSelect';
+import TablePagination from '../../shared/components/TablePagination';
 import TableSkeleton from '../../shared/components/TableSkeleton';
-import { useDrivers } from '../hooks/useDrivers';
-import type { Driver } from '../hooks/useDrivers';
+import {
+  useDrivers,
+  isBannedDriver,
+  DRIVER_FILTERS,
+  DRIVERS_PER_PAGE_OPTIONS,
+  EFFICIENCY_PERIODS,
+} from '../hooks/useDrivers';
+import type { Driver, DriverStatusFilter } from '../hooks/useDrivers';
+
+const statusBadgeClasses = (status: Driver['status']): string => {
+  switch (status) {
+    case 'verified':
+      return 'bg-secondary-fixed text-on-secondary-container';
+    case 'pending':
+      return 'bg-tertiary-fixed text-on-tertiary-fixed-variant';
+    case 'suspended':
+    case 'rejected':
+      return 'bg-error-container text-on-error-container';
+    default:
+      return 'bg-surface-container-high text-on-surface-variant';
+  }
+};
 
 const activityIconClasses = (color: string): string => {
   switch (color) {
@@ -44,19 +69,24 @@ const Drivers: React.FC = () => {
   const isRtl = i18n.language === 'ar';
 
   const {
-    visibleDrivers,
+    drivers,
     stats,
     activity,
     efficiency,
+    efficiencyDelta,
+    efficiencyPeriod,
+    setEfficiencyPeriod,
+    isEfficiencyLoading,
     statusFilter,
     setStatusFilter,
     search,
     setSearch,
     page,
     setPage,
+    perPage,
+    setPerPage,
     lastPage,
     total,
-    perPage,
     isLoading,
     error,
     refetch,
@@ -64,8 +94,22 @@ const Drivers: React.FC = () => {
     unbanDriver,
   } = useDrivers();
 
+  /**
+   * No count badges: unlike `GET /admin/trips`, `GET /admin/drivers` returns no
+   * `counts` block, and `meta.total` only describes the requested filter. Four
+   * badges would mean four extra requests — filed as REQ-2.
+   */
+  const filterItems = useMemo<FilterTabItem<DriverStatusFilter>[]>(
+    () =>
+      DRIVER_FILTERS.map((filter) => ({
+        value: filter,
+        label: t(`drivers.filter_${filter}`),
+      })),
+    [t]
+  );
+
   const handleToggleStatus = async (driver: Driver) => {
-    if (driver.status === 'suspended') {
+    if (isBannedDriver(driver)) {
       await runAction({
         key: `status-${driver.id}`,
         action: () => unbanDriver(driver),
@@ -95,8 +139,13 @@ const Drivers: React.FC = () => {
     setBanTarget(null);
   };
 
-  const paginationStart = total === 0 ? 0 : (page - 1) * perPage + 1;
-  const paginationEnd = Math.min(page * perPage, total);
+  const rangeInfo = (): string => {
+    if (total === 0) return '';
+    const from = (page - 1) * perPage + 1;
+    const to = Math.min(page * perPage, total);
+    // `count` drives the Arabic plural category, so it must be the total.
+    return t('common.showing_range', { from, to, count: total });
+  };
 
   return (
     <div className="space-y-10">
@@ -167,32 +216,19 @@ const Drivers: React.FC = () => {
       {/* Filters */}
       <section className="flex flex-col md:flex-row gap-4 items-center justify-between">
         <div className="flex items-center gap-3 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto">
-          <div className="flex bg-surface-container-low rounded-full p-1">
-            <button
-              onClick={() => setStatusFilter('all')}
-              className={`px-6 py-1.5 rounded-full text-sm font-bold shadow-sm ${statusFilter === 'all' ? 'bg-surface-container-lowest text-on-surface' : 'text-on-surface-variant hover:text-on-surface transition-colors'}`}
-            >
-              {t('users.all')}
-            </button>
-            <button
-              onClick={() => setStatusFilter('verified')}
-              className={`px-6 py-1.5 rounded-full text-sm font-medium transition-colors ${statusFilter === 'verified' ? 'bg-secondary text-white' : 'text-on-surface-variant hover:text-on-surface'}`}
-            >
-              {t('drivers.status_verified')}
-            </button>
-            <button
-              onClick={() => setStatusFilter('pending')}
-              className={`px-6 py-1.5 rounded-full text-sm font-medium transition-colors ${statusFilter === 'pending' ? 'bg-primary text-white' : 'text-on-surface-variant hover:text-on-surface'}`}
-            >
-              {t('users.pending_review')}
-            </button>
-            <button
-              onClick={() => setStatusFilter('suspended')}
-              className={`px-6 py-1.5 rounded-full text-sm font-medium transition-colors ${statusFilter === 'suspended' ? 'bg-error text-white' : 'text-on-surface-variant hover:text-on-surface'}`}
-            >
-              {t('drivers.status_suspended')}
-            </button>
-          </div>
+          <FilterTabs
+            items={filterItems}
+            active={statusFilter}
+            onChange={setStatusFilter}
+            disabled={isLoading}
+            aria-label={t('drivers.filter')}
+          />
+          <PerPageSelect
+            value={perPage}
+            options={DRIVERS_PER_PAGE_OPTIONS}
+            onChange={setPerPage}
+            disabled={isLoading}
+          />
         </div>
         <div className="relative w-full md:max-w-xs">
           <span className={`absolute inset-y-0 ${isRtl ? 'right-0 pr-4' : 'left-0 pl-4'} flex items-center pointer-events-none text-on-surface-variant`}>
@@ -225,18 +261,18 @@ const Drivers: React.FC = () => {
             <tbody className="divide-y divide-surface-container text-sm">
               {isLoading ? (
                 <TableSkeleton rows={6} cols={6} firstColAvatar />
-              ) : visibleDrivers.length === 0 ? (
+              ) : drivers.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-8 py-10 text-center text-on-surface-variant font-medium">
-                    {t('common.no_data')}
+                    {search ? t('drivers.no_results', { term: search }) : t('common.no_data')}
                   </td>
                 </tr>
               ) : (
-                visibleDrivers.map((driver) => (
+                drivers.map((driver) => (
                   <tr key={driver.id} className="hover:bg-surface-container/30 transition-colors group">
                     <td className="px-8 py-5 text-start">
                       <div className="flex items-center gap-3">
-                        <img alt={driver.name} className="w-10 h-10 rounded-full object-cover" src={driver.avatar} />
+                        <Avatar name={driver.name} photo={driver.photo} size="sm" />
                         <div className="flex flex-col">
                           <span className="font-bold text-on-surface">{driver.name}</span>
                           <span className="text-xs text-on-surface-variant">{driver.displayId}</span>
@@ -248,17 +284,25 @@ const Drivers: React.FC = () => {
                       <span className="text-on-surface font-medium">{driver.vehicle}</span>
                     </td>
                     <td className="px-6 py-5 text-start">
-                      <span
-                        className={`px-3 py-1 rounded-full text-[10px] font-bold ${
-                          driver.status === 'verified'
-                            ? 'bg-secondary-fixed text-on-secondary-container'
-                            : driver.status === 'pending'
-                            ? 'bg-tertiary-fixed text-on-tertiary-fixed-variant'
-                            : 'bg-error-container text-on-error-container'
-                        }`}
-                      >
-                        {t(`drivers.status_${driver.status}`)}
-                      </span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${statusBadgeClasses(driver.status)}`}>
+                          {t(`drivers.status_${driver.status}`)}
+                        </span>
+                        {/*
+                          Shown only for rows whose ban state we actually know —
+                          i.e. ones banned in this session. The list payload
+                          carries no ban field (BUG-6), so absence of this chip
+                          means "unknown", never "not banned".
+                        */}
+                        {isBannedDriver(driver) && (
+                          <span
+                            data-testid={`driver-banned-${driver.id}`}
+                            className="px-3 py-1 rounded-full text-[10px] font-bold bg-error text-on-error"
+                          >
+                            {t('drivers.account_banned')}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-5 text-start">
                       <div className={`flex items-center gap-1 ${driver.rating ? 'text-amber-500' : 'text-slate-400'}`}>
@@ -280,10 +324,10 @@ const Drivers: React.FC = () => {
                         <button
                           onClick={() => void handleToggleStatus(driver)}
                           disabled={isBusy(`status-${driver.id}`)}
-                          className={`p-2 rounded-lg transition-colors disabled:opacity-40 ${driver.status === 'suspended' ? 'hover:bg-secondary/10 text-secondary' : 'hover:bg-error/10 text-error'}`}
-                          title={driver.status === 'suspended' ? t('users.approve') : t('users.block')}
+                          className={`p-2 rounded-lg transition-colors disabled:opacity-40 ${isBannedDriver(driver) ? 'hover:bg-secondary/10 text-secondary' : 'hover:bg-error/10 text-error'}`}
+                          title={isBannedDriver(driver) ? t('drivers.unban_action') : t('drivers.ban_action')}
                         >
-                          <span className="material-symbols-outlined">{driver.status === 'suspended' ? 'undo' : 'block'}</span>
+                          <span className="material-symbols-outlined">{isBannedDriver(driver) ? 'undo' : 'block'}</span>
                         </button>
                       </div>
                     </td>
@@ -293,31 +337,13 @@ const Drivers: React.FC = () => {
             </tbody>
           </table>
         </div>
-        {/* Pagination */}
-        <div className="px-8 py-6 bg-surface-container-low/30 flex items-center justify-between border-t border-outline-variant/10">
-          <p className="text-xs text-on-surface-variant font-medium">
-            {t('drivers.pagination_info', { start: paginationStart, end: paginationEnd, total })}
-          </p>
-          <div className="flex gap-2 items-center">
-            <button
-              onClick={() => setPage(Math.max(1, page - 1))}
-              disabled={page <= 1}
-              className="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-colors disabled:opacity-40"
-            >
-              <span className="material-symbols-outlined text-sm">{isRtl ? 'chevron_right' : 'chevron_left'}</span>
-            </button>
-            <span className="text-xs font-bold text-on-surface px-2">
-              {page} / {lastPage}
-            </span>
-            <button
-              onClick={() => setPage(Math.min(lastPage, page + 1))}
-              disabled={page >= lastPage}
-              className="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-colors disabled:opacity-40"
-            >
-              <span className="material-symbols-outlined text-sm">{isRtl ? 'chevron_left' : 'chevron_right'}</span>
-            </button>
-          </div>
-        </div>
+        <TablePagination
+          page={page}
+          lastPage={lastPage}
+          onPageChange={setPage}
+          info={rangeInfo()}
+          isLoading={isLoading}
+        />
       </section>
 
       {/* Ban confirmation modal (reason + permanent/temporary + expiry) */}
@@ -359,23 +385,76 @@ const Drivers: React.FC = () => {
           )}
         </div>
 
-        {/* Verification Efficiency */}
+        {/* Verification Efficiency — its own endpoint, refetched per period */}
         <div className="bg-primary p-8 rounded-2xl text-on-primary flex flex-col justify-between overflow-hidden relative shadow-lg shadow-primary/20">
           <div className="absolute -top-10 -left-10 w-40 h-40 bg-on-primary/10 rounded-full blur-3xl"></div>
           <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-secondary/20 rounded-full blur-3xl"></div>
           <div className="relative z-10">
             <h3 className="text-lg font-bold mb-2 font-headline">{t('drivers.efficiency_title')}</h3>
-            <p className="text-sm opacity-80 mb-6">{t('drivers.efficiency_subtitle')}</p>
-            <div className="text-4xl font-extrabold font-headline mb-4">
+            <p className="text-sm opacity-80 mb-4">{t('drivers.efficiency_subtitle')}</p>
+
+            {/* period switch → GET /admin/drivers/verification-efficiency?period= */}
+            <div
+              role="tablist"
+              aria-label={t('drivers.efficiency_period_label')}
+              className="flex p-1 bg-on-primary/10 rounded-xl mb-6 w-fit"
+            >
+              {EFFICIENCY_PERIODS.map((period) => (
+                <button
+                  key={period}
+                  role="tab"
+                  aria-selected={period === efficiencyPeriod}
+                  data-testid={`efficiency-period-${period}`}
+                  disabled={isEfficiencyLoading}
+                  onClick={() => void setEfficiencyPeriod(period)}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-colors disabled:opacity-50 ${
+                    period === efficiencyPeriod
+                      ? 'bg-on-primary text-primary'
+                      : 'text-on-primary/70 hover:text-on-primary'
+                  }`}
+                >
+                  {t(`drivers.efficiency_period_${period}`)}
+                </button>
+              ))}
+            </div>
+
+            <div className="text-4xl font-extrabold font-headline mb-4" data-testid="efficiency-pct">
               {efficiency ? `${efficiency.current.efficiency_pct}%` : '—'}
             </div>
-            <div className="w-full bg-on-primary/20 h-2 rounded-full mb-2">
+            <div className="w-full bg-on-primary/20 h-2 rounded-full mb-3">
               <div
                 className="bg-secondary-fixed h-full rounded-full transition-all duration-1000"
                 style={{ width: `${efficiency?.current.efficiency_pct ?? 0}%` }}
               ></div>
             </div>
-            {efficiency && <p className="text-xs font-medium">{efficiency.comparison.text}</p>}
+
+            {efficiency && (
+              <div className="space-y-1">
+                <p className="text-xs opacity-80" data-testid="efficiency-processed">
+                  {t('drivers.efficiency_processed', {
+                    processed: efficiency.current.processed,
+                    count: efficiency.current.total_incoming,
+                  })}
+                </p>
+                {efficiency.current.pending > 0 && (
+                  <p className="text-xs opacity-80">
+                    {t('drivers.efficiency_pending', { count: efficiency.current.pending })}
+                  </p>
+                )}
+                {/*
+                  Built from `comparison.delta` rather than the payload's
+                  `comparison.text`, which the backend renders in English only.
+                */}
+                {efficiencyDelta && (
+                  <p className="text-xs font-medium" data-testid="efficiency-delta">
+                    {t(`drivers.efficiency_delta_${efficiencyDelta.direction}`, {
+                      count: efficiencyDelta.points,
+                      period: t(`drivers.efficiency_previous_${efficiencyPeriod}`),
+                    })}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </section>
