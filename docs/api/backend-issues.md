@@ -51,6 +51,69 @@ Measured across all six routes with a valid `system_admin` token:
 | PATCH | `/employees/{id}/toggle-active` | **500** — undefined `formatEmployee()` |
 | PATCH | `/employees/{id}/reset-password` | **500** — undefined `resetPassword()` |
 
+### 🔴 Three of the six endpoints WRITE and then report failure (proven Phase 10)
+
+"All six return 500" is true but dangerously incomplete. *Where* in each action the undefined call
+sits decides whether the request corrupts data on its way out:
+
+| Endpoint | Undefined call | Writes before dying? |
+|---|---|---|
+| `GET /employees` | `list()` | no — dies immediately |
+| `GET /employees/{id}` | `formatEmployee()` | no (read-only) |
+| `POST /employees` | `formatEmployee()`, after `create()` | 🔴 **YES — employee created, then 500** ([BUG-2](#-bug-2--post-employees-writes-the-row-then-500s)) |
+| `PUT /employees/{id}` | `formatEmployee()`, after `update()` | 🔴 **YES — row updated, then 500** |
+| `PATCH .../toggle-active` | `formatEmployee()`, after `toggleActive()` | 🔴 **YES — row flipped, then 500** |
+| `PATCH .../reset-password` | `resetPassword()` | no — dies before the write |
+
+**Why the 500 is Laravel's page and not the controller's own error JSON:** every action wraps its
+body in `catch (\Exception $e) { … serverError(); }`, but *"Call to undefined method"* throws
+**`\Error`**, which is not an `\Exception`. The catch never fires, the error escapes the controller
+entirely, and with `APP_DEBUG=true` ([NOTE-2](#ℹ️-note-2--env-ships-app_envproduction-with-app_debugtrue))
+Laravel renders a full stack trace with absolute filesystem paths.
+
+**Verified against the database, not inferred.** `verify-staff.mjs --mutate` reads the row before and
+after each call and asserts it moved despite the reported failure:
+
+```
+🔴 PATCH /employees/3/toggle-active returned 500 …
+🔴 …AND THE ROW REALLY FLIPPED: is_active 1 → 0, with a fresh updated_at.
+🔴 PUT /employees/3 returned 500 …
+🔴 …AND THE ROW WAS REALLY UPDATED: first_name "Test" → "VerifyProbe"
+🔴 POST /employees returned 500 …
+🔴 …AND THE EMPLOYEE WAS REALLY CREATED (BUG-2): 3 → 4 rows
+   PATCH /employees/3/reset-password returned 500 …
+   …and this one is NOT destructive: the password hash is unchanged.
+```
+
+All three were rolled back by the script, which then asserts the `employees` table is byte-for-byte
+identical to its pre-run snapshot.
+
+### ⚠️ Do not be fooled by the non-500 responses
+
+Against **employee 1** — the seeded, `isRestricted()` `system_admin` — the same calls look healthy:
+
+```
+PATCH /employees/1/toggle-active   → 403 "The 'System Administrator' account cannot be deactivated"
+PUT   /employees/1                 → 403 "…cannot be modified via the API."
+PATCH /employees/1/reset-password  → 422 {"new_password":["The new password field is required."]}
+```
+
+All three are the **guard or the validator firing before** the undefined method is reached. Against a
+real, non-restricted employee (id 3, `agent01`, `support_agent`) every one of them 500s. **Any
+verification that only exercises employee 1 will conclude the backend works.**
+
+### What the dashboard does about it
+
+The Staff page is **kept mounted and shipped with a labelled unavailable state** rather than hidden
+behind a build-time flag. `useStaff` derives an `isBackendAvailable` flag from the live
+`GET /employees`; while it fails, the page renders `StaffUnavailablePanel` — which names the defect,
+shows the server's real error, and states that the write controls are withheld deliberately — and
+**every create / edit / deactivate / reset control is unreachable**.
+
+Availability is derived from the live response rather than hardcoded on purpose: `GET /employees`
+exercises **both** `list()` and `formatEmployee()`, so its success proves the methods the write paths
+depend on are back. The page un-gates itself the moment this bug is fixed, with no frontend change.
+
 ### Suggested fix
 
 Rename the two call sites and add the formatter:
@@ -100,9 +163,26 @@ response formatting throws. The client sees a failure for an operation that actu
 
 Reproduced exactly: a `POST /employees` that returned 500 still created `agent01` (id 3).
 
-Retrying then fails with **409 username already taken** — so from the dashboard the account looks
+Retrying then fails as **username already taken** — so from the dashboard the account looks
 impossible to create while in fact it exists. Wrapping create + format in a transaction, or simply
 fixing BUG-1, resolves it.
+
+### Re-proven against the database in Phase 10, not inferred
+
+`verify-staff.mjs --mutate` now demonstrates this end-to-end rather than describing it: it counts the
+`employees` rows, POSTs, asserts the **500**, counts again, and asserts a row appeared anyway — then
+retries the "failed" creation to show it is refused as a duplicate, and deletes the probe row.
+
+```
+🔴 POST /employees returned 500 …
+🔴 …AND THE EMPLOYEE WAS REALLY CREATED (BUG-2): 3 → 4 rows, new id 5.
+🔴 …and retrying the "failed" creation is REJECTED as username-already-taken
+```
+
+The same script proves the other two write-then-500 endpoints the same way — see BUG-1.
+
+> ⚠️ Note the retry is refused with **403**, not the 409 this document previously claimed. See
+> [BUG-11](#-bug-11--every-employee-domain-refusal-is-403-the-controllers-409-branch-is-dead-code-phase-10).
 
 ---
 
@@ -637,6 +717,26 @@ If a metrics endpoint is genuinely wanted, register it **before** the `{id}` rou
 `SupportStats` KPI row was rebuilt from the two `counts` blocks the list endpoints already return.
 The avg-response-time card was removed rather than left showing a dash — see [REQ-5](#-req-5).
 
+### 8b — this is a PATTERN, not one route: second site confirmed (Phase 9)
+
+Any `{id}` route whose action type-hints `int` explodes the same way on a non-numeric segment.
+Confirmed live 2026-08-13 on the wallet transactions route:
+
+```console
+$ curl -H "Authorization: Bearer $T" http://127.0.0.1:8000/api/admin/wallet/abc/transactions
+HTTP 500
+TypeError: App\Http\Controllers\API\WalletController::showWalletTransactions():
+  Argument #1 ($walletId) must be of type int, string given
+```
+
+`verify-reports.mjs` asserts this. The fix is the same — `->whereNumber('walletId')` — and it should
+be applied as a **sweep over every `{id}` route**, not one at a time.
+
+**What the dashboard does about it:** Phase 9 added the first route-parameter links in this feature
+(the admin wallet card and each wallet row open `/admin/wallet/{id}/transactions`). Every one of them
+checks `Number.isFinite(wallet.id)` before the id can reach a URL, so the dashboard cannot trigger
+this site. That is a guard against a backend defect, not a fix for it.
+
 ---
 
 ## 🟠 BUG-9 — `counts.all` on `GET /staff/complaints` counts rows the endpoint never returns (Phase 7)
@@ -759,6 +859,179 @@ a column the schema does not have: nothing records **when** an agent first respo
 
 ---
 
+## 🔴 BUG-11 — Every `/employees` domain refusal is 403; the controller's 409 branch is dead code (Phase 10)
+
+`EmployeeManagementController::store()` and `update()` both carry:
+
+```php
+} catch (\DomainException $e) {
+    return response()->json([...], 403);
+} catch (\RuntimeException $e) {
+    return response()->json([...], 409);   // ← unreachable
+}
+```
+
+But `EmployeeManagementService` **never throws `\RuntimeException`**. All 18 of its throw sites are
+`\DomainException`, including both uniqueness checks:
+
+```php
+if (Employee::where('username', $data['username'])->exists()) {
+    throw new \DomainException("Username '{$data['username']}' is already taken.");
+}
+if (!empty($data['email']) && Employee::where('email', $data['email'])->exists()) {
+    throw new \DomainException("Email '{$data['email']}' is already in use.");
+}
+```
+
+### Verified live (2026-08-13, `verify-staff.mjs --mutate`)
+
+```
+POST /employees {username: "verify_probe_bug2", …}   → 403
+  {"status":"error","message":"Username 'verify_probe_bug2' is already taken."}
+```
+
+### Consequence
+
+A **duplicate username is reported as "forbidden"**, indistinguishable by status code from "your role
+may not create this account" or "this account is restricted". Any client that branches on `409` to
+show a "that name is taken, pick another" hint — which is the obvious implementation, and what the
+integration plan told Phase 10 to build — will never reach that branch, and will instead tell the
+user they lack permission.
+
+### Suggested fix
+
+Throw the exception that matches the meaning, so the existing `catch` is reached:
+
+```php
+- throw new \DomainException("Username '{$data['username']}' is already taken.");
++ throw new \RuntimeException("Username '{$data['username']}' is already taken.");
+```
+
+…for both uniqueness checks in `create()` and both in `update()` (4 sites). Leave the genuine
+authorization failures as `\DomainException`.
+
+### What the dashboard does about it
+
+It does **not** branch on 403-vs-409 at all. `extractApiError` surfaces the server's own message
+verbatim, which is unambiguous ("Username 'x' is already taken."), and the source comments at the
+call site record why the status code cannot be trusted here. A test would otherwise have been written
+against a 409 that never arrives.
+
+---
+
+## 🟢 REQ-6 — Three gaps in the wallet endpoints found while building Phase 9
+
+Grouped because they share one page and one owner. None is a defect in the sense of "returns the
+wrong thing" — each is a **missing capability that forces the UI to be less than it should be**.
+
+### 6a — `GET /admin/wallet/requests` has no "all statuses" option
+
+`AdminWalletRequestController::index()`:
+
+```php
+$status = $request->get('status', 'pending');
+$query->where('status', $status);          // ← unconditional
+```
+
+The filter is **always** applied, defaulting to `pending`. Omitting `status` does not mean "all", it
+means "pending". Verified live: the response to `GET /admin/wallet/requests` is byte-for-byte
+identical to `?status=pending`, and its `meta.total` (7 on the Phase 9 seed) is smaller than the
+whole table (12).
+
+Contrast `type`, immediately below it, which is applied only `if ($request->filled('type'))` and
+therefore *does* support "both".
+
+**Consequence:** the dashboard previously mapped an "All" tab onto *sending no `status`*, so
+selecting **All** silently showed **only pending requests, labelled as all**.
+
+**Suggested fix:** make the filter conditional, matching `type`:
+
+```php
+- $status = $request->get('status', 'pending');
+- $query->where('status', $status);
++ if ($request->filled('status')) {
++     $query->where('status', $request->input('status'));
++ }
+```
+
+**What the dashboard does about it:** the "All" tab was **removed**. Faking it client-side would need
+three requests and could not be paginated coherently across three paginators. The three real statuses
+are each reachable, and the `counts` badges show the other two totals from whichever tab is active, so
+nothing is concealed. One line restores the tab once the fix lands.
+
+### 6b — `per_page` is accepted and silently ignored on wallet transactions
+
+```php
+public function getWalletTransactions(int $walletId, int $perPage = 10)
+```
+
+The controller never passes the second argument, so the page size is hardcoded to 10. `page` **is**
+honoured. Verified live: `?per_page=3` returns **10** rows and echoes `"per_page": 10`.
+
+**Suggested fix:** thread the request value through, and validate it like every other list
+(`sometimes|integer|min:1|max:50`).
+
+**What the dashboard does about it:** the transactions drawer ships `TablePagination` **without** a
+`PerPageSelect`. A page-size control there would be a widget that does nothing. `walletApi.getWalletTransactions()`
+deliberately takes no `perPage` argument so the gap cannot be re-introduced by a caller.
+
+### 6c — `GET /admin/wallet/{id}/transactions` returns a raw paginator, not the house envelope
+
+Every other paginated endpoint in this API returns `{data, meta{current_page, last_page, per_page,
+total}}`. This one returns Laravel's paginator verbatim under `transactions`:
+
+```
+current_page, data, first_page_url, from, last_page, last_page_url,
+links, next_page_url, path, per_page, prev_page_url, to, total
+```
+
+— **no `meta` at all**, plus six keys nothing consumes. The nested `wallet` object is inconsistent
+too: its `balance` is raw (`"135600.00"`) where `/admin/wallet` and `/admin/wallets` return the
+formatted `"135,600.00 SYP"`.
+
+**Suggested fix:** wrap it in the same `{data, meta}` shape as the rest, and format `balance`
+consistently.
+
+**What the dashboard does about it:** `WalletTransactionsPage` types the raw shape explicitly and the
+hook reads the page numbers off the paginator, with a comment at both sites recording that `meta` is
+absent here **by defect, not by design** — so a future refactor does not "fix" it into reading a
+`meta` that will never exist.
+
+---
+
+## 🟠 BUG-12 — `POST /admin/photo` is a stub that reports success without doing anything (found Phase 9)
+
+`AdminDashboardController::uploadAdminPhoto()` is, in its entirety:
+
+```php
+return response()->json(['status' => 'success', 'message' => 'Photo uploaded']);
+```
+
+No validation, no file handling, no storage write, no database write.
+
+### Verified live (2026-08-13)
+
+A POST with **no file at all** returns `200 {"status":"success","message":"Photo uploaded"}`.
+
+### Consequence
+
+This is the reason `admin_photo` will never populate, alongside [BUG-5](#-bug-5). Worse than a
+missing endpoint: it **actively lies**. Any UI wired to it would show the user a success toast for a
+photo that was never stored, and the avatar would silently stay on its initials fallback.
+
+### Suggested fix
+
+Either implement it (validate `image|max:2048`, store, write the path to the employee row) or remove
+the route so it 404s honestly.
+
+### What the dashboard does about it
+
+**No upload control is wired to it in any phase.** It belongs to Phase 12; this entry exists so that
+phase does not discover it the hard way. The shared `<Avatar>` initials fallback already covers the
+null case (Phase 4).
+
+---
+
 ## ℹ️ NOTE-3 — Verified: the rejection reason really does reach the user (Phase 6)
 
 `POST /staff/verifications/{userId}/reject` takes `reason => nullable|string|max:500` (**no minimum
@@ -833,3 +1106,27 @@ Also present: `APP_URL=https://api.onwayride.me`, which is a different service (
   `verify-verifications.mjs` (51/51), `verify-drivers.mjs` (94/94) and `verify-users.mjs` (137/137)
   were re-run afterwards — Phase 7 touched the shared `ConfirmActionModal`, `PerPageSelect` and
   `useApiAction` — and all three still pass.
+- Phase 9 found `wallet_requests` **completely empty** (0 rows) while reports, wallets and wallet
+  *transactions* all had real data and needed no seeding. A deliberate temporary seed of **12
+  `wallet_requests`** (ids 9001–9012: 7 pending / 3 approved / 2 rejected, both `type` values in every
+  status) was applied from [`seed-phase-9.sql`](./seed-phase-9.sql), the runs recorded, and **all of
+  it removed again** via [`revert-phase-9.sql`](./revert-phase-9.sql).
+  A `--mutate` run additionally performed one real approve, one real reject and one real admin wallet
+  charge — **none of which is reversible through the API**. Each moved a balance and/or wrote a
+  `wallet_transactions` row, so the revert also restored `wallets.balance` for wallets 4 and 32 and
+  deleted the two transactions (one `reference='wallet_request:9002'`, one
+  `transaction_id='SYSTEM_ADMIN_CHARGE_…'` — the latter has a NULL `reference`, which is why the
+  revert matches it by `transaction_id` prefix). Verified afterwards, read-only:
+  `wallet_requests` **0 rows**, `wallet_transactions` back to **194**, wallet 4 back to
+  `2063600.00` and wallet 32 to `4986000.00`.
+- Phase 10 ran `verify-staff.mjs --mutate`, which deliberately triggers the three write-then-500
+  endpoints against **employee 3 (`agent01`, non-restricted)** and asserts the write landed by
+  reading the database after each 500. All three were rolled back inside the script
+  (`is_active` restored, `first_name` restored, the probe employee deleted), and the run ends by
+  asserting the `employees` table is **byte-for-byte identical** to the snapshot taken before it
+  started. Confirmed: 3 employees, all `is_active = 1`.
+- After Phase 9/10, `verify-drivers.mjs` (94/94), `verify-users.mjs` (137/137),
+  `verify-verifications.mjs` (51/51), `verify-support.mjs` (105/105) and `verify-reviews.mjs` (64/64)
+  were all re-run — Phase 10 added an optional `hideReason` prop to the shared `ConfirmActionModal` —
+  and all five still pass. The Phase 7/8 seed was re-applied for the support/reviews runs and
+  reverted again afterwards.

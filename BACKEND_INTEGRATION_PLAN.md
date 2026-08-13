@@ -63,9 +63,9 @@ These will 404/500 today. Every one of them backs a visible component.
 | Dashboard constant | URL | Used by | Reality |
 |---|---|---|---|
 | `ENDPOINTS.SETTINGS` | `GET/POST /admin/settings` | whole **Settings** page | no route, no controller |
-| `ENDPOINTS.BROADCAST_ALERT` | `POST /admin/broadcast-alert` | **Staff → Broadcast Alert** modal | no route |
+| ~~`ENDPOINTS.BROADCAST_ALERT`~~ | `POST /admin/broadcast-alert` | **Staff → Broadcast Alert** modal | ✅ resolved in Phase 10: constant **deleted**. Confirmed **404** live (a clean missing route, unlike SUPPORT_METRICS which 500s) |
 | ~~`ENDPOINTS.SUPPORT_METRICS`~~ | `GET /staff/complaints/metrics` | **Support** KPI cards | ✅ resolved in Phase 7: constant **deleted**. It does not 404 as stated here — `"metrics"` matches `GET /staff/complaints/{id}` and fails its `int` type hint, returning **500 with an Ignition stack trace** ([BUG-8](docs/api/backend-issues.md)) |
-| `staffApi.deleteEmployee` | `DELETE /employees/{id}` | **Staff** delete button | `EmployeeManagementController` has no `destroy()`; deactivation is via `PATCH /employees/{id}/toggle-active` |
+| ~~`staffApi.deleteEmployee`~~ | `DELETE /employees/{id}` | **Staff** delete button | ✅ resolved in Phase 10: confirmed **405** live, constant and wrapper **deleted**, button replaced by *Deactivate*. Note `EmployeeManagementService::delete()` IS implemented — it just has no route ([BUG-4](docs/api/backend-issues.md)) |
 
 ### 1.4 Endpoints in the Postman collection that **do not exist** in the backend checkout
 
@@ -85,13 +85,13 @@ either source until you have probed the live host.
 
 ### 1.5 Backend endpoints with **no dashboard consumer yet** (needed for "fully functional")
 
-- `GET /admin/wallet` — the admin's own wallet (balance card).
-- `GET /admin/wallet/{walletId}/transactions` — `walletApi.getWalletTransactions()` exists but is never called from any component.
+- ~~`GET /admin/wallet` — the admin's own wallet (balance card).~~ ✅ wired in Phase 9 as the Reports header card.
+- ~~`GET /admin/wallet/{walletId}/transactions`~~ ✅ wired in Phase 9 as the transactions drawer.
 - ~~`GET /admin/passengers/{id}/stats | monthly-trips | recent-trips | complaints | wallet-charges`~~ ✅ all five wired in Phase 5 as per-section refresh controls (window/limit/status selectors + a reload button each).
 - `GET /admin/drivers/stats`, `GET /admin/drivers/activity` — covered by the `drivers/dashboard` BFF, so these are only needed if you add per-widget refresh. ~~`GET /admin/drivers/verification-efficiency`~~ ✅ wired in Phase 4 (period switch). `GET /admin/drivers/{id}/profile` has **no consumer by design** — Phase 4 deleted the wrapper; `{id}/dashboard` is a superset.
 - ~~`GET /staff/bookings` and `POST /staff/bookings/{bookingId}/cancel` — **no UI exists**.~~ ✅ Built in Phase 3 as the Bookings tab on the Trips page.
-- `GET /employees/{id}` — no consumer (the list carries everything today).
-- `POST /admin/photo` — admin avatar upload; `MainLayout` still renders a hardcoded Unsplash photo.
+- `GET /employees/{id}` — still no consumer (the list carries everything), and it 500s anyway (BUG-1). `staffApi.getEmployee` exists for when BUG-1 is fixed.
+- `POST /admin/photo` — ❌ **a stub that reports success and does nothing** ([BUG-12](docs/api/backend-issues.md)). Never wire an upload control to it.
 - ~~`GET /admin/users/{id}/status`~~ ✅ Wired in Phase 4 (driver ban banner) and Phase 5 (passenger ban banner) through the now-shared `BanStatusBanner`.
 
 ### 1.6 Smaller mismatches worth fixing while you are in there
@@ -137,19 +137,19 @@ Legend: ✅ wired & endpoint exists · ⚠️ wired but mismatched/incomplete ·
 | `support` (escalated view) | `GET /staff/escalated-complaints`, `PATCH .../{id}/resolve` | ✅ own `counts` badges; resolved/closed tabs labelled "(all)" ([BUG-10](docs/api/backend-issues.md)) |
 | `support/SupportStats` | derived from the two `counts` blocks | ✅ rebuilt in Phase 7; avg-response card removed ([REQ-5](docs/api/backend-issues.md)), its endpoint 500s ([BUG-8](docs/api/backend-issues.md)) |
 | `reviews/pages/Reviews` | `GET /staff/reviews`, `DELETE /staff/reviews/{id}` | ✅ paged, `per_page`, server-side search + date, `?user_id=` deep link, confirmed delete |
-| `reports/OverviewCards` | `GET /admin/reports` | ✅ |
-| `reports/TransactionTable` | `GET /admin/wallet/requests`, `POST .../approve|reject` | ✅ |
-| `reports/ManagementSidebar` | `GET /admin/wallets`, `POST /admin/wallet/charge` | ✅ |
-| reports PDF | `GET /admin/export/pdf` | ✅ |
-| `staff/pages/Staff` | `GET/POST /employees`, `PUT /employees/{id}`, `PATCH .../toggle-active`, `PATCH .../reset-password` | ✅ |
-| staff delete | `DELETE /employees/{id}` | ❌ no such route |
-| `staff/BroadcastAlertModal` | `POST /admin/broadcast-alert` | ❌ no such route |
+| `reports/OverviewCards` | `GET /admin/reports` | ✅ rebuilt in Phase 9: two non-existent fields removed, five real ones surfaced, split into range-filtered vs point-in-time groups |
+| `reports/TransactionTable` | `GET /admin/wallet/requests`, `POST .../approve|reject` | ✅ paged, `per_page`, **`counts`-driven badges**, type filter, `admin_notes`; "All" tab removed ([REQ-6a](docs/api/backend-issues.md)) |
+| `reports/ManagementSidebar` | `GET /admin/wallets`, `POST /admin/wallet/charge` | ✅ full directory on load, all three charge figures, `max:1000000` mirrored |
+| reports PDF | `GET /admin/export/pdf` | ✅ date range + `sections[]`; JSON-under-blob errors parsed |
+| `staff/pages/Staff` | `GET/POST /employees`, `PUT /employees/{id}`, `PATCH .../toggle-active`, `PATCH .../reset-password` | ⚠️ built, but **all six 500** ([BUG-1](docs/api/backend-issues.md)); ships a live-derived "unavailable" state with every write control gated |
+| staff delete | ~~`DELETE /employees/{id}`~~ | ✅ resolved in Phase 10: **405**, so `deleteEmployee` was deleted and replaced by *Deactivate* |
+| ~~`staff/BroadcastAlertModal`~~ | `POST /admin/broadcast-alert` | ✅ resolved in Phase 10: **404** confirmed live, so the modal, its api call, its endpoint constant and its locale namespace were all removed |
 | `settings/pages/Settings` (4 components) | `GET/POST /admin/settings` | ❌ no such route |
 | `home/pages/Home` | — | ❌ two mock buttons |
 | `MainLayout` header search | — | 🆕 non-functional input |
-| `MainLayout` admin avatar | `POST /admin/photo` | 🆕 hardcoded Unsplash image |
+| `MainLayout` admin avatar | `POST /admin/photo` | ❌ **stub that lies** — returns success with no file handling at all ([BUG-12](docs/api/backend-issues.md)); do NOT wire an upload to it |
 | ~~— | `GET /staff/bookings`, `POST /staff/bookings/{id}/cancel`~~ | ✅ built in Phase 3 (Bookings tab) |
-| — | `GET /admin/wallet`, `GET /admin/wallet/{id}/transactions` | 🆕 no UI |
+| ~~—~~ | `GET /admin/wallet`, `GET /admin/wallet/{id}/transactions` | ✅ built in Phase 9 (admin wallet card + transactions drawer) |
 
 ---
 
@@ -839,48 +839,276 @@ is no undo.
 
 ---
 
-## Phase 9 — Reports & Wallet (system_admin only)
+## Phase 9 — Reports & Wallet — ✅ **DONE & VERIFIED AGAINST THE LIVE BACKEND 2026-08-13**
 
-Endpoints: `GET /admin/reports?start_date&end_date` · `GET /admin/export/pdf` · `GET /admin/wallets` · `GET /admin/wallet` · `GET /admin/wallet/{walletId}/transactions` · `POST /admin/wallet/charge {phone_number, amount}` · `GET /admin/wallet/requests?status&type&page&per_page` · `POST /admin/wallet/requests/{id}/approve|reject {admin_notes?}`.
+Endpoints: `GET /admin/reports?start_date&end_date` → `{status, report_data{ride_stats, financial_stats, date_range}}` (**server-cached 5 min, keyed `admin.report.{start}.{end}`**) · `GET /admin/export/pdf?start_date&end_date&sections[]` → `application/pdf` · `GET /admin/wallet` · `GET /admin/wallets` → `{admin_wallets[2], all_wallets[32]}` (**no query params at all**) · `GET /admin/wallet/{walletId}/transactions` → **raw Laravel paginator, no `meta`** · `POST /admin/wallet/charge {phone_number 10–15, amount 1–1 000 000}` · `GET /admin/wallet/requests?status&type&per_page&page` → `{data, meta{…}, counts{pending,approved,rejected}}` · `POST /admin/wallet/requests/{id}/approve|reject {admin_notes? ≤500}`.
 
-- [ ] **Date range.** `reportsApi` accepts `start_date`/`end_date` but `useReports.fetchAll()` calls `generateFinancialReport()` with no arguments. Add a range picker and thread it through both the report and the PDF export.
-- [ ] 🆕 **Admin wallet card** — `GET /admin/wallet` returns the current admin's wallet (`wallet_number`, `phone_number`, formatted `balance`, `admin_type`). Nothing renders it. Add it to the Reports header.
-- [ ] 🆕 **Wallet transactions drawer** — `walletApi.getWalletTransactions()` exists and is never called. Clicking a wallet in `ManagementSidebar` should open `GET /admin/wallet/{id}/transactions` (paginated: `{current_page, data, per_page, total}`).
-- [ ] Wallet requests: expose the `type` filter (`charge|withdraw`) alongside the existing status filter, and let the admin type `admin_notes` when approving/rejecting — the API accepts it, the UI always sends nothing.
-- [ ] `chargeUserWallet` returns `{previous_balance, new_balance, transaction_id}` — show all three in the confirmation, and refetch `getAllWallets()` afterwards.
-- [ ] PDF export: handle a non-blob error response (Laravel returns JSON on failure even with `responseType:'blob'` — parse and surface it instead of downloading a corrupt file).
-- [ ] Reports is `staff:system_admin`-gated; a `sycash` or `admin` user hitting it gets 403 `FORBIDDEN`. Make sure `RoleRoute` blocks before the request fires (it does today — keep it in sync if `sycash` gains access).
+> `npx tsc -b` clean · `npm run lint` clean · `npm test` **198 passing, up from 173**.
+>
+> **Verified end-to-end** by [`docs/api/verify-reports.mjs`](docs/api/verify-reports.mjs) — drives the
+> real page in Chromium in **both `en` and `ar`** against MySQL + `artisan serve` on `:8000`:
+> **155 assertions read-only, 160 with `--mutate`, 0 failures.**
 
-**DoD:** a date range changes both the on-screen report and the exported PDF; wallet transactions open from the sidebar.
+### 🔴 The KPI row was broken before this phase, and silently
+
+`FinancialStats` had drifted from the payload, and `display()` turned every `undefined` into `—`:
+
+| `OverviewCards` read | The API actually returns |
+|---|---|
+| `primary_admin.total_collected` → **undefined → "—"** | `primary_admin.total_platform_fees` |
+| `primary_admin.total_disbursed` → **undefined → "—"** | — (does not exist) |
+| `sycash.total_creation_fees` (typed, never rendered) | `sycash.total_escrow_in / total_escrow_out / total_refunds_paid` |
+
+**Two of the four cards were permanently dashed in the shipping build**, and the four real `sycash`
+figures were rendered nowhere. Both non-existent fields are gone; all five real ones are now on
+screen. *Verified: each card's text equals the server's own string, asserted field by field.*
+
+There was a **second** currency bug on the same row: money arrives pre-formatted as `"135,600.00 SYP"`
+and the cards appended `t('users.currency')`, which is **`SAR`** — so a Syrian-pound figure rendered
+as `"135,600.00 SYP SAR"`. The append is gone. *Verified: the string `SYP <currency>` appears nowhere
+on the page in either language.*
+
+### ⚠️ Deliberate UI change: the KPI row is now two labelled groups
+
+Confirmed live on a `2020-01-01..2020-01-02` range — **only half the figures respond to the date
+picker**:
+
+| Range-filtered (flows) | NOT range-filtered (point-in-time) |
+|---|---|
+| `sycash.total_escrow_in / out / total_refunds_paid` → `0.00` | `sycash.current_balance` → unchanged |
+| `primary_admin.total_platform_fees` → `0.00` | `primary_admin.current_balance` → unchanged |
+| `ride_stats.*` → `71 → 0` | `active_rides_locked` → unchanged |
+
+A range picker above a row where half the cards ignore it is a lie by layout. The cards are therefore
+split into **"Period figures"** and **"Current balances"**, the latter captioned *"As of now. These
+are point-in-time balances and are NOT affected by the date range."* *Verified in both languages:
+applying the range drives the flow card to `0.00` while the balance card is unchanged, in the same
+screenshot.*
+
+### Done
+
+- [x] **`FinancialStats` fixed against the real payload and the KPI row re-laid-out** (above). Ride
+      stats are rendered too — they are range-filtered, so they sit in the period group.
+- [x] **Date range picker**, threaded through **both** `GET /admin/reports` and `GET /admin/export/pdf`.
+      `after_or_equal:start_date` is mirrored client-side and **disables Apply** rather than
+      submitting and 422'ing. *Verified: both endpoints receive the same applied range; an
+      end-before-start range disables the button, explains why, and fires no request.*
+- [x] **"updated HH:MM · server-cached for up to 5 minutes"** next to a real refresh control —
+      `GET /admin/reports` is cached per date range and nothing busts it. Dashboard/Verifications precedent.
+- [x] 🆕 **Admin wallet card** — `GET /admin/wallet` had no consumer since Phase 0. It now renders the
+      acting admin's balance, wallet number and phone in the Reports header.
+- [x] 🆕 **Wallet transactions drawer** — `walletApi.getWalletTransactions()` had never been called
+      from anywhere. Opens from the admin wallet card **and** from any row in the wallet directory.
+      *Verified: 31 real transactions over 4 pages on wallet 1, paging round-trips.*
+- [x] **`sections[]` on the PDF export shipped as a real feature** — the plan never mentioned it. It
+      is validated (`in:stats,financial,growth,cities,recent`) and genuinely changes the output.
+      *Verified: all five values accepted, and stats+financial produces a different byte length from
+      the full report.*
+- [x] **Wallet requests rebuilt**: `counts`-driven badges (the second real badge source in the
+      project, after Phase 7), the `type` filter, `per_page` + `TablePagination`, and `page` resets to
+      1 on **every** filter and per-page change. *All verified against the server.*
+- [x] **`admin_notes` on approve/reject**, through `ConfirmActionModal` with `minReasonLength={1}` and
+      `maxReasonLength={500}` — the Phase 6 reject precedent, **not** the 10-char ban rule, because
+      the validator is `nullable`. The approve dialog also shows the user's own note and warns that
+      the money movement cannot be undone. *Verified: the notes reach the API and come back on the row.*
+- [x] **Charge wallet shows all three returned figures** (`previous_balance → new_balance` and
+      `transaction_id`, all nested under `wallet`) and refetches afterwards. `max:1000000` is mirrored
+      and **disables** the confirm. *Verified: the cap disables the button; a real charge returns all
+      three.*
+- [x] **`filteredWallets` no longer returns `[]` until the user types** — the sidebar rendered "no
+      wallets" on load while holding 32. Justified as client-side the way Phase 6 justified
+      `visibleRequests`: `GET /admin/wallets` accepts **no query params at all** and returns every
+      wallet unpaginated, so a client filter is the only one possible and there is no server filter
+      for it to fight with. A plural-correct "showing N of 32" label and a search-miss empty state
+      were added. *Verified: all 32 render before anything is typed.*
+- [x] **PDF export handles a non-blob error.** Laravel returns JSON on failure even under
+      `responseType:'blob'`, so the old code would have written a JSON error page to disk named
+      `.pdf`. The rejected Blob is now read back into the parsed body in place, so `extractApiError`
+      and `getFieldErrors` work unchanged. *Verified live (`sections[]=bogus` → 422 JSON) and in a
+      unit test.*
+- [x] **Hook hygiene:** `useReports.error` moved from `Error | null` + `console.error` to
+      `extractApiError` + `string | null`; dates follow the active locale instead of a pinned
+      `'ar-SY'`; the report, the wallets and the requests each own their fetch, so a request-filter
+      change no longer refetches the cached report; skeletons, `ErrorBanner` with retry, and distinct
+      empty states throughout.
+- [x] New tests: `tests/hooks/useReports.test.ts` (11 cases) and `tests/hooks/useWalletTransactions.test.ts`
+      (6), covering the range reaching both endpoints, both filters, the `counts` badges,
+      page-resets-on-filter-change, the `admin_notes` payload, the charge response shape and the raw-paginator mapping.
+- [x] **Test-infra fix:** jsdom's `Blob` implements neither `stream()` nor `text()`, so any
+      `responseType: 'blob'` request made msw's XHR interceptor throw an *unhandled rejection* that
+      failed every other test in the same file. Both are polyfilled in `tests/setup.ts`.
+
+### 🔴 The "All" tab was a lie, and was removed
+
+`AdminWalletRequestController::index()` does `$status = $request->get('status', 'pending')` and
+**always** filters — there is no way to ask for all statuses. `useReports` mapped its `'all'` filter
+to *sending no `status` at all*, so selecting **All** silently showed **only pending requests**.
+
+*Proven live:* the no-status response is byte-for-byte identical to `?status=pending`, and its total
+(7) is smaller than the whole table (12).
+
+**The tab is gone.** Faking it would need three requests and could not be paginated coherently across
+three paginators; relabelling it would leave a tab that shows pending under another name. The three
+real statuses are each reachable and the `counts` badges show the other two totals from whichever tab
+is active, so nothing is concealed. Filed as [REQ-6a](docs/api/backend-issues.md) with the one-line
+backend fix that restores it. Note `type` **does** legitimately support "all" — it is applied only
+`if filled` — and that asymmetry is commented at both sites.
+
+### ⚠️ Two gaps meant a control was deliberately NOT shipped
+
+- [x] ~~A `PerPageSelect` on the transactions drawer~~ — **not possible.** `per_page` is accepted and
+      **silently ignored** there: `AdminWalletService::getWalletTransactions(int $walletId, int $perPage = 10)`
+      never receives the controller's value. *Verified: `?per_page=3` returns 10 rows.* The drawer
+      ships `TablePagination` alone, and `walletApi.getWalletTransactions()` takes no `perPage`
+      argument so a caller cannot re-introduce it. Filed as [REQ-6b](docs/api/backend-issues.md).
+- [x] **The transactions endpoint returns a raw Laravel paginator, not the house `{data, meta}`
+      envelope** — no `meta` anywhere, plus six keys nothing consumes, and a `wallet.balance` that is
+      raw (`"135600.00"`) where every other wallet endpoint returns `"135,600.00 SYP"`. Typed
+      explicitly and commented so a refactor does not "fix" it into reading a `meta` that will never
+      exist. Filed as [REQ-6c](docs/api/backend-issues.md).
+
+### 🔴 BUG-8 is a pattern — second site confirmed
+
+`GET /admin/wallet/abc/transactions` → `TypeError: …showWalletTransactions(): Argument #1 ($walletId)
+must be of type int, string given`. This phase added the first route-parameter links in the feature,
+so every wallet id is checked `Number.isFinite` before it can reach a URL. Filed by **extending
+BUG-8** rather than as a new number.
+
+### Seed state after this phase
+
+`wallet_requests` was **empty** (0 rows), so the table, its badges, both filters, paging and both
+actions rendered against nothing. 12 rows were seeded deliberately from
+[`seed-phase-9.sql`](docs/api/seed-phase-9.sql) — 7 pending / 3 approved / 2 rejected, both `type`
+values in every status, >1 page at the smallest `per_page` — and **all of it reverted** via
+[`revert-phase-9.sql`](docs/api/revert-phase-9.sql). Reports, wallets and wallet transactions needed
+**no seeding**.
+
+`--mutate` performed one real approve, one real reject and one real charge. **None is reversible
+through the API** — an approve moves a balance *and* writes a `wallet_transactions` row; so does a
+charge. The script prints the before/after balances, the rows it created and the exact SQL to undo
+them, rather than implying it cleaned up. All of it was reverted and proven: `wallet_requests` back to
+**0**, `wallet_transactions` back to **194**, wallets 4 and 32 back to their seeded balances.
+
+**DoD:** ✅ a date range changes both the on-screen report and the exported PDF; ✅ wallet transactions
+open from the sidebar and from the admin wallet card; ✅ every card on the page reads a field that
+exists.
 
 ---
 
-## Phase 10 — Staff / Employees (system_admin only) — 🔴 **BLOCKED ON THE BACKEND**
+## Phase 10 — Staff / Employees — ✅ **DONE 2026-08-13, SHIPPED BEHIND A LIVE-DERIVED UNAVAILABLE STATE**
 
-> **All six `/employees` endpoints return 500.** `EmployeeManagementController` calls
-> `list()`, `formatEmployee()` and `resetPassword()`, none of which exist on
-> `EmployeeManagementService` (which defines `getAll()`, `rotatePassword()`, and no formatter at
-> all). The Staff page cannot work at any level until this is fixed —
-> [BUG-1](docs/api/backend-issues.md).
->
-> Also: `POST /employees` **writes the row and then 500s**, so a "failed" creation actually
-> succeeded and the retry hits 409 (BUG-2). And `EmployeeManagementService::delete()` is fully
-> implemented but has **no route**, which suggests Q4's answer is "forgotten", not "deliberate"
-> (BUG-4).
->
-> The frontend work below can still be written; it just cannot be verified yet.
+Endpoints: `GET /employees` · `POST /employees` · `GET /employees/{id}` · `PUT /employees/{id}` · `PATCH /employees/{id}/toggle-active` · `PATCH /employees/{id}/reset-password {new_password ≥8}`. **There is no `DELETE /employees/{id}`** — confirmed live, `405`.
 
-Endpoints: `GET /employees` · `POST /employees` · `GET /employees/{id}` · `PUT /employees/{id}` · `PATCH /employees/{id}/toggle-active` · `PATCH /employees/{id}/reset-password {new_password ≥8}`.
+> **Verified end-to-end** by [`docs/api/verify-staff.mjs`](docs/api/verify-staff.mjs) — drives the
+> real page in Chromium in **both `en` and `ar`**: **50 assertions read-only, 63 with `--mutate`,
+> 0 failures.** It is the first script in this project that **reads the database directly**, because
+> the API lies about whether the write happened.
 
-- [ ] **Remove `deleteEmployee`.** There is no `DELETE /employees/{id}`. Replace the delete button with *Deactivate* (`toggle-active`) — which is what the backend intends — and drop `staffApi.deleteEmployee` + `useStaff.deleteEmployee`.
-- [ ] Restrict the create-role dropdown to `admin` and `support_agent`. The backend derives allowed roles from `creatableRoles()` and 422s on anything else; `system_admin` and `sycash` are `isRestricted()` and can never be created.
-- [ ] Surface the real error codes: **403** `DomainException` (not permitted to manage this employee), **409** `RuntimeException` (username/email already taken), **422** validation. `username` is `alpha_dash|min:3|max:50`; `password` is `min:8`; `email` is nullable.
-- [ ] Wire edit → `PUT /employees/{id}` (`first_name`, `last_name`, `email`) if the UI doesn't already.
-- [ ] Show `created_by` and `last_login_at` — both are in `EmployeeResponse` and useful for an admin audit view.
-- [ ] Replace the `i.pravatar.cc` avatar (`useStaff.ts:40`) with initials.
-- [ ] **Broadcast alert modal** — per the Phase 0 decision: build against the real endpoint if it exists, otherwise hide the button behind a feature flag rather than shipping a control that 404s.
+### 🔴 The backend is not merely broken — three of its six endpoints corrupt data
 
-**DoD:** creating, editing, deactivating, and password-resetting an employee all work; no button maps to a missing route.
+| Endpoint | Undefined call | Writes before dying? |
+|---|---|---|
+| `GET /employees` | `list()` | no — dies immediately |
+| `GET /employees/{id}` | `formatEmployee()` | no (read-only) |
+| `POST /employees` | `formatEmployee()` after `create()` | 🔴 **YES — employee created, then 500** |
+| `PUT /employees/{id}` | `formatEmployee()` after `update()` | 🔴 **YES — row updated, then 500** |
+| `PATCH .../toggle-active` | `formatEmployee()` after `toggleActive()` | 🔴 **YES — row flipped, then 500** |
+| `PATCH .../reset-password` | `resetPassword()` | no — dies before the write |
+
+The 500 is an uncaught **`\Error`** ("Call to undefined method"), which is not an `\Exception`, so
+each action's own `catch (\Exception)` never fires and Laravel renders a stack trace instead.
+
+**Proven against the database, not restated.** `verify-staff.mjs --mutate` reads the row before and
+after each call: `is_active 1 → 0`, `first_name "Test" → "VerifyProbe"`, `3 → 4 employee rows` — every
+one alongside a reported 500. All three are rolled back inside the script, which then asserts the
+`employees` table is **byte-for-byte identical** to its pre-run snapshot.
+
+**The decoys were asserted too.** Against employee 1 (the restricted `system_admin`) the same calls
+return `403 / 403 / 422` — guards and validators firing *before* the undefined method. The script
+exercises **employee 3 (`agent01`, non-restricted)** precisely because a check that only used
+employee 1 would have concluded the backend works.
+
+### The decision: option (a) — ship it, gated on the live response
+
+**Chosen:** keep the page mounted and ship a clearly-labelled unavailable state driven by the real
+500, rather than hiding it behind a build-time feature flag.
+
+- The read path always attempts `GET /employees` and, on failure, renders `StaffUnavailablePanel` —
+  which **names the defect, shows the server's own error verbatim, and states that the write actions
+  are withheld on purpose** — never an empty table, which would read as "this platform has no staff".
+- **Every write control is unreachable while the list request fails**: create, edit, deactivate and
+  password reset are all gated, and their modals are not even mounted.
+
+Availability is derived from the live response rather than a hardcoded flag **on purpose**:
+`GET /employees` exercises *both* `list()` and `formatEmployee()`, so its success proves the two
+missing methods the write paths depend on are back. The page un-gates itself the moment BUG-1 is
+fixed, with no frontend change and no stale flag left behind. Password reset is gated by the same
+flag — it dies before its write so it cannot corrupt anything, but a button that can only ever fail is
+still a lie about what the page can do.
+
+*Verified in both languages: the panel renders, no `staff-row` exists, no create/edit/toggle/reset/delete
+control exists, the page issues only `GET`, and never a `DELETE`.*
+
+### Done
+
+- [x] **`deleteEmployee` removed** from `staffApi` **and** `useStaff`. `DELETE /employees/{id}` returns
+      **405** — the route was never registered. The delete button is replaced by *Deactivate*
+      (`toggle-active`), which is what the backend intends. A test asserts no code path can issue a
+      `DELETE`, and `verify-staff.mjs` asserts the page never sends one.
+      **Note this is a routing gap, not a design decision:** `EmployeeManagementService::delete()` is
+      fully implemented and simply has no route ([BUG-4](docs/api/backend-issues.md)) — so deletion is
+      unsupported by *omission*, not by design.
+- [x] **The create-role dropdown offers only `admin` and `support_agent`**, reusing the Phase 1
+      `CreatableStaffRole` / `CREATABLE_STAFF_ROLES` rather than redefining them. Pinned by a test.
+- [x] **Client-side validators mirrored** rather than submitted-and-422'd: `username`
+      `alpha_dash|min:3|max:50` (with its own inline message), `password` `min:8`, `first_name` /
+      `last_name` `max:100`, `email` `max:255` and nullable.
+- [x] **Edit wired to `PUT /employees/{id}`** through a new `EditEmployeeModal`, sending **only the
+      changed fields** — which is what the endpoint's `sometimes` rules are for. Username and role are
+      immutable there and the dialog says so. 422 field errors are pinned under their own inputs.
+- [x] **`BroadcastAlertModal` removed**, along with `staffApi.sendBroadcastAlert`,
+      `ENDPOINTS.BROADCAST_ALERT` and the whole `broadcast.*` locale namespace.
+      `POST /admin/broadcast-alert` returns a clean **404**, confirmed live. Per the Phase 0 decision a
+      control that 404s is not shipped. A comment at the deletion site records how to restore it.
+- [x] **Hook hygiene:** `useStaff.error` moved from `Error | null` + `console.error` to
+      `extractApiError` + `string | null`; `last_login_at` follows the active locale instead of a
+      pinned `'ar-SY'`; `TableSkeleton` replaced the "loading…" text row; real empty state; every
+      write re-reads the list rather than trusting an optimistic local update — the server is the only
+      trustworthy source when three endpoints write and then report failure.
+- [x] ~~Replace the `i.pravatar.cc` avatar~~ — **stale, and struck.** `useStaff` has used the shared
+      `<Avatar name photo />` since Phase 4; `photo` is typed `null` with a comment saying there is no
+      employee photo endpoint. Confirmed: `grep -r "pravatar" src` → nothing.
+- [x] New tests: `tests/hooks/useStaff.test.ts` (9 cases) covering the create payload, the role
+      restriction, the `sometimes` update payload, the unavailable flag on a 500, locale-aware dates,
+      and that **no code path can issue `DELETE /employees/{id}`**.
+- [x] A `hideReason` prop was added to the shared `ConfirmActionModal` for the deactivate dialog:
+      `toggle-active` takes **no body at all**, so collecting a reason would imply it gets recorded.
+      Optional and defaulted off, so the five earlier verify scripts are unaffected — all re-run and
+      still passing (94 / 137 / 51 / 105 / 64).
+
+### ⚠️ One planned item was dropped — the data cannot support it
+
+- [x] ~~Show `created_by`~~ — **not possible.** It is `NULL` for **all three** seeded employees, so the
+      column would read "Unknown" on every row. Dropped exactly as Phase 4 dropped `banned_by`
+      ([BUG-5](docs/api/backend-issues.md)). `last_login_at` **is** shown — only 1 of 3 rows has a
+      value, but "never signed in" is a real fact about an account, not a missing field. Both counts
+      are asserted by `verify-staff.mjs` against the database.
+
+### 🔴 New backend defect found and filed
+
+- [x] **[BUG-11](docs/api/backend-issues.md) — every `/employees` domain refusal is 403; the
+      controller's 409 branch is dead code.** This plan told Phase 10 to surface "**409**
+      `RuntimeException` (username/email already taken)". That status is unreachable:
+      `EmployeeManagementService` throws `\DomainException` at all 18 of its throw sites, including
+      both uniqueness checks, and **never throws `\RuntimeException`**. Verified live — a duplicate
+      username returns **403** `"Username 'x' is already taken."`, indistinguishable by status from a
+      permissions failure. The dashboard therefore does not branch on the status code at all; it
+      surfaces the server's message, which is unambiguous, and comments why at the call site.
+
+**DoD:** ⚠️ creating, editing, deactivating and password-resetting **cannot** work until BUG-1 is
+fixed — that is a backend blocker, not a frontend gap. ✅ No button maps to a missing route, ✅ no
+control that would corrupt a row is reachable, and ✅ the read path degrades honestly instead of
+rendering an empty table.
 
 ---
 
@@ -924,6 +1152,19 @@ Apply uniformly across every page touched above:
 - [ ] **Single-flight token refresh** — refresh tokens are single-use and rotate (verified live). If two requests 401 at the same time, both call `/refresh`; the second replays a consumed token and the user is logged out. The interceptor needs to share one in-flight refresh promise across all queued requests. Pages that fire several parallel fetches on mount (Dashboard, Reports, Trips) make this easy to hit.
 - [ ] **403 handling** — `RoleRoute` blocks navigation, but a role change mid-session can still produce a 403. Show the "no permission" panel instead of an error banner.
 - [ ] **i18n** — every new string goes in both `src/locales/en/translation.json` and `src/locales/ar/translation.json`. Check RTL for new tables/modals.
+- [ ] 🆕 **Four keys are referenced but defined in neither locale**, so they render as the raw key
+      string to the user. Found by a full `t('…')`-vs-JSON audit run at the end of Phase 9/10; all
+      four are **pre-existing** and sit outside those phases' files, so they were filed rather than
+      fixed in place (Trips and Users are verified by passing scripts, and Home is slated for deletion
+      in Phase 12):
+      | Key | Site |
+      |---|---|
+      | `common.welcome` | `home/pages/Home.tsx:11` — Phase 12 deletes this page |
+      | `trips.view_details` | `trips/components/TripsTable.tsx:132` (a `title=` tooltip) |
+      | `trips.cancel_trip` | `trips/components/TripsTable.tsx:141` (a `title=` tooltip) |
+      | `auth.email` | `users/pages/UserDetails.tsx:775` and `users/pages/Users.tsx:452` |
+      The rest of the audit is clean: **597 keys used, en/ar at exact parity, zero orphans.** Re-run it
+      as part of this phase so the count stays honest.
 - [ ] **Dates** — several hooks call `toLocaleDateString('ar-SY')` unconditionally. Format by active locale.
 - [x] ~~**Avatars** — one shared `<Avatar name photo />` with initials fallback; remove all `i.pravatar.cc` and Unsplash URLs.~~ ✅ done in Phase 4.
 
@@ -1039,8 +1280,8 @@ All paths are relative to `VITE_API_BASE_URL`. Auth header: `Authorization: Bear
 | 6 — Verifications | 1 | ✅ done 2026-08-12 |
 | 7 — Support | 0, 1 | ✅ done 2026-08-13 |
 | 8 — Reviews | 1 | ✅ done 2026-08-13 |
-| 9 — Reports & Wallet | 1 | 1.5 d |
-| 10 — Staff | 0, 1 | 1 d |
+| 9 — Reports & Wallet | 1 | ✅ done 2026-08-13 |
+| 10 — Staff | 0, 1 | ✅ done 2026-08-13 (blocked on BUG-1 server-side) |
 | 11 — Settings | 0 | 0.25–1 d (depends on the answer) |
 | 12 — Shell | 1 | 0.5 d |
 | 13 — Hardening | 2–12 | 1 d |

@@ -43,8 +43,25 @@ WHERE `reference` IN (
   'wallet_request:9010', 'wallet_request:9011', 'wallet_request:9012'
 );
 
+-- ── 1b. Transactions written by a --mutate admin wallet charge ─────────────
+-- `POST /admin/wallet/charge` writes an `admin_credit` row whose `reference` is
+-- NULL, so the clause above cannot reach it. It is identified by its
+-- `transaction_id` prefix instead. Verified live: a charge produced
+-- `SYSTEM_ADMIN_CHARGE_1786620617_3OY6M7tv`.
+-- ⚠️ Scoped to 2026-08-13 onwards so it can never touch the original seed.
+DELETE FROM `wallet_transactions`
+WHERE `transaction_id` LIKE 'SYSTEM\_ADMIN\_CHARGE\_%'
+  AND `created_at` >= '2026-08-13';
+
 -- ── 2. Balance restore (fill in from the verify script's output) ────────────
--- UPDATE `wallets` SET `balance` = <original> WHERE `id` = <wallet_id>;
+-- REQUIRED after any --mutate run. Deleting a transaction row does NOT restore
+-- the balance it moved — `wallets.balance` is the authoritative figure and is
+-- written in place. `verify-reports.mjs --mutate` prints the exact statements;
+-- this seed's own runs needed:
+--     UPDATE `wallets` SET `balance` = <original> WHERE `id` = <approved wallet>;
+--     UPDATE `wallets` SET `balance` = <original> WHERE `id` = <charged wallet>;
+-- Confirm with:
+--     SELECT COUNT(*) FROM wallet_transactions;   -- must be back to 194
 
 -- ── 3. Notifications created by a --mutate approve/reject ──────────────────
 -- Both actions call NotificationService::createNotification, which writes to

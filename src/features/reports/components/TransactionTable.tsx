@@ -181,8 +181,18 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                       {t(`reports.request_type.${request.type}`)}
                     </span>
                   </td>
+                  {/*
+                    `amount` here is a RAW number (the controller casts it to
+                    float), unlike the pre-formatted balance strings elsewhere on
+                    this page — so a unit does have to be appended. It is NOT
+                    `t('users.currency')`, which is "SAR": this platform settles
+                    in SYP, and the backend's own notification text says so
+                    ("Your wallet charge request of {amount} SYP…"). Appending
+                    SAR to a SYP figure was the second half of the double-
+                    currency bug the KPI row had.
+                  */}
                   <td className="px-6 py-5 text-sm font-bold text-primary text-start ltr:font-mono">
-                    {request.amount.toLocaleString()} {t('users.currency')}
+                    {t('reports.amount_syp', { amount: request.amount.toLocaleString() })}
                   </td>
                   <td className="px-6 py-5 text-xs text-on-surface-variant text-start">
                     {request.date}

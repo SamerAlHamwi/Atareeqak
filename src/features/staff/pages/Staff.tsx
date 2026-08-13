@@ -107,12 +107,20 @@ const Staff: React.FC = () => {
     setCreateErrors({});
     await runAction({
       key: 'staff-add',
-      // 403 DomainException (not permitted to manage this employee, and the
-      // restricted-account guard), 409 RuntimeException (username or email
-      // already taken) and 422 validation all carry a real server message,
-      // which extractApiError surfaces verbatim in the banner. The 422's
-      // per-field errors are additionally pinned under their own inputs — hence
-      // the catch, which records them and rethrows so runAction still reports.
+      // Real error codes, confirmed live 2026-08-13 by verify-staff.mjs:
+      //   422 → validation (per-field, pinned under the inputs below)
+      //   403 → EVERY domain refusal, including a duplicate username/email
+      //
+      // ⚠️ The plan documented a duplicate as `409 RuntimeException`. It is not.
+      // `EmployeeManagementService` throws `\DomainException` for the restricted
+      // role, the permission check AND both uniqueness checks, and it never
+      // throws `\RuntimeException` anywhere — so the controller's 409 branch is
+      // unreachable dead code (BUG-11). Nothing here may branch on 409 vs 403 to
+      // tell "conflict" from "forbidden"; the server's message is the only
+      // signal, and extractApiError surfaces it verbatim in the banner.
+      //
+      // The catch records the 422 field errors and rethrows so runAction still
+      // reports the failure in the banner.
       action: async () => {
         try {
           return await createEmployee({

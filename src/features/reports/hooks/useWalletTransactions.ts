@@ -1,5 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
 import { extractApiError } from '../../../services/apiError';
 import { walletApi } from '../../wallet/api/walletApi';
 import type {
@@ -41,16 +42,21 @@ export const useWalletTransactions = (walletId: number | null) => {
 
   const [wallet, setWallet] = useState<WalletTransactionsWallet | null>(null);
   const [transactions, setTransactions] = useState<WalletTransactionRow[]>([]);
-  const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // A different wallet restarts at page 1 rather than inheriting page 4.
-  useEffect(() => {
-    setPage(1);
-  }, [walletId]);
+  // Opening a different wallet restarts at page 1 rather than inheriting page 4
+  // from the previous one. The owning wallet is stored *alongside* the page so
+  // the reset is derived during render — an effect that called setPage(1) would
+  // render page 4 against the new wallet for one frame first.
+  const [pageState, setPageState] = useState({ walletId, page: 1 });
+  const page = pageState.walletId === walletId ? pageState.page : 1;
+  const setPage = useCallback(
+    (next: number) => setPageState({ walletId, page: next }),
+    [walletId]
+  );
 
   const mapTransaction = useCallback(
     (tx: WalletTransaction): WalletTransactionRow => ({
@@ -90,9 +96,7 @@ export const useWalletTransactions = (walletId: number | null) => {
     }
   }, [walletId, page, mapTransaction, t]);
 
-  useEffect(() => {
-    void fetchTransactions();
-  }, [fetchTransactions]);
+  useFetchEffect(fetchTransactions);
 
   return {
     wallet,

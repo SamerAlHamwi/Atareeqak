@@ -627,7 +627,8 @@
     "credit_phone_invalid": "يجب أن يكون رقم الهاتف بين {{min}} و {{max}} خانة.",
     "credit_amount_invalid": "يجب أن يكون المبلغ بين {{min}} و {{max}}.",
     "credit_amount_hint": "الحد الأقصى {{max}} ل.س لكل عملية شحن.",
-    "credit_success_detailed": "تم شحن {{phone}}: {{previous}} ← {{next}} (المعاملة {{transaction}})"
+    "credit_success_detailed": "تم شحن {{phone}}: {{previous}} ← {{next}} (المعاملة {{transaction}})",
+    "amount_syp": "{{amount}} ل.س"
   },
   "support": {
     "title": "الدعم والشكاوى",

@@ -539,7 +539,8 @@
     "credit_phone_invalid": "The phone number must be between {{min}} and {{max}} characters.",
     "credit_amount_invalid": "The amount must be between {{min}} and {{max}}.",
     "credit_amount_hint": "Maximum {{max}} SYP per charge.",
-    "credit_success_detailed": "Charged {{phone}}: {{previous}} → {{next}} (transaction {{transaction}})"
+    "credit_success_detailed": "Charged {{phone}}: {{previous}} → {{next}} (transaction {{transaction}})",
+    "amount_syp": "{{amount}} SYP"
   },
   "support": {
     "title": "Support & Complaints",
