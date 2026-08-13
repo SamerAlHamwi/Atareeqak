@@ -98,8 +98,10 @@ either source until you have probed the live host.
 
 - ~~`useTrips.ts:49` calls `tripsApi.getAllTrips(1, activeFilter)` — **page is hardcoded to 1**.~~ ✅ Fixed in Phase 3: `getAllTrips({page, filter, per_page})` with a real pager.
 - ~~Ban is always sent as `type: 'permanent'` from the details pages.~~ ✅ Fixed for **drivers** in Phase 4 and for **passengers** in Phase 5; both use `ConfirmActionModal` with `showBanOptions`.
-- `verificationsApi.rejectVerification(userId)` is called with no `reason`; the backend accepts one
-  and forwards it into the user's notification.
+- ~~`verificationsApi.rejectVerification(userId)` is called with no `reason`; the backend accepts one
+  and forwards it into the user's notification.~~ ✅ Fixed in Phase 6 through `ConfirmActionModal`
+  (`minReasonLength={1}` — the reject validator is `nullable|max:500`, **not** the 10-char ban rule).
+  Confirmed live that the reason reaches the notification body ([NOTE-3](docs/api/backend-issues.md)).
 - ~~`GET /admin/users` builds `admin_photo` from `$request->user()?->id`, which is **null** under
   `StaffJwtMiddleware`.~~ ✅ Confirmed live in Phase 5 and rendered through the `<Avatar>` fallback;
   filed as [BUG-5](docs/api/backend-issues.md), which Phase 5 extended to a **third** site
@@ -129,8 +131,8 @@ Legend: ✅ wired & endpoint exists · ⚠️ wired but mismatched/incomplete ·
 | drivers ban/unban | `POST /admin/users/{id}/ban|unban` | ✅ permanent + temporary with expiry |
 | `users/pages/Users` | `GET /admin/users` | ✅ paged, `per_page`, type + status + **date** + search (no `counts` — [REQ-2](docs/api/backend-issues.md)) |
 | `users/pages/UserDetails` | `GET /admin/passengers/{id}/full-profile` + `stats`/`monthly-trips`/`recent-trips`/`complaints`/`wallet-charges`, `POST .../charge-wallet`, `GET /admin/users/{id}/status` | ✅ + per-section refresh, ban banner, temporary bans |
-| `verification/pages/Verifications` | `GET /staff/verifications/pending`, `POST .../approve|reject` | ⚠️ no reject reason |
-| `verification/VerificationDocuments` | documents from the pending payload | ✅ |
+| `verification/pages/Verifications` | `GET /staff/verifications/pending`, `POST .../approve {national_id}`, `POST .../reject {reason}` | ✅ server `total`, real reject reason, required `national_id`, optimistic removal + reconcile |
+| `verification/VerificationDocuments` | documents from the pending payload | ✅ all four types; unreachable files degrade visibly (BUG-7) |
 | `support/pages/Support` (inbox) | `GET /staff/complaints`, `GET /staff/complaints/{id}`, `PATCH .../respond`, `PATCH .../escalate` | ✅ |
 | `support` (escalated view) | `GET /staff/escalated-complaints`, `PATCH .../{id}/resolve` | ✅ |
 | `support/SupportStats` | `GET /staff/complaints/metrics` | ❌ endpoint does not exist |
@@ -477,17 +479,153 @@ script says so and prints the delta rather than implying it cleaned up after its
 
 ---
 
-## Phase 6 — Verifications
+## Phase 6 — Verifications — ✅ **DONE & VERIFIED AGAINST THE LIVE BACKEND 2026-08-12**
 
-Endpoints: `GET /staff/verifications/pending` → `{status, total, data[]}` · `POST /staff/verifications/{userId}/approve {national_id?}` · `POST /staff/verifications/{userId}/reject {reason?}`.
+Endpoints: `GET /staff/verifications/pending` → `{status, total, data[{user_id,name,email,gender,address,type,profile_photo,documents[],submitted_at}]}` (**no query params, never paginated, server-cached 2 min**) · `POST /staff/verifications/{userId}/approve {national_id}` (**required**, `max:50`, unique) · `POST /staff/verifications/{userId}/reject {reason?}` (`nullable|string|max:500`, **no minimum**).
 
-- [ ] **Add the reject reason.** `useVerifications.ts:114` calls `rejectVerification(userId)` with no reason; the backend forwards it into the user's notification. Use `ConfirmActionModal` with a required reason.
-- [ ] Check whether approve needs `national_id` — the Postman body sends `{"national_id":"1234567890"}` and the latest backend release added a `national_id` column to `users`. If required, add the field to the approve modal, pre-filled from the submitted ID document when available.
-- [ ] Show `total` in the page header and an explicit empty state ("no pending verifications").
-- [ ] Document viewer: verify all four types render (`face_id`, `back_id`, `license`, `mechanic_card`) and handle a broken/expired URL.
-- [ ] Optimistically remove the row on approve/reject, then refetch to reconcile.
+> `npx tsc -b` clean · `npm run lint` clean · `npm test` **156 passing, up from 145**.
+>
+> **Verified end-to-end** by [`docs/api/verify-verifications.mjs`](docs/api/verify-verifications.mjs) —
+> drives the real page in Chromium in **both `en` and `ar`** against MySQL + `artisan serve` on `:8000`:
+> **59 assertions read-only, 67 with `--mutate`, 0 failures.** `verify-drivers.mjs` (94/94) and
+> `verify-users.mjs` (137/137) were re-run afterwards, since this phase touched the shared
+> `ConfirmActionModal`.
 
-**DoD:** rejecting requires a reason, the row disappears, and `total` decrements.
+### Two open questions answered by reading the controller, then confirmed live
+
+- **Q7 — does approve require `national_id`? YES.** `national_id => required|string|max:50`, plus a
+  uniqueness pre-check that 422s with `conflicting_user_id` if the number belongs to another account.
+  Verified live: an empty body returns `422 errors.national_id`. Recorded in
+  [`decisions.md`](docs/api/decisions.md).
+- **Reject's `reason` has NO minimum length.** It is `nullable|string|max:500` — the 10-char rule that
+  ban, trip-cancel, booking-cancel and escalate share **does not apply here**. Proven, not assumed:
+  `--mutate` rejects with a 4-character reason and the server accepts it.
+
+### Done
+
+- [x] **Reject reason is real.** `useVerifications.ts:114` used to call `rejectVerification(userId)`
+      with no reason at all. It now goes through `ConfirmActionModal` with `minReasonLength={1}` and a
+      new `maxReasonLength={500}` mirroring the server's cap (with a live character counter). Required
+      client-side as a product decision — the text is forwarded verbatim into the user's notification,
+      and an empty one tells them nothing. *Verified: confirming with an empty reason is blocked
+      **before** any request is sent, and a real rejection wrote
+      `تم رفض طلب توثيق حسابك. السبب: مكرر` into the user's notification.*
+- [x] **Approve collects the required `national_id`** through a new `ApproveVerificationModal`
+      (deliberately not `ConfirmActionModal`, which collects a min-length free-text *reason* — the
+      wrong control for a unique, stored, collidable identifier). Confirm is **disabled** until the
+      field is non-empty rather than submitting and 422'ing, and the field carries the server's
+      `maxlength=50`. *Verified: the body is exactly `{"national_id":"…"}` and the success banner
+      reports the value the **server** echoed back, not the value typed.*
+- [x] **`total` comes from the server**, not `requests.length`, and is rendered twice: as the KPI
+      figure and as a plural-correct header label. A unit test pins the two apart so a future refactor
+      cannot quietly substitute the row count. *Verified: the header reads "2 requests awaiting review"
+      / "طلبان بانتظار المراجعة", both read out of the locale JSON by the script.*
+- [x] **Real empty states, three of them:** the generic "no pending verifications", a distinct
+      "no pending requests of type X" for a filter miss, and "no documents attached" on a request that
+      submitted none. *Verified against a genuinely empty server response — `--mutate` drains the
+      two-row queue, and the empty state plus the Arabic `_zero` plural form render.*
+- [x] **Optimistic removal, then reconcile.** Both mutations await the API (so a 422 leaves the row
+      exactly where it is), drop the row and decrement `total` locally, then re-read the list without
+      flipping the loading flag. **Checked the cache first, as instructed:** unlike `/admin/dashboard`,
+      this endpoint *is* cached — `Cache::remember('staff.pending-verifications', 2 min)` — but approve
+      and reject both `Cache::forget` it, so the reconcile is guaranteed fresh. That is the only reason
+      the pattern is safe here, and it is commented at the call site. The 2-minute TTL still applies to
+      *new* submissions, so the header carries an "updated HH:MM · server-cached for up to 2 minutes"
+      note next to a real refresh button. *Verified: the reconciled total matches the server's, and the
+      post-mutation GET already omits the mutated user.*
+- [x] **Document viewer: all four types verified against real data.** The seed made this impossible as
+      shipped (see below), so four `photos` rows were seeded deliberately for user 31 — `face_id`,
+      `back_id`, `license`, `mechanic_card` — the run recorded, and the rows deleted again. All four
+      tiles render with the shared `common.documents.*` labels and their own icons, sorted into the
+      enum's canonical order.
+- [x] **A broken document degrades visibly, which BUG-7 makes the normal case.** Each tile that fails
+      to load replaces its `<img>` with an "unavailable" panel — so no browser broken-image glyph can
+      appear inside a review tool — while still offering the raw link, because opening it directly is
+      how a reviewer confirms the file is genuinely missing. The fullscreen preview degrades the same
+      way. *Verified: with the four seeded documents, all four URLs failed
+      (`net::ERR_BLOCKED_BY_ORB`), all four tiles flipped, and **zero `<img>` elements remained**.*
+- [x] **Client-side re-filter audited — kept, with the reason recorded.** `visibleRequests` is *not*
+      the `visibleTrips`/`visibleDrivers`/`visibleComplaints` bug class removed in Phases 3–5. Those
+      re-filtered an already server-filtered page on a *derived UI status*, blanking rows the server had
+      deliberately returned. `GET /staff/verifications/pending` accepts **no query parameters** and
+      returns the entire queue unpaginated, so a client filter is the only one possible, and it compares
+      against `type` exactly as the server emitted it. Both the hook comment and a unit test record
+      this. For the same reason the driver/passenger **counts are exact rather than estimates**, so the
+      filter tabs (now the shared `FilterTabs`) carry real badges — the first list in the project that
+      can. *Verified: switching tabs issues **no** new request, and the driver tab shows exactly the
+      rows the payload types as drivers.*
+- [x] **`ENDPOINTS.VERIFICATIONS` deleted**, following the Phase 4 precedent for `DRIVERS.PROFILE`. Its
+      three `/admin/verifications*` routes are `system_admin`-only twins of the `/staff/*` routes with a
+      strictly thinner payload — no `total`, no `gender`/`address`/`profile_photo` — while the staff
+      routes serve `admin` **and** `system_admin`. A comment at the deletion site records why, and the
+      script asserts the thinness so the justification stays true. *Verified live: the twin returns
+      `{status,data}` with rows of `user_id,name,email,type,documents,submitted_at` only.*
+- [x] **Hook rewritten to the house pattern:** `error` is now `string | null` via `extractApiError`
+      (it was `Error | null`, and the message was going to `console.error` instead of the user),
+      `ErrorBanner` with retry replaced a bare `common.load_failed` div, and a list-shaped loading
+      skeleton replaced the "Loading..." text. Dates were pinned to `'ar-SY'` regardless of language and
+      now follow the active locale. The `.charAt(0)` initials circles are now the shared `<Avatar>`, so
+      the (broken) seeded profile photo degrades the same way it does everywhere else.
+- [x] **The richer staff payload is now actually used:** `gender` and `address` were typed since Phase 0
+      and rendered nowhere; the detail header shows both.
+- [x] i18n: every new key in `ar` **and** `en`, with all six CLDR forms for the three count-bearing ones
+      (`pending_total`, `national_id_max`, and the pre-existing **`documents_title`**, which shipped a
+      single ungrammatical Arabic form — the count-key audit this phase was asked for; Phase 4 found
+      three in `drivers`, Phase 5 one in `users`). The duplicate `verifications.doc.*` block was deleted
+      in favour of the shared `common.documents.*` already used by `DriverDetails`, so the four document
+      types have one vocabulary. *Verified: no raw i18n key leaks in either language.*
+- [x] New tests: `tests/hooks/useVerifications.test.ts` (11 cases) covering the reject payload with and
+      without a reason, the approve payload, optimistic removal + reconcile, the row surviving a failed
+      mutation, server `total` vs row count, and the type filter not dropping server rows.
+
+### ⚠️ One planned item was dropped — the payload cannot support it
+
+- [x] ~~Pre-fill the approve `national_id` from the submitted ID document~~ — **not possible.** The
+      pending payload has no `national_id` field, and correctly so: `User::$fillable` marks the column
+      *"set by admin/system_admin during verification approval only"*, and this endpoint is what first
+      writes it. The number exists only as pixels inside the `face_id`/`back_id` images — which, thanks
+      to BUG-7, do not load at all. **No pre-fill was faked.** The dialog instead names the ID documents
+      actually attached and says explicitly when none were. Filed as
+      **[REQ-4](docs/api/backend-issues.md)**, requesting the number be captured at submission time.
+
+### Cross-page consistency (asked for, and verified)
+
+An approval writes `verification_status = 'approved'` (**not** `'verified'`) and
+`is_verified_passenger = true`. `AdminUserService::resolveUserStatus()` checks the `is_verified_*`
+flags **before** `verification_status`, so **the Users page does reflect it**: the row flips
+`pending → verified`. A rejection sets `verification_status = 'rejected'` with both flags false, and the
+row reads `rejected` — a status Phase 5 had already widened `UserRowStatus` to carry. Both directions
+are asserted by `verify-verifications.mjs --mutate` against `GET /admin/users`. No dashboard change was
+needed; the KPI `verification_requests` count on the dashboard is `verification_status = 'pending'`, so
+it follows automatically.
+
+### Seed reality, and what was done about it
+
+Probed before building: `total: 2`, users **31** and **33**, both `type: passenger`, both with
+`documents: []`. The document viewer therefore had **nothing to render** even before BUG-7 — so it was
+not verifiable as shipped, and this is stated rather than glossed. Four `photos` rows were inserted for
+user 31, the read-only run recorded at **59/59** with all four tiles asserted, and the rows deleted
+again. Filed as [BUG-7b](docs/api/backend-issues.md): with the files missing, a verification decision
+has to be made with no visible evidence at all — the highest-impact consequence of BUG-7 so far.
+
+**The driver branch of `approveVerification` was not exercised**, deliberately: the seed has no pending
+driver, and `VerificationRepository::verifyDriver()` additionally writes a 3-star `UserRating` row,
+which is residue in a table Phase 8 (Reviews) will read. Only `verifyPassenger` was run for real.
+
+### Seed state after this phase
+
+`--mutate` rejected user **33** (in `en`) and approved user **31** (in `ar`) — with only two pending
+rows, exercising both actions consumes the whole queue, which is what made the real empty state
+verifiable. **Neither is reversible through the API**: there is no un-approve and no un-reject endpoint,
+and the script says so and prints the SQL rather than implying it cleaned up after itself. All of it was
+rolled back in SQL — `verification_status` back to `pending`, both `is_verified_*` back to 0,
+`national_id` back to `NULL`, the four seeded `photos` rows and the `verification_rejected` notification
+deleted — followed by `cache:clear`. Confirmed afterwards: the queue is again `total: 2`, users 31 and
+33, both `passenger`, both `documents: []`.
+
+**DoD:** ✅ rejecting requires a reason and the reason reaches the user's notification; ✅ the row
+disappears and `total` decrements, then reconciles to the server's figure; ✅ approve sends the required
+`national_id` and the Users page reflects the result.
 
 ---
 
@@ -658,6 +796,10 @@ All paths are relative to `VITE_API_BASE_URL`. Auth header: `Authorization: Bear
 ### Admin — `system_admin` only
 `POST /admin/wallet/charge` `{phone_number, amount}` · `GET /admin/export/pdf` · `GET /admin/reports?start_date&end_date` · `GET /admin/verifications` · `POST /admin/verifications/{userId}/approve|reject`
 
+> ⚠️ The three `/admin/verifications*` routes are **deliberately unused** — they are `system_admin`-only
+> twins of the `/staff/verifications*` routes with a thinner payload (no `total`, no
+> `gender`/`address`/`profile_photo`). Phase 6 deleted `ENDPOINTS.VERIFICATIONS`; do not re-add it.
+
 ### Staff (any role)
 `GET /staff/reviews?user_id&search&date&per_page&page` · `DELETE /staff/reviews/{commentId}`
 `GET /staff/users?type&status&search&per_page` · `/staff/users/{id}`
@@ -698,7 +840,7 @@ All paths are relative to `VITE_API_BASE_URL`. Auth header: `Authorization: Bear
 4. Is employee deletion intentionally absent, i.e. is `toggle-active` the final answer? (Phase 10.)
 5. Do the deployed complaint verbs `open` / `resolve` / `close` / `notes` exist? They are in the Postman collection but not in `origin/main`. (Phase 7.)
 6. `GET /admin/users` derives `admin_photo` from `$request->user()?->id`, which is `null` under `StaffJwtMiddleware` (the employee is on `$request->attributes`). Intentional?
-7. Does `POST /admin/verifications/{userId}/approve` (and the `/staff/` equivalent) require `national_id` now that the column exists? The Postman body sends it.
+7. ~~Does `POST /admin/verifications/{userId}/approve` (and the `/staff/` equivalent) require `national_id` now that the column exists? The Postman body sends it.~~ ✅ **Answered by the code and confirmed live in Phase 6: yes, `required|string|max:50` plus a uniqueness check.** What remains is a *request*, not a question — the value appears nowhere in the payload the reviewer is shown, so it must be transcribed by hand ([REQ-4](docs/api/backend-issues.md)).
 8. Should `sycash` reach the dashboard/trips/drivers pages? Those route groups are `staff:admin,system_admin`, which excludes `sycash` even though `isAdminRole()` is true for it — that looks like an inconsistency.
 9. Is `http://localhost:5173` (Vite) going to be added to `config/cors.php`, or should everyone keep using the dev proxy?
 

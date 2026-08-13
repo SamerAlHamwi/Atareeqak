@@ -369,6 +369,23 @@ links on a driver's page all lead to 404s, which will matter for Phase 6.
 **Suggested fix:** run `php artisan storage:link`, and have the seeder copy a real placeholder image
 into `storage/app/public/...` for each path it records.
 
+### 7b — confirmed for verification documents specifically (Phase 6)
+
+The seed's two pending users (31 and 33) have **`documents: []`**, so this could not be exercised
+without seeding rows. Four `photos` rows were inserted for user 31 (`face_id`, `back_id`, `license`,
+`mechanic_card`), verified, then deleted again. Result: **all four `/storage/verification-docs/*.jpg`
+URLs failed with `net::ERR_BLOCKED_BY_ORB`** — the ORB path, not a clean 404, exactly as above.
+
+Consequence for the reviewer: with the files missing, a verification decision has to be made with
+**no visible evidence at all**. The dashboard now says so explicitly (each tile degrades to an
+"unavailable" state and the `<img>` is removed, so no broken-image glyph appears), but the underlying
+problem is that the review tool cannot show the documents it exists to review. This is the highest-
+impact consequence of BUG-7 found so far.
+
+Also worth noting: `photos.type` is an enum of exactly those four values, and the pending payload
+derives `type: driver` from the presence of `license` **or** `mechanic_card` — inserting either flips
+the request from passenger to driver.
+
 ---
 
 ## 🟢 REQ-1 — `recent_activities` has no `user_id`, so dashboard rows cannot link to a profile
@@ -546,6 +563,59 @@ return response()->json([
 (`$previousBalance` and `$transactionId` are already local to the `DB::transaction` closure; they
 just need hoisting out of it.)
 
+---
+
+## 🟢 REQ-4 — Approve requires a `national_id` that appears nowhere in the payload the reviewer is shown
+
+Found in Phase 6. `POST /staff/verifications/{userId}/approve` validates
+`national_id => required|string|max:50` and additionally 422s if the value already belongs to another
+account. So the reviewer **must** supply the number.
+
+But there is no source for it in the API. `GET /staff/verifications/pending` returns, per row:
+
+```
+user_id, name, email, gender, address, type, profile_photo, documents[{type,url}], submitted_at
+```
+
+no `national_id` — and correctly so: `User::$fillable` marks the column
+`// set by admin/system_admin during verification approval only`, and the migration adds it as
+`nullable()->unique()`. The user never submits it; this endpoint is what first writes it.
+
+**Consequence:** the plan's "pre-fill the approve field from the submitted ID document" is not
+implementable. The number exists only as pixels inside `face_id` / `back_id` images — which, thanks to
+[BUG-7](#-bug-7--seeded-file-urls-point-at-files-that-do-not-exist-and-there-is-no-publicstorage-link),
+currently do not load at all. **No pre-fill was faked.** The approve dialog states where the number
+must be read from, names the ID documents actually attached, and says explicitly when none were
+submitted.
+
+**Requested, in preference order:**
+
+1. Capture `national_id` at submission time (user side) and echo it on the pending row as
+   `submitted_national_id`, so approval becomes confirm-or-correct rather than transcribe.
+2. Failing that, add it to the pending payload if it is ever populated by any other flow, so a
+   re-review of an already-known user does not require re-typing.
+
+Neither is urgent — the current flow is workable — but the endpoint currently requires a field the
+API gives the caller no way to know.
+
+---
+
+## ℹ️ NOTE-3 — Verified: the rejection reason really does reach the user (Phase 6)
+
+`POST /staff/verifications/{userId}/reject` takes `reason => nullable|string|max:500` (**no minimum
+length** — unlike the 10-character ban/cancel/escalate reasons) and appends it to the Arabic
+notification body. The `createNotification` call is wrapped in `try { … } catch (\Throwable) {}`, so
+it was worth confirming it is not silently swallowed. It is not — a real rejection wrote:
+
+```
+type    verification_rejected
+title   طلب التوثيق مرفوض
+message تم رفض طلب توثيق حسابك. السبب: مكرر
+```
+
+Note the row is linked through `user_notifications`, not through `notifications.user_id` (that column
+exists but is left null by this path) — worth knowing before concluding "no notification was sent".
+
 Also related: there is **no way to reverse an admin charge** through the API — no debit endpoint and
 no transaction-delete route. `verify-users.mjs --mutate` therefore reports its charge as
 unrecoverable and prints the delta plus the SQL to undo it, rather than claiming the seed is intact.
@@ -585,3 +655,10 @@ Also present: `APP_URL=https://api.onwayride.me`, which is a different service (
   **fully rolled back in SQL** afterwards — `users.status` back to 1, both wallet balances back to
   their seeded values, and all five `ADM-*` transactions deleted — followed by `cache:clear`.
   `verify-drivers.mjs` was re-run afterwards and still passes 94/94.
+- Phase 6 mutations (user 33 rejected, user 31 approved, plus four temporary `photos` rows on user 31)
+  were **fully rolled back in SQL** — `verification_status` back to `pending`, both `is_verified_*`
+  flags back to 0, `national_id` back to `NULL`, the seeded `photos` rows and the
+  `verification_rejected` notification deleted — followed by `cache:clear`. Verified afterwards:
+  `GET /staff/verifications/pending` again returns `total: 2`, users 31 and 33, both `passenger`,
+  both `documents: []`. `verify-drivers.mjs` (94/94) and `verify-users.mjs` (137/137) were re-run and
+  still pass.
