@@ -17,6 +17,28 @@ export type CreatableStaffRole = 'admin' | 'support_agent';
 
 export const CREATABLE_STAFF_ROLES: CreatableStaffRole[] = ['admin', 'support_agent'];
 
+/** `username` is `required|string|min:3|max:50|alpha_dash`. */
+export const USERNAME_MIN_LENGTH = 3;
+export const USERNAME_MAX_LENGTH = 50;
+export const USERNAME_PATTERN = /^[A-Za-z0-9_-]+$/;
+/** `password` / `new_password` are `required|string|min:8`. */
+export const PASSWORD_MIN_LENGTH = 8;
+/** `first_name` / `last_name` are `max:100`; `email` is `nullable|email|max:255`. */
+export const NAME_MAX_LENGTH = 100;
+export const EMAIL_MAX_LENGTH = 255;
+
+/**
+ * The shape `EmployeeManagementController` *intends* to return.
+ *
+ * 🔴 Nothing has ever returned it. Every action formats its output through
+ * `EmployeeManagementService::formatEmployee()`, which **does not exist** — see
+ * BUG-1 in docs/api/backend-issues.md. This interface is the documented
+ * contract the UI is built against, not an observed payload.
+ *
+ * `created_by` is deliberately **not rendered**: it is NULL for all three seeded
+ * employees, so a column for it would read "Unknown" on every row. Same call
+ * Phase 4 made for `banned_by` (BUG-5).
+ */
 export interface EmployeeResponse {
   id: number;
   username: string;
@@ -42,51 +64,66 @@ export interface CreateEmployeeRequest {
   email?: string;
 }
 
-export interface BroadcastAlertRequest {
-  message: string;
-  type: 'alert' | 'warning';
-  recipient_type: 'users' | 'drivers' | 'all';
-}
+export type UpdateEmployeeRequest = Partial<{
+  first_name: string;
+  last_name: string;
+  email: string | null;
+}>;
 
-export interface BroadcastAlertResponse {
-  status: string;
-  message: string;
-  message_id: number;
-  sent_count: number;
-}
-
+/**
+ * ⚠️ There is deliberately **no `deleteEmployee`** here.
+ *
+ * `DELETE /employees/{id}` returns **405 MethodNotAllowed** — confirmed live.
+ * The route was never registered. Deactivation via
+ * `PATCH /employees/{id}/toggle-active` is what the backend intends instead.
+ *
+ * Note this is a *routing* gap, not a design decision:
+ * `EmployeeManagementService::delete()` is **fully implemented** and simply has
+ * no route pointing at it (BUG-4). Do not describe deletion as unsupported by
+ * design — it is unsupported by omission.
+ *
+ * `sendBroadcastAlert` is gone for the same class of reason:
+ * `POST /admin/broadcast-alert` returns **404**, confirmed live 2026-08-13.
+ */
 export const staffApi = {
-  // Admin-side broadcast; lives here because it's triggered from the staff page
-  sendBroadcastAlert: async (payload: BroadcastAlertRequest): Promise<BroadcastAlertResponse> => {
-    const response = await api.post(ENDPOINTS.BROADCAST_ALERT, payload);
-    return response.data;
-  },
   getAllStaff: async (): Promise<{ status: string; data: EmployeeResponse[] }> => {
     const response = await api.get(ENDPOINTS.EMPLOYEES.ALL);
     return response.data;
   },
+
+  getEmployee: async (
+    id: string | number
+  ): Promise<{ status: string; data: EmployeeResponse }> => {
+    const response = await api.get(ENDPOINTS.EMPLOYEES.SINGLE(id));
+    return response.data;
+  },
+
   createEmployee: async (
     payload: CreateEmployeeRequest
   ): Promise<{ status: string; message: string; employee: EmployeeResponse }> => {
     const response = await api.post(ENDPOINTS.EMPLOYEES.ALL, payload);
     return response.data;
   },
+
   updateEmployee: async (
     id: string | number,
-    payload: Partial<Pick<CreateEmployeeRequest, 'first_name' | 'last_name' | 'email'>>
-  ) => {
+    payload: UpdateEmployeeRequest
+  ): Promise<{ status: string; message: string; employee: EmployeeResponse }> => {
     const response = await api.put(ENDPOINTS.EMPLOYEES.SINGLE(id), payload);
     return response.data;
   },
-  deleteEmployee: async (id: string | number): Promise<{ status: string; message: string }> => {
-    const response = await api.delete(ENDPOINTS.EMPLOYEES.SINGLE(id));
-    return response.data;
-  },
-  toggleStaffStatus: async (id: string | number) => {
+
+  toggleStaffStatus: async (
+    id: string | number
+  ): Promise<{ status: string; message: string; employee: EmployeeResponse }> => {
     const response = await api.patch(ENDPOINTS.EMPLOYEES.TOGGLE_ACTIVE(id));
     return response.data;
   },
-  resetStaffPassword: async (id: string | number, newPassword: string) => {
+
+  resetStaffPassword: async (
+    id: string | number,
+    newPassword: string
+  ): Promise<{ status: string; message: string }> => {
     const response = await api.patch(ENDPOINTS.EMPLOYEES.RESET_PASSWORD(id), {
       new_password: newPassword,
     });

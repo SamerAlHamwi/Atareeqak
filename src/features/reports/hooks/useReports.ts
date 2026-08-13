@@ -2,159 +2,271 @@ import { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
+import { extractApiError } from '../../../services/apiError';
 import { reportsApi } from '../api/reportsApi';
-import type { ReportData } from '../api/reportsApi';
+import type { ReportData, ReportDateRange, PdfSection } from '../api/reportsApi';
 import { walletApi } from '../../wallet/api/walletApi';
-import type { Wallet, WalletRequestResponse } from '../../wallet/api/walletApi';
+import type {
+  Wallet,
+  WalletRequestResponse,
+  WalletRequestStatus,
+  WalletRequestType,
+  ChargeWalletResponse,
+} from '../../wallet/api/walletApi';
 
 export interface WalletRequestRow {
   id: number;
   displayId: string;
   user: string;
-  userInitial: string;
-  type: 'charge' | 'withdraw';
+  userName: string;
+  type: WalletRequestType;
   amount: number;
   phone: string;
+  walletNumber: string;
+  userNotes: string | null;
+  adminNotes: string | null;
   date: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: WalletRequestStatus;
 }
 
-export type RequestStatusFilter = 'all' | WalletRequestRow['status'];
+/**
+ * There is deliberately **no `'all'`** member here.
+ *
+ * `AdminWalletRequestController::index()` runs
+ * `$status = $request->get('status', 'pending'); $query->where('status', $status);`
+ * — it always filters, and no value of `status` means "every status". The old
+ * UI mapped an "All" tab onto *sending no `status` at all*, which returned
+ * **pending rows labelled as all**. Faking it client-side would need three
+ * requests and could not be paginated coherently across three paginators, so
+ * the tab is gone and the three real statuses are each reachable instead. The
+ * `counts` badges show the other two totals, so nothing is hidden. The missing
+ * "no filter" option is filed as REQ-6 in docs/api/backend-issues.md.
+ */
+export type RequestStatusFilter = WalletRequestStatus;
 
-const mapRequest = (r: WalletRequestResponse, t: TFunction): WalletRequestRow => ({
+/**
+ * `'all'` **is** honest here: the controller applies `type` only
+ * `if ($request->filled('type'))`, so omitting it really does return both.
+ */
+export type RequestTypeFilter = 'all' | WalletRequestType;
+
+export const REQUESTS_PER_PAGE_OPTIONS = [5, 10, 25, 50] as const;
+
+const mapRequest = (r: WalletRequestResponse, t: TFunction, locale: string): WalletRequestRow => ({
   id: r.id,
   displayId: `#WR-${r.id}`,
   user: r.user?.name || t('common.unknown'),
-  userInitial: r.user?.name
-    ? r.user.name
-        .split(' ')
-        .map((n) => n[0])
-        .slice(0, 2)
-        .join(' ')
-    : '?',
+  userName: r.user?.name || '',
   type: r.type,
   amount: r.amount,
   phone: r.wallet?.phone_number || '',
-  date: r.created_at ? new Date(r.created_at).toLocaleDateString('ar-SY') : '',
+  walletNumber: r.wallet?.wallet_number || '',
+  userNotes: r.user_notes,
+  adminNotes: r.admin_notes,
+  date: r.created_at ? new Date(r.created_at).toLocaleDateString(locale) : '',
   status: r.status,
 });
 
 export const useReports = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language;
+
   const [report, setReport] = useState<ReportData | null>(null);
+  const [reportUpdatedAt, setReportUpdatedAt] = useState<Date | null>(null);
+  const [range, setRangeState] = useState<ReportDateRange>({});
+
+  const [myWallet, setMyWallet] = useState<Wallet | null>(null);
   const [wallets, setWallets] = useState<Wallet[]>([]);
+  const [walletQuery, setWalletQuery] = useState('');
+
   const [requests, setRequests] = useState<WalletRequestRow[]>([]);
-  const [requestCounts, setRequestCounts] = useState<{ pending: number; approved: number; rejected: number } | null>(null);
-  const [statusFilter, setStatusFilterState] = useState<RequestStatusFilter>('all');
+  const [requestCounts, setRequestCounts] = useState<{
+    pending: number;
+    approved: number;
+    rejected: number;
+  } | null>(null);
+  const [statusFilter, setStatusFilterState] = useState<RequestStatusFilter>('pending');
+  const [typeFilter, setTypeFilterState] = useState<RequestTypeFilter>('all');
   const [requestsPage, setRequestsPage] = useState(1);
+  const [requestsPerPage, setRequestsPerPageState] = useState<number>(10);
   const [requestsLastPage, setRequestsLastPage] = useState(1);
   const [requestsTotal, setRequestsTotal] = useState(0);
-  const [walletQuery, setWalletQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [isRequestsLoading, setIsRequestsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [requestsError, setRequestsError] = useState<string | null>(null);
+
+  // ── Report + wallets (their own request; the request filters must not refetch them)
+  const fetchReport = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [reportResponse, walletsResponse, myWalletResponse] = await Promise.all([
+        reportsApi.generateFinancialReport(range),
+        walletApi.getAllWallets(),
+        walletApi.getMyWallet(),
+      ]);
+      setReport(reportResponse.report_data);
+      setReportUpdatedAt(new Date());
+      setWallets(walletsResponse.all_wallets || []);
+      setMyWallet(myWalletResponse.wallet ?? null);
+    } catch (err) {
+      setError(extractApiError(err, t('reports.load_failed_hint')));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [range, t]);
+
+  useFetchEffect(fetchReport);
+
+  // ── Wallet requests (own request, own loading + error state)
+  const fetchRequests = useCallback(async () => {
+    setIsRequestsLoading(true);
+    setRequestsError(null);
+    try {
+      const response = await walletApi.getWalletRequests({
+        page: requestsPage,
+        per_page: requestsPerPage,
+        status: statusFilter,
+        ...(typeFilter === 'all' ? {} : { type: typeFilter }),
+      });
+      setRequests((response.data || []).map((r) => mapRequest(r, t, locale)));
+      setRequestCounts(response.counts ?? null);
+      setRequestsLastPage(response.meta?.last_page ?? 1);
+      setRequestsTotal(response.meta?.total ?? 0);
+    } catch (err) {
+      setRequestsError(extractApiError(err, t('reports.requests_load_failed')));
+    } finally {
+      setIsRequestsLoading(false);
+    }
+  }, [statusFilter, typeFilter, requestsPage, requestsPerPage, t, locale]);
+
+  useFetchEffect(fetchRequests);
+
+  // Every filter change resets to page 1 — otherwise page 3 of `pending` asks
+  // for a page 3 of `approved` that may not exist and renders an empty table.
   const setStatusFilter = useCallback((filter: RequestStatusFilter) => {
     setStatusFilterState(filter);
     setRequestsPage(1);
   }, []);
 
-  const fetchAll = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const [reportResponse, walletsResponse, requestsResponse] = await Promise.all([
-        reportsApi.generateFinancialReport(),
-        walletApi.getAllWallets(),
-        walletApi.getWalletRequests({
-          page: requestsPage,
-          ...(statusFilter === 'all' ? {} : { status: statusFilter }),
-        }),
-      ]);
-      setReport(reportResponse.report_data);
-      setWallets(walletsResponse.all_wallets || []);
-      setRequests((requestsResponse.data || []).map((r) => mapRequest(r, t)));
-      setRequestCounts(requestsResponse.counts ?? null);
-      setRequestsLastPage(requestsResponse.meta?.last_page ?? 1);
-      setRequestsTotal(requestsResponse.meta?.total ?? 0);
-    } catch (err) {
-      const fetchError = err instanceof Error ? err : new Error('Failed to load reports');
-      setError(fetchError);
-      console.error(fetchError.message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [statusFilter, requestsPage, t]);
+  const setTypeFilter = useCallback((filter: RequestTypeFilter) => {
+    setTypeFilterState(filter);
+    setRequestsPage(1);
+  }, []);
 
-  useFetchEffect(fetchAll);
+  const setRequestsPerPage = useCallback((perPage: number) => {
+    setRequestsPerPageState(perPage);
+    setRequestsPage(1);
+  }, []);
 
+  const setRange = useCallback((next: ReportDateRange) => {
+    setRangeState(next);
+  }, []);
+
+  /**
+   * Client-side filter over `all_wallets`, kept for the same reason Phase 6
+   * kept `visibleRequests`: `GET /admin/wallets` accepts **no query params at
+   * all** and returns every wallet unpaginated, so a client filter is the only
+   * one possible and it compares fields exactly as the server emitted them.
+   * This is *not* the `visibleTrips`/`visibleDrivers` bug class — there is no
+   * server-side filter here for it to fight with.
+   *
+   * It previously returned `[]` whenever the query was empty, so the sidebar
+   * rendered "no wallets" on load while holding 32 of them. An empty query now
+   * means "everything".
+   */
   const filteredWallets = useMemo(() => {
     const query = walletQuery.trim().toLowerCase();
     if (!query) {
-      return [];
+      return wallets;
     }
-    return wallets
-      .filter(
-        (wallet) =>
-          wallet.phone_number?.toLowerCase().includes(query) ||
-          wallet.wallet_number?.toLowerCase().includes(query) ||
-          wallet.owner?.toLowerCase().includes(query)
-      )
-      .slice(0, 5);
+    return wallets.filter(
+      (wallet) =>
+        wallet.phone_number?.toLowerCase().includes(query) ||
+        wallet.wallet_number?.toLowerCase().includes(query) ||
+        wallet.owner?.toLowerCase().includes(query) ||
+        wallet.name?.toLowerCase().includes(query)
+    );
   }, [wallets, walletQuery]);
 
-  const approveRequest = useCallback(async (request: WalletRequestRow) => {
-    await walletApi.approveWalletRequest(request.id);
-    setRequests((prev) =>
-      prev.map((entry) => (entry.id === request.id ? { ...entry, status: 'approved' } : entry))
-    );
-    setRequestCounts((prev) =>
-      prev ? { ...prev, pending: Math.max(0, prev.pending - 1), approved: prev.approved + 1 } : prev
-    );
-  }, []);
+  const approveRequest = useCallback(
+    async (request: WalletRequestRow, adminNotes?: string) => {
+      const response = await walletApi.approveWalletRequest(request.id, adminNotes);
+      // An approval moves real money, so the list AND the wallet balances are
+      // both stale afterwards — re-read rather than patching state locally.
+      await Promise.all([fetchRequests(), fetchReport()]);
+      return response;
+    },
+    [fetchRequests, fetchReport]
+  );
 
-  const rejectRequest = useCallback(async (request: WalletRequestRow) => {
-    await walletApi.rejectWalletRequest(request.id);
-    setRequests((prev) =>
-      prev.map((entry) => (entry.id === request.id ? { ...entry, status: 'rejected' } : entry))
-    );
-    setRequestCounts((prev) =>
-      prev ? { ...prev, pending: Math.max(0, prev.pending - 1), rejected: prev.rejected + 1 } : prev
-    );
-  }, []);
+  const rejectRequest = useCallback(
+    async (request: WalletRequestRow, adminNotes?: string) => {
+      const response = await walletApi.rejectWalletRequest(request.id, adminNotes);
+      await fetchRequests();
+      return response;
+    },
+    [fetchRequests]
+  );
 
-  const chargeWalletByPhone = useCallback(async (phoneNumber: string, amount: number) => {
-    return walletApi.chargeUserWallet(phoneNumber, amount);
-  }, []);
+  const chargeWalletByPhone = useCallback(
+    async (phoneNumber: string, amount: number): Promise<ChargeWalletResponse> => {
+      const response = await walletApi.chargeUserWallet(phoneNumber, amount);
+      // Refetch so the sidebar list and the balance cards reflect the new total.
+      await fetchReport();
+      return response;
+    },
+    [fetchReport]
+  );
 
-  const exportPdf = useCallback(async () => {
-    const blob = await reportsApi.exportReportToPdf();
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `financial-report-${new Date().toISOString().slice(0, 10)}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
-  }, []);
+  const exportPdf = useCallback(
+    async (sections: readonly PdfSection[] = []) => {
+      const blob = await reportsApi.exportReportToPdf(range, sections);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const suffix = range.start_date && range.end_date
+        ? `${range.start_date}_${range.end_date}`
+        : new Date().toISOString().slice(0, 10);
+      link.download = `financial-report-${suffix}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    },
+    [range]
+  );
 
   return {
     report,
+    reportUpdatedAt,
+    range,
+    setRange,
+    myWallet,
     wallets,
     filteredWallets,
+    walletQuery,
+    setWalletQuery,
     requests,
     requestCounts,
     statusFilter,
     setStatusFilter,
+    typeFilter,
+    setTypeFilter,
     requestsPage,
     setRequestsPage,
+    requestsPerPage,
+    setRequestsPerPage,
     requestsLastPage,
     requestsTotal,
-    walletQuery,
-    setWalletQuery,
     isLoading,
+    isRequestsLoading,
     error,
-    refetch: fetchAll,
+    requestsError,
+    refetch: fetchReport,
+    refetchRequests: fetchRequests,
     approveRequest,
     rejectRequest,
     chargeWalletByPhone,

@@ -31,6 +31,13 @@ interface ConfirmActionModalProps {
   statusOptions?: readonly ConfirmActionStatusOption[];
   /** Overrides the destructive red confirm button for non-destructive actions. */
   confirmTone?: 'destructive' | 'primary';
+  /**
+   * Drops the reason field entirely, for confirmations whose endpoint takes
+   * **no body at all** — `PATCH /employees/{id}/toggle-active` is the first.
+   * Collecting a reason there would imply it gets recorded somewhere; it does
+   * not. Implies `minReasonLength: 0`.
+   */
+  hideReason?: boolean;
   /** Renders above the reason field — e.g. who a moderated comment belongs to. */
   children?: React.ReactNode;
   isBusy?: boolean;
@@ -55,13 +62,15 @@ const ModalForm: React.FC<ModalFormProps> = ({
   showBanOptions = false,
   statusOptions,
   confirmTone = 'destructive',
+  hideReason = false,
   children,
   isBusy = false,
-  minReasonLength = 10,
+  minReasonLength: minReasonLengthProp = 10,
   maxReasonLength,
   onConfirm,
   onClose,
 }) => {
+  const minReasonLength = hideReason ? 0 : minReasonLengthProp;
   const { t } = useTranslation();
   const [reason, setReason] = useState('');
   const [banType, setBanType] = useState<'permanent' | 'temporary'>('permanent');
@@ -153,6 +162,7 @@ const ModalForm: React.FC<ModalFormProps> = ({
               </div>
             )}
 
+            {!hideReason && (
             <div>
               <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2 block">
                 {t('modal.reason_label')}
@@ -176,6 +186,7 @@ const ModalForm: React.FC<ModalFormProps> = ({
                 </p>
               )}
             </div>
+            )}
 
             {showBanOptions && (
               <div className="grid grid-cols-2 gap-4">

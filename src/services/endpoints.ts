@@ -89,7 +89,14 @@ export const ENDPOINTS = {
     RESET_PASSWORD: (id: string | number) => `/employees/${id}/reset-password`,
   },
   SETTINGS: '/admin/settings',
-  BROADCAST_ALERT: '/admin/broadcast-alert',
+  // `BROADCAST_ALERT: '/admin/broadcast-alert'` was deleted in Phase 10.
+  // There is no such route — `POST /admin/broadcast-alert` returns a clean
+  // **404** (confirmed live 2026-08-13), unlike the SUPPORT_METRICS case above
+  // which 500s. Per the Phase 0 decision a control that 404s is not shipped, so
+  // `staffApi.sendBroadcastAlert` and `BroadcastAlertModal` went with it. The
+  // `broadcast.*` locale keys were removed from both `ar` and `en`. Restore the
+  // modal from git history if the route is ever added; do not re-add this
+  // constant without one.
   // `SUPPORT_METRICS: '/staff/complaints/metrics'` was deleted in Phase 7.
   // There is no such route. Worse than missing: `"metrics"` is matched by
   // `GET /staff/complaints/{id}` and fails that action's `int` type hint, so the
