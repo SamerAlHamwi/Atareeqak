@@ -600,6 +600,165 @@ API gives the caller no way to know.
 
 ---
 
+## 🔴 BUG-8 — `GET /staff/complaints/metrics` returns **500 with a full stack trace**, not 404 (Phase 7)
+
+The integration plan recorded this route as "missing, so it 404s". That is wrong, and the truth is
+worse. `"metrics"` is captured by the `{id}` route and fails that action's `int` type hint:
+
+```console
+$ curl -H "Authorization: Bearer $T" http://127.0.0.1:8000/api/staff/complaints/metrics
+HTTP 500
+<!DOCTYPE html> …
+TypeError: App\Http\Controllers\API\Staff\StaffComplaintController::show():
+  Argument #1 ($complaintId) must be of type int, string given, called in
+  C:\…\vendor\laravel\framework\src\Illuminate\Routing\Controller.php on line 54 in file
+  C:\…\app\Http\Controllers\API\Staff\StaffComplaintController.php on line 122
+```
+
+Combined with [NOTE-2](#ℹ️-note-2--env-ships-app_envproduction-with-app_debugtrue) (`APP_DEBUG=true`)
+it renders an **Ignition HTML page carrying absolute filesystem paths and the framework's internals**
+to any authenticated staff user. A missing endpoint is a gap; this is information disclosure plus an
+unhandled 500 on a route that any typo'd complaint id also reaches — `/staff/complaints/abc` fails the
+same way.
+
+### Suggested fix
+
+Two independent problems, both worth fixing:
+
+1. Constrain the parameter so a non-numeric segment 404s instead of exploding:
+   `Route::get('/complaints/{complaintId}', …)->whereNumber('complaintId');`
+2. Set `APP_DEBUG=false` outside local development so a 500 never renders a stack trace.
+
+If a metrics endpoint is genuinely wanted, register it **before** the `{id}` route.
+
+### What the dashboard does about it
+
+`ENDPOINTS.SUPPORT_METRICS` and `supportApi.getMetrics` were **deleted** in Phase 7, and the
+`SupportStats` KPI row was rebuilt from the two `counts` blocks the list endpoints already return.
+The avg-response-time card was removed rather than left showing a dash — see [REQ-5](#-req-5).
+
+---
+
+## 🟠 BUG-9 — `counts.all` on `GET /staff/complaints` counts rows the endpoint never returns (Phase 7)
+
+`StaffComplaintService::listAll()` hard-excludes escalated complaints:
+
+```php
+$query = Complaint::with(self::WITH)
+    ->where('status', '!=', ComplaintStatus::ESCALATED->value);
+```
+
+but `StaffComplaintController::statusCounts()` sums a `GROUP BY` over **every** complaint row,
+escalated included:
+
+```php
+'all' => array_sum($rows),   // $rows = SELECT status, COUNT(*) … GROUP BY status
+```
+
+So `counts.all` overstates the list by exactly the number of escalated complaints.
+
+### Verified live (Phase 7 seed: 10 non-escalated + 2 escalated)
+
+```console
+GET /staff/complaints
+  meta.total = 10
+  counts     = {"all":12,"pending":4,"in_review":2,"resolved":2,"closed":2}
+```
+
+`all: 12` sits over a list that can only ever return 10 rows. The four buckets sum to 10 — the
+correct figure — so the data to fix it is already in the response.
+
+### Suggested fix
+
+`'all' => $rows[PENDING] + $rows[IN_REVIEW] + $rows[RESOLVED] + $rows[CLOSED]`, i.e. sum the buckets
+the list can actually serve, or exclude `escalated` from the `GROUP BY`.
+
+### What the dashboard does about it
+
+`useSupport.inboxTotal` derives the "all" tab badge as `pending + in_review + resolved + closed` and
+**never renders `counts.all`**. A unit test pins the two apart, and `verify-support.mjs` asserts both
+that the bucket sum equals `meta.total` and that the rendered badge shows the sum rather than `all`.
+
+---
+
+## 🟠 BUG-10 — The escalated view's `status` filter silently drops its own escalated constraint (Phase 7)
+
+`StaffComplaintService::listEscalated()` applies the escalated constraint **only in the else branch**:
+
+```php
+if ($status) {
+    $query->where('status', $status);          // ← no escalated constraint at all
+} else {
+    $query->where('status', ComplaintStatus::ESCALATED->value);
+}
+```
+
+So `GET /staff/escalated-complaints?status=resolved` returns **every resolved complaint in the
+system**, including ones that were never escalated. `escalatedStatusCounts()` agrees with it — it runs
+a bare `where('status', …)->count()` — so the endpoint is self-consistent but does not mean what its
+name says.
+
+### Verified live
+
+```console
+GET /staff/escalated-complaints?status=resolved
+  id=7 status=resolved is_escalated=false  "Ride cancelled after I paid"
+  id=8 status=resolved is_escalated=false  "Passenger left rubbish in my car"
+```
+
+Neither complaint was ever escalated. `counts` reports `{escalated:2, resolved:2, closed:2}` where the
+`2`s for resolved/closed are the platform-wide totals, identical to the inbox's own `counts.resolved`
+and `counts.closed`.
+
+### Consequence
+
+An admin reviewing "escalated complaints → resolved" is looking at the whole platform's resolved
+queue, not at escalation history. There is currently **no way to ask "which complaints were escalated
+and then resolved?"** — the `escalated` status is overwritten by `resolveEscalated()`, and no column
+records that a complaint ever passed through it.
+
+### Suggested fix
+
+Scope the filter to rows that were escalated, e.g. keep an `escalated_at` timestamp (or an
+`is_escalated` boolean) set by `escalate()` and never cleared, then
+`->whereNotNull('escalated_at')->where('status', $status)`. That also makes the counts meaningful.
+
+### What the dashboard does about it
+
+The escalated view's resolved/closed tabs are labelled **"Resolved (all)" / "Closed (all)"**
+(`المحلولة (الكل)` / `المغلقة (الكل)`) rather than plain "Resolved"/"Closed", so the UI does not claim
+these are escalation history. `verify-support.mjs` asserts both the live `is_escalated: false` rows
+and the "(all)" labels, so the workaround stays tied to the defect.
+
+---
+
+## 🟢 REQ-5 — No endpoint exposes complaint response latency, so the "avg response time" KPI has no source (Phase 7)
+
+The Support page shipped a four-card KPI row whose fourth card was **average response time**. Its only
+source was `GET /staff/complaints/metrics`, which does not exist and 500s ([BUG-8](#-bug-8)).
+
+Nothing else in the checkout can supply it. `complaints` carries `created_at`, `resolved_at` and
+`updated_at`, so a *resolution* time is derivable in principle — but:
+
+- there is no aggregate endpoint that computes it, and
+- the list endpoint is paginated, so a client-side average would describe **the current page**, not
+  the platform, and would be presented as a server figure while being neither.
+
+Deriving it from one page of rows and labelling it "average response time" is exactly the
+invented-value case the phase brief forbids, so **the card was removed**. The KPI row is now three
+cards (open / pending / resolved) plus an escalated card for roles that can read the escalated
+endpoint — every one of them a direct read of a `counts` field.
+
+### What would fix it
+
+Either a real `GET /staff/complaints/metrics` (registered **before** the `{id}` route — see BUG-8), or
+a `counts`-style block on the existing list response, e.g.
+`stats: {avg_first_response_minutes, avg_resolution_minutes}`. First-response time additionally needs
+a column the schema does not have: nothing records **when** an agent first responded, only the final
+`resolved_at`.
+
+---
+
 ## ℹ️ NOTE-3 — Verified: the rejection reason really does reach the user (Phase 6)
 
 `POST /staff/verifications/{userId}/reject` takes `reason => nullable|string|max:500` (**no minimum
@@ -662,3 +821,15 @@ Also present: `APP_URL=https://api.onwayride.me`, which is a different service (
   `GET /staff/verifications/pending` again returns `total: 2`, users 31 and 33, both `passenger`,
   both `documents: []`. `verify-drivers.mjs` (94/94) and `verify-users.mjs` (137/137) were re-run and
   still pass.
+- Phase 7/8 found **both features completely unseeded** — `complaints`, `complaint_attachments`,
+  `profile_comments` and `user_ratings` were all empty, so nothing on either page could render. A
+  deliberate temporary seed (12 complaints, 2 attachments, 8 profile comments) was applied from
+  [`seed-phase-7-8.sql`](./seed-phase-7-8.sql), the runs recorded, and **all of it removed again** via
+  [`revert-phase-7-8.sql`](./revert-phase-7-8.sql) — which also deletes the `complaint_response` /
+  `complaint_resolved` notifications a `--mutate` run creates through the `user_notifications` join
+  table, and resets the three `AUTO_INCREMENT` counters. Verified afterwards, read-only:
+  `/staff/complaints` `total: 0` with all counts `0`, `/staff/escalated-complaints` `total: 0`,
+  `/staff/reviews` `total: 0`, and `notifications` carries 0 rows of either complaint type.
+  `verify-verifications.mjs` (51/51), `verify-drivers.mjs` (94/94) and `verify-users.mjs` (137/137)
+  were re-run afterwards — Phase 7 touched the shared `ConfirmActionModal`, `PerPageSelect` and
+  `useApiAction` — and all three still pass.

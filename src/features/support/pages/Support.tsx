@@ -78,7 +78,7 @@ const Support: React.FC = () => {
     respondToComplaint,
     escalateComplaint,
     resolveEscalatedComplaint,
-  } = useSupport();
+  } = useSupport({ canSeeEscalated });
 
   /**
    * Opening a row is a WRITE — `GET /staff/complaints/{id}` transitions a

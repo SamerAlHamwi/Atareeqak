@@ -54,9 +54,23 @@ const login = async () => {
   return res.json();
 };
 
+/**
+ * Not every response is JSON. An unregistered route (the Postman-only complaint
+ * verbs) and the 500-ing `metrics` route both return Laravel/Ignition HTML, so
+ * parsing unconditionally throws and takes the whole run down.
+ */
+const parse = async (res) => {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { __nonJson: true, raw: text.slice(0, 200) };
+  }
+};
+
 const get = async (token, path) => {
   const res = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` } });
-  return { status: res.status, body: await res.json() };
+  return { status: res.status, body: await parse(res) };
 };
 
 const patch = async (token, path, body) => {
@@ -65,7 +79,7 @@ const patch = async (token, path, body) => {
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(body ?? {}),
   });
-  return { status: res.status, body: await res.json() };
+  return { status: res.status, body: await parse(res) };
 };
 
 /** Labels read from the shipped locale JSON, never hardcoded. */
@@ -613,7 +627,25 @@ const run = async () => {
     }
 
     // ---- attachments --------------------------------------------------------
-    const attachTarget = live.data.find((c) => (c.attachments ?? []).length > 0);
+    /**
+     * `c.status !== 'pending'` is load-bearing, not defensive: inspecting the
+     * attachments means CLICKING the row, and clicking a pending row fires the
+     * GET that writes. An earlier cut of the seed put the attachments on a
+     * pending complaint and this "read-only" pass silently moved it to
+     * in_review — the badge counts differed between the en and ar passes, which
+     * is how it was caught. The seed now attaches to an in_review complaint and
+     * this filter keeps the guarantee true even if the seed changes again.
+     */
+    const attachTarget = live.data.find(
+      (c) => (c.attachments ?? []).length > 0 && c.status !== 'pending'
+    );
+    if (!live.data.some((c) => (c.attachments ?? []).length > 0 && c.status !== 'pending')) {
+      notes.push(
+        'ATTACHMENTS: every complaint carrying attachments in this seed is `pending`, and ' +
+          'opening a pending complaint mutates it. The attachment viewer was therefore NOT ' +
+          'exercised on this run. Move the attachments onto a non-pending complaint to verify it.'
+      );
+    }
     if (attachTarget) {
       const idx = live.data.findIndex((c) => c.id === attachTarget.id);
       await page.getByTestId('complaint-row').nth(idx).click();
@@ -882,6 +914,20 @@ const run = async () => {
   await browser.close();
 
   if (!MUTATE) {
+    /**
+     * The read-only claim, ENFORCED rather than asserted in prose. Because
+     * `GET /staff/complaints/{id}` writes, "read-only" is a property of which
+     * rows this script clicked, not of the HTTP verbs it used — so it is checked
+     * against the server at the end. This assertion is what caught the seed
+     * placing attachments on a pending complaint: the counts moved between the
+     * `en` and `ar` passes.
+     */
+    const finalCounts = (await get(token, '/staff/complaints')).body.counts;
+    record(
+      'READ-ONLY: the complaint status counts are byte-for-byte unchanged after the whole run',
+      JSON.stringify(finalCounts) === JSON.stringify(index.counts),
+      `before ${JSON.stringify(index.counts)} after ${JSON.stringify(finalCounts)}`
+    );
     notes.push(
       'READ-ONLY RUN: this pass opened only NON-pending complaints, so GET ' +
         '/staff/complaints/{id} performed no write. The pending→in_review side effect is ' +

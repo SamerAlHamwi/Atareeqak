@@ -43,9 +43,13 @@
 --   · complaint 4 is `pending` and UNASSIGNED, reserved for exercising the
 --     GET /staff/complaints/{id} side effect (pending → in_review + assigned_to)
 --
--- complaint_attachments (2 rows on complaint 1): one image/jpeg + one application/pdf,
+-- complaint_attachments (2 rows on complaint 5): one image/jpeg + one application/pdf,
 --   so the inline-image path AND the download-link path both render. Both URLs 404
 --   under BUG-7 — that is the point: the "unavailable" degradation is what ships.
+--   They sit on complaint 5 (`in_review`) DELIBERATELY: the verification script has to
+--   click that row to inspect the attachments, and clicking a `pending` row would
+--   trigger the GET-that-writes side effect and silently mutate a "read-only" run.
+--   An earlier cut of this seed put them on complaint 1 (pending) and did exactly that.
 --
 -- profile_comments (8 rows, ids 1–8):
 --   · 8 rows → >1 page at per_page=5
@@ -81,8 +85,8 @@ INSERT INTO complaints (id, user_id, assigned_to, title, description, type, stat
 -- Both files are absent from disk (BUG-7): no `storage:link`, no written files.
 -- That is deliberate — the UI must degrade visibly rather than show a broken glyph.
 INSERT INTO complaint_attachments (id, complaint_id, path, original_name, mime_type, size, created_at, updated_at) VALUES
- (1, 1, 'complaints/seed-dashcam.jpg', 'dashcam-still.jpg', 'image/jpeg',       184320, NOW() - INTERVAL 2 DAY, NOW() - INTERVAL 2 DAY),
- (2, 1, 'complaints/seed-route.pdf',   'route-report.pdf',  'application/pdf',   40960, NOW() - INTERVAL 2 DAY, NOW() - INTERVAL 2 DAY);
+ (1, 5, 'complaints/seed-crash-screen.jpg', 'crash-screenshot.jpg', 'image/jpeg',      184320, NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 1 DAY),
+ (2, 5, 'complaints/seed-crash-log.pdf',    'crash-log.pdf',        'application/pdf',  40960, NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 1 DAY);
 
 -- ── profile_comments (the "reviews" of Phase 8) ─────────────────────────────
 -- profile_id = who the comment is ABOUT · user_id = who WROTE it.

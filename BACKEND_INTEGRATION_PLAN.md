@@ -64,7 +64,7 @@ These will 404/500 today. Every one of them backs a visible component.
 |---|---|---|---|
 | `ENDPOINTS.SETTINGS` | `GET/POST /admin/settings` | whole **Settings** page | no route, no controller |
 | `ENDPOINTS.BROADCAST_ALERT` | `POST /admin/broadcast-alert` | **Staff → Broadcast Alert** modal | no route |
-| `ENDPOINTS.SUPPORT_METRICS` | `GET /staff/complaints/metrics` | **Support** KPI cards | no route — and worse, it *matches* `GET /staff/complaints/{id}`, so `"metrics"` is cast to `int 0` → 404 |
+| ~~`ENDPOINTS.SUPPORT_METRICS`~~ | `GET /staff/complaints/metrics` | **Support** KPI cards | ✅ resolved in Phase 7: constant **deleted**. It does not 404 as stated here — `"metrics"` matches `GET /staff/complaints/{id}` and fails its `int` type hint, returning **500 with an Ignition stack trace** ([BUG-8](docs/api/backend-issues.md)) |
 | `staffApi.deleteEmployee` | `DELETE /employees/{id}` | **Staff** delete button | `EmployeeManagementController` has no `destroy()`; deactivation is via `PATCH /employees/{id}/toggle-active` |
 
 ### 1.4 Endpoints in the Postman collection that **do not exist** in the backend checkout
@@ -133,10 +133,10 @@ Legend: ✅ wired & endpoint exists · ⚠️ wired but mismatched/incomplete ·
 | `users/pages/UserDetails` | `GET /admin/passengers/{id}/full-profile` + `stats`/`monthly-trips`/`recent-trips`/`complaints`/`wallet-charges`, `POST .../charge-wallet`, `GET /admin/users/{id}/status` | ✅ + per-section refresh, ban banner, temporary bans |
 | `verification/pages/Verifications` | `GET /staff/verifications/pending`, `POST .../approve {national_id}`, `POST .../reject {reason}` | ✅ server `total`, real reject reason, required `national_id`, optimistic removal + reconcile |
 | `verification/VerificationDocuments` | documents from the pending payload | ✅ all four types; unreachable files degrade visibly (BUG-7) |
-| `support/pages/Support` (inbox) | `GET /staff/complaints`, `GET /staff/complaints/{id}`, `PATCH .../respond`, `PATCH .../escalate` | ✅ |
-| `support` (escalated view) | `GET /staff/escalated-complaints`, `PATCH .../{id}/resolve` | ✅ |
-| `support/SupportStats` | `GET /staff/complaints/metrics` | ❌ endpoint does not exist |
-| `reviews/pages/Reviews` | `GET /staff/reviews`, `DELETE /staff/reviews/{id}` | ✅ |
+| `support/pages/Support` (inbox) | `GET /staff/complaints`, `GET /staff/complaints/{id}`, `PATCH .../respond`, `PATCH .../escalate` | ✅ paged, `per_page`, **`counts`-driven badges**, type + date filters, attachments |
+| `support` (escalated view) | `GET /staff/escalated-complaints`, `PATCH .../{id}/resolve` | ✅ own `counts` badges; resolved/closed tabs labelled "(all)" ([BUG-10](docs/api/backend-issues.md)) |
+| `support/SupportStats` | derived from the two `counts` blocks | ✅ rebuilt in Phase 7; avg-response card removed ([REQ-5](docs/api/backend-issues.md)), its endpoint 500s ([BUG-8](docs/api/backend-issues.md)) |
+| `reviews/pages/Reviews` | `GET /staff/reviews`, `DELETE /staff/reviews/{id}` | ✅ paged, `per_page`, server-side search + date, `?user_id=` deep link, confirmed delete |
 | `reports/OverviewCards` | `GET /admin/reports` | ✅ |
 | `reports/TransactionTable` | `GET /admin/wallet/requests`, `POST .../approve|reject` | ✅ |
 | `reports/ManagementSidebar` | `GET /admin/wallets`, `POST /admin/wallet/charge` | ✅ |
@@ -287,7 +287,7 @@ Cheapest first; any one of these unblocks the rest of the plan:
 ### 1.6 Follow-ups created by this phase
 
 - [ ] `e2e/smoke.spec.ts` now types credentials instead of clicking the removed demo button, and covers `sycash`. **The e2e suite has not been run** — it needs `npx playwright install` and a dev server.
-- [ ] `tests/testServer.ts` still stubs `/staff/complaints/metrics` as a success. It is a confirmed-missing endpoint (C3); Phase 7 decides whether that handler becomes a 404.
+- [x] ~~`tests/testServer.ts` still stubs `/staff/complaints/metrics` as a success.~~ ✅ **Removed in Phase 7**, along with the code that called it. `setupServer()` now has no baseline handlers at all — a success stub for a route that 500s would let a regression re-introduce the call and still pass the suite.
 
 ---
 
@@ -361,7 +361,7 @@ Endpoints: `GET /admin/trips?filter&per_page&page` → `{data, meta{current_page
   carry testids, so verification scripts do not depend on CSS classes.
 - Client-side re-filtering was **removed** from `useTrips` (`visibleTrips` is gone). Filtering is
   server-side; re-filtering a page would have blanked the table whenever a row's UI status did not
-  literally equal the filter name. Phase 7's `useSupport.visibleComplaints` has the same latent bug.
+  literally equal the filter name. ~~Phase 7's `useSupport.visibleComplaints` has the same latent bug.~~ ✅ deleted in Phase 7.
 
 **DoD:** ✅ paging through >1 page of trips works; ✅ tab badges match `counts`; ✅ a booking can be cancelled and the row updates.
 
@@ -629,33 +629,213 @@ disappears and `total` decrements, then reconciles to the server's figure; ✅ a
 
 ---
 
-## Phase 7 — Support / Complaints
+## Phase 7 — Support / Complaints — ✅ **DONE & VERIFIED AGAINST THE LIVE BACKEND 2026-08-13**
 
-Endpoints: `GET /staff/complaints?status&type&date&user_id&per_page&page` → `{data, meta, counts}` · `GET /staff/complaints/{id}` (⚠️ **side effect: a `pending` complaint auto-transitions to `in_review` and is assigned to you**) · `PATCH /staff/complaints/{id}/respond {resolution_notes ≥10, status}` · `PATCH /staff/complaints/{id}/escalate {reason ≥10}` · `GET /staff/escalated-complaints?status&per_page` · `PATCH /staff/escalated-complaints/{id}/resolve {resolution_notes, status}`.
+Endpoints: `GET /staff/complaints?status&type&date&user_id&per_page&page` → `{status, data, meta{…}, counts{all,pending,in_review,resolved,closed}}` · `GET /staff/complaints/{id}` (⚠️ **not a read — a `pending`, unassigned complaint auto-transitions to `in_review` and is assigned to the caller**) · `PATCH /staff/complaints/{id}/respond {resolution_notes 10–3000, status in:in_review,resolved,closed}` · `PATCH /staff/complaints/{id}/escalate {reason 10–1000}` · `GET /staff/escalated-complaints?status&type&date&per_page&page` → same envelope, `counts{escalated,resolved,closed}` · `PATCH /staff/escalated-complaints/{id}/resolve {resolution_notes 10–3000, status in:resolved,closed}`.
 
-- [ ] **`SupportStats` is broken** — it calls `GET /staff/complaints/metrics`, which does not exist and collides with the `{id}` route. Per the Phase 0 decision, either:
-      - **(a)** backend adds the endpoint (registered *before* the `{id}` route) → keep the component as-is; or
-      - **(b)** derive what you can client-side from `counts` (`all/pending/in_review/resolved/closed`) and the escalated `counts`, and **remove** the cards that cannot be derived (avg response time). Do not leave a card silently showing a dash because of a 404.
-- [ ] Make the auto-transition side effect visible: opening a pending complaint changes its status and assignment. Refetch `counts` after `show()` (the backend already busts its `staff.complaint-counts` cache) and tell the user "assigned to you".
-- [ ] Wire the `type` filter (8 enum values in `StaffComplaintController::index`) and the `date` filter (`last_7_days|last_30_days`) — both accepted, neither exposed.
-- [ ] Note in code that `status` accepts only `pending|in_review|resolved|closed` in `index` — **`escalated` is not a valid filter value** there; escalated complaints live behind the separate view. Guard the client so the `escalated` tab never hits `index` with that value (it would 422).
-- [ ] If Phase 0 confirms `open`/`resolve`/`close`/`notes` exist on the deployed API, add them: explicit open, direct resolve/close, and an internal notes thread on `ComplaintDetails`.
-- [ ] Attachments: `ComplaintResponse.attachments` is typed but check it renders (images inline, other mime types as download links).
+> `npx tsc -b` clean · `npm run lint` clean · `npm test` **173 passing, up from 156**.
+>
+> **Verified end-to-end** by [`docs/api/verify-support.mjs`](docs/api/verify-support.mjs) — drives the
+> real page in Chromium in **both `en` and `ar`** against MySQL + `artisan serve` on `:8000`:
+> **105 assertions read-only, 110 with `--mutate`, 0 failures.**
 
-**DoD:** the KPI row shows only real numbers; type and date filters work; no request ever 422s from a bad filter combination.
+### The seed was empty — what was done about it
+
+Probed before building: `complaints`, `complaint_attachments`, `profile_comments` and `user_ratings`
+were **all zero rows**. Nothing on either page could render — not a row, not a badge, not a detail
+panel, not one action — and no filter could be told apart from a broken query.
+
+So 12 complaints, 2 attachments and 8 profile comments were seeded deliberately from
+[`docs/api/seed-phase-7-8.sql`](docs/api/seed-phase-7-8.sql) (which documents what each row exercises
+and why) and removed again by [`docs/api/revert-phase-7-8.sql`](docs/api/revert-phase-7-8.sql). The
+seed spans all four `index` statuses plus two `escalated`, all eight `type` values, and a `created_at`
+spread that makes the date filter change the **row count** (10 → 8 → 5) rather than only echo itself.
+
+**Revert proven read-only afterwards:** `/staff/complaints` `total: 0` with every count `0`,
+`/staff/escalated-complaints` `total: 0`, `/staff/reviews` `total: 0`, and zero leftover
+`complaint_response`/`complaint_resolved` notifications. `verify-verifications.mjs` (51/51),
+`verify-drivers.mjs` (94/94) and `verify-users.mjs` (137/137) were re-run — this phase touched the
+shared `ConfirmActionModal`, `PerPageSelect` and `useApiAction` — and all three still pass.
+
+### All three corrections to this plan's earlier text were confirmed live
+
+1. **`GET /staff/complaints/metrics` returns `500`, not `404`.** `"metrics"` is captured by the `{id}`
+   route and fails its `int` type hint, and with `APP_DEBUG=true` it renders an Ignition page carrying
+   absolute filesystem paths. Filed as **[BUG-8](docs/api/backend-issues.md)** — information
+   disclosure plus an unhandled 500 that any typo'd id (`/staff/complaints/abc`) also reaches.
+2. **`GET /staff/complaints` does carry a `counts` block**, unlike the REQ-2 pages. The filter tabs
+   ship with **real badges** — the first inbox in the project that can.
+3. **`/staff/escalated-complaints` carries its own `counts{escalated,resolved,closed}`**, used for the
+   escalated view rather than reusing the inbox's.
+
+### The `show()` side effect — made visible, not hidden
+
+Confirmed live: opening complaint 4 (`pending`, unassigned) returned it as `in_review` assigned to
+`System Admin`, and the badges moved `pending 4→3 · in_review 2→3`. Opening an `escalated` complaint
+correctly changed nothing.
+
+- `supportApi.getComplaint` is documented at the call site as **a write, not a read**.
+- `useSupport.openComplaint` detects the transition, silently refetches so the badges stop describing
+  a state that no longer exists, and returns `wasAssignedToMe` so the page can **tell the user** the
+  complaint is now theirs (new `useApiAction.notify`, added for exactly this: a banner for something
+  that happened with no action of the user's to wrap).
+- The `show()` response is re-applied **after** the reconcile — the list is served from a 1-minute
+  cache the open only just busted, so the detail response is the fresher authority.
+
+**Decision for the verification script, stated explicitly:** the read-only pass **opens only
+non-pending rows**, so it genuinely writes nothing; the side effect itself is exercised for real only
+under `--mutate`, on the complaint the seed reserves for it. That claim is *enforced*, not asserted —
+the script re-reads the counts at the end and fails if they moved. **That assertion earned its keep
+immediately**: the first seed put the attachments on a `pending` complaint, so inspecting them clicked
+a pending row and silently mutated the "read-only" run. The badge counts differed between the `en` and
+`ar` passes, the seed moved the attachments to an `in_review` complaint, and the script now also
+filters its attachment target to non-pending so the guarantee survives a future seed change.
+
+### Done
+
+- [x] **`SupportStats` rebuilt** — path (b). Every figure is derived from the two `counts` blocks;
+      the **avg-response-time card was removed**, not left dashed. No endpoint in the checkout exposes
+      response latency, and averaging one paginated page client-side would describe the page, not the
+      platform. Filed as **[REQ-5](docs/api/backend-issues.md)**. The escalated card is withheld
+      entirely for roles that cannot call the escalated endpoint (a 3-card row), rather than showing a
+      number they have no source for.
+- [x] **`type` (8 values) and `date` (2 values) filters wired** — both accepted by the API since
+      Phase 0, neither previously exposed. *Verified: `type=trip_safety` renders exactly its 2 rows and
+      `date=last_7_days` renders 5 of 10, so the filters change the result rather than just echoing.*
+- [x] **The `escalated` guard is structural.** The inbox has no `escalated` tab, and the request
+      builder whitelists `COMPLAINT_INDEX_STATUSES`, so the 422 combination is unrepresentable even if
+      the state is forced. *Verified: `status=escalated` really does 422 on `index`, and no index
+      request in either language ever carried it.* A unit test forces the value onto the inbox and
+      asserts it is dropped.
+- [x] **`visibleComplaints` deleted.** The Phase 6 justification (`visibleRequests`) explicitly does
+      not apply: that endpoint takes no parameters, while `/staff/complaints` takes `status`, `type`,
+      `date`, `user_id`, `per_page` and `page`. Filtering is server-side; a test asserts every
+      server-returned row renders even when the client filter would have dropped it.
+- [x] **`per_page` + `TablePagination` on both views**, with `page` reset to 1 on every filter and
+      per-page change. *Verified: next issues `page=2` carrying `per_page`, and changing a filter while
+      on page 2 reissues `page=1`.*
+- [x] **Attachments shipped and verified against real data** — `ComplaintResponse.attachments` was
+      typed since Phase 0 and had never rendered. Two rows were seeded (`image/jpeg` +
+      `application/pdf`) so both branches run: images inline, everything else as a download link with
+      its MIME type and original filename. **BUG-7 makes failure the normal case**, so a failed image
+      flips to a labelled "unavailable" panel — the raw link is kept, because opening it is how a
+      reviewer confirms the file is genuinely missing. *Verified: both URLs failed, the tile flipped,
+      and zero `<img>` elements remained.*
+- [x] **`respond` and `escalate` through `ConfirmActionModal`**, honouring the real validators
+      (`min:10`; `max:3000` and `max:1000` via `maxReasonLength`). `respond` needs a target status, so
+      the shared modal gained an **optional `statusOptions`** prop — additive, so the five existing
+      call sites are untouched — rather than a fourth bespoke dialog. *Verified: the modal offers
+      exactly the three valid statuses, carries the server's `maxlength`, and a 9-character response is
+      blocked before any request is sent.*
+- [x] **Actions are hidden, not shown-and-422'd**, mirroring `ComplaintStatus::isAgentActionable()`:
+      respond/escalate only from `pending|in_review`, escalated-resolve only from `escalated`.
+      *Verified: a resolved complaint renders no action control and an explanatory panel instead.*
+- [x] **Hook rewritten to the house pattern:** `error` is `string | null` via `extractApiError` (was
+      `Error | null` with the message going to `console.error`), `ErrorBanner` carries the real
+      message, dates follow the active locale instead of being pinned to `'ar-SY'`, and the KPI row
+      has a real skeleton.
+- [x] **The Postman-only verbs confirmed absent** against the live API before anything was built on
+      them: `PATCH .../open`, `.../resolve` and `.../close` all 404. Nothing depends on them.
+
+### 🔴 Two backend defects found and filed
+
+- [x] **[BUG-9](docs/api/backend-issues.md) — `counts.all` counts rows the endpoint never returns.**
+      `listAll()` excludes `escalated`; `statusCounts()` sums a `GROUP BY` over everything. Live:
+      `counts.all = 12` over a list whose `meta.total` is `10`. The dashboard therefore derives the
+      "all" badge as `pending + in_review + resolved + closed` (exactly `meta.total`) and **never
+      renders `counts.all`**; a unit test pins the two apart and the script asserts the rendered badge
+      shows the sum, not `all`.
+- [x] **[BUG-10](docs/api/backend-issues.md) — the escalated view's `status` filter drops its own
+      escalated constraint.** `listEscalated()` applies `where('status', $status)` with no escalated
+      clause, so `?status=resolved` returns **every** resolved complaint. Verified live: it returned
+      complaints 7 and 8, both `is_escalated: false`, neither ever escalated. Rather than paper over
+      it, those tabs are labelled **"Resolved (all)" / "Closed (all)"** so the UI does not claim to be
+      showing escalation history. There is currently no way to ask "which complaints were escalated
+      *then* resolved" — the status is overwritten and no column records the transition.
+
+### Deliberate UI changes (recorded so they are decisions, not surprises)
+
+| Change | Why |
+|---|---|
+| **Avg-response-time KPI card removed** | Its only source 500s (BUG-8) and nothing else can supply it — REQ-5. A permanently-dashed card is worse than no card. |
+| **KPI row re-laid out to 3 or 4 cards** (open / pending / escalated / resolved) | Every card is now a direct read of a `counts` field; the escalated one is dropped for roles that cannot call that endpoint. |
+| **Status filter `<select>` → shared `FilterTabs` with badges** | The payload carries `counts`, so real badges are possible here for the first time; consistent with Trips and Verifications. |
+| **Inline reply textarea → `ConfirmActionModal`** | The textarea enforced no `max`, offered no status choice, and sent `status: 'in_review'` for "send reply" and `'resolved'` for "resolve" with no way to reach `closed`. |
+| **"Close" button removed from the inbox** | `respond` reaches `closed` through the modal's status selector; a separate button duplicated it. |
+| **Escalated tabs labelled "(all)"** | BUG-10 — they are not escalation history and must not read as if they were. |
+| **`driver_history_note` hint panel removed** | It was a hardcoded sentence ("first financial complaint in 6 months") backed by no data at all. |
+| **Detail panel gained subject, assignee and attachments** | `title`, `assigned_to` and `attachments` were all in the payload and rendered nowhere. |
+
+### i18n
+
+Every new key in `ar` **and** `en`. The count-bearing audit this phase was asked for found **one**
+ungrammatical single-form key in `support` — `avg_response_minutes` (`{{count}} دقيقة`) — which was
+**deleted** along with the card it fed rather than pluralised, since it has no data source. The one new
+count-bearing key, `attachments_title`, ships all six Arabic CLDR forms. **37 dead keys removed** from
+`support` (the mock `category_*` vocabulary superseded by the real 8-value `type` enum, the whole
+`avg_response_*` group, and the inline-reply strings). The API's `type_label` is **Arabic-only** and
+`status_label` **English-only**, so both are ignored and the codes are translated client-side —
+*verified in both directions: neither leaks into the other language's UI.*
+
+**DoD:** ✅ the KPI row shows only real numbers; ✅ type and date filters change the row count
+server-side; ✅ no request can 422 from a bad filter combination.
 
 ---
 
-## Phase 8 — Reviews
+## Phase 8 — Reviews — ✅ **DONE & VERIFIED AGAINST THE LIVE BACKEND 2026-08-13**
 
-Endpoints: `GET /staff/reviews?user_id&search&date&per_page&page` · `DELETE /staff/reviews/{commentId}`.
+Endpoints: `GET /staff/reviews?user_id&search&date&per_page&page` → `{status, data, meta{…}}` (**no `counts` block**) · `DELETE /staff/reviews/{commentId}`.
 
-- [ ] Wire `search` (debounced) and the `date` filter (`last_7_days|last_30_days` — those two values only; anything else 422s).
-- [ ] Confirm `TablePagination` is wired to `meta.last_page`.
-- [ ] Deletion is a moderation action — require confirmation and show the commenter/recipient in the dialog.
-- [ ] Support deep-linking `?user_id=` so a profile page can jump to "reviews about this user".
+> **Verified end-to-end** by [`docs/api/verify-reviews.mjs`](docs/api/verify-reviews.mjs) — drives the
+> real page in Chromium in **both `en` and `ar`**: **64 assertions read-only, 66 with `--mutate`,
+> 0 failures.**
 
-**DoD:** search + date + paging all round-trip to the server (not client-side filtering).
+Backed by `profile_comments` (`id, profile_id, user_id, comment, timestamps`) — comments written **on
+a profile**, not ride ratings. `user_ratings` is a separate, unused table and stayed untouched.
+
+### Done
+
+- [x] **`search` and `date` verified rather than rebuilt** — both were already wired at a 400 ms
+      debounce and both are genuinely server-side. Proven rather than assumed: the seed puts the token
+      "punctual" in exactly 2 of 8 comments, and `search=punctual` narrows 8 → 2 **on the server**.
+      `ReviewModerationService` matches `comment LIKE %…%` and nothing else — *verified by searching a
+      recipient's name (`Driver5`) and getting **zero** rows*, which is what proves the filter is the
+      comment body rather than a join. `date` changes the count 8 → 6 → 3.
+- [x] **`per_page` added** (`PerPageSelect`, 5/10/25/50 inside the backend's 1–50 rule) and the
+      hand-rolled pager replaced with the shared `TablePagination` reading `meta.last_page`. The old
+      pager was also hidden entirely when `lastPage <= 1`, so the page size control had nowhere to
+      live. *Verified: `per_page=5` renders exactly 5 rows and next issues `page=2` carrying it.*
+- [x] **`?user_id=` deep link shipped**, so a profile page can jump to "reviews involving this user".
+      Note the server matches **commenter OR recipient**, so the chip says "written by or about", which
+      is what it actually returns. A **non-numeric** value is never sent at all; a **numeric but
+      nonexistent** one 422s (`exists:users,id`) and that message reaches an `ErrorBanner` instead of a
+      blank table. *Both paths verified in both languages.* The filter renders as a dismissible chip
+      that clears the URL param.
+- [x] **Deletion is a real moderation dialog.** It was a two-click inline confirm; it is now
+      `ConfirmActionModal` showing the comment being removed, **the commenter and the recipient by
+      name**, and an explicit "this cannot be undone — there is no way to restore a deleted comment",
+      which is true: `deleteComment()` is a hard delete with no restore route and no soft delete. A
+      reason is required so the moderator has to articulate why. *Verified: opening the dialog fires no
+      request, cancelling fires no request and leaves the row, and both names match the payload.*
+- [x] **Same hook hygiene as Phase 7:** `error` → `string | null` via `extractApiError` (it was
+      `Error | null` going to `console.error`), locale-aware dates (was pinned `'ar-SY'`),
+      `TableSkeleton`, `ErrorBanner` with retry, and **three distinct empty states** — no comments at
+      all, no comments matching a filter, and a search miss naming the query. *Verified: a search miss
+      renders the search-specific state and **not** the generic one.*
+- [x] New tests: `tests/hooks/useReviews.test.ts` (9 cases) covering the delete payload, the `user_id`
+      deep link, `per_page`, page-reset-on-filter-change, the debounced server-side search, the 422
+      surfacing as a string, and locale-aware dates.
+
+### `--mutate` and the irreversible delete
+
+A deleted `profile_comment` **cannot be restored through the API**. `--mutate` therefore performs one
+real deletion and prints the deleted row's full contents *and* the exact `INSERT` to put it back —
+the same treatment `verify-users.mjs` gives the wallet charge — rather than implying it cleaned up
+after itself. All of it was reverted in SQL and proven: `/staff/reviews` is back to `total: 0`.
+
+**DoD:** ✅ search, date, `user_id` and paging all round-trip to the server, each changing the row
+count rather than only its echo; ✅ deletion requires confirmation naming both parties and says there
+is no undo.
 
 ---
 
@@ -739,7 +919,7 @@ Apply uniformly across every page touched above:
 - [ ] **Loading** — `TableSkeleton` for tables, spinners for cards. No layout shift on load.
 - [ ] **Errors** — `ErrorBanner` with a Retry that calls the hook's `refetch`. Use the shared `extractApiError` from 1.4 so 422 field errors read as field errors, not "Request failed with status code 422".
 - [ ] **Empty states** — every table needs one; several currently render an empty `<tbody>`.
-- [ ] **Pagination** — `TablePagination` on every list backed by `meta` (✅ trips + bookings in Phase 3, ✅ drivers in Phase 4, ✅ users in Phase 5; audit reviews, complaints, wallet requests).
+- [ ] **Pagination** — `TablePagination` on every list backed by `meta` (✅ trips + bookings in Phase 3, ✅ drivers in Phase 4, ✅ users in Phase 5, ✅ complaints + escalated in Phase 7, ✅ reviews in Phase 8; audit wallet requests).
 - [ ] **Concurrency** — an in-flight request must be cancelled/ignored when filters change (a stale response currently overwrites fresh state in the `useFetchEffect` hooks). Use an `AbortController` or a request-sequence guard.
 - [ ] **Single-flight token refresh** — refresh tokens are single-use and rotate (verified live). If two requests 401 at the same time, both call `/refresh`; the second replays a consumed token and the user is logged out. The interceptor needs to share one in-flight refresh promise across all queued requests. Pages that fire several parallel fetches on mount (Dashboard, Reports, Trips) make this easy to hit.
 - [ ] **403 handling** — `RoleRoute` blocks navigation, but a role change mid-session can still produce a 403. Show the "no permission" panel instead of an error banner.
@@ -756,7 +936,7 @@ Existing: `tests/{auth,hooks,services}` (vitest + msw), `e2e/smoke.spec.ts` + `e
 - [ ] Update `tests/testServer.ts` msw handlers to the confirmed contract — including the removed endpoints, so a regression that re-introduces `/admin/settings` fails loudly.
 - [ ] `tests/services/api.test.ts` — the three refresh/403 cases from 1.4.
 - [ ] `tests/auth/AuthContext.test.tsx` — role comes from `/staff/me`, not from the login response; `sycash` renders correctly.
-- [x] ~~`useTrips` (paging)~~ ✅ done in Phase 3 (`tests/hooks/useTrips.test.ts`, `useBookings.test.ts`); ✅ `useDrivers` / `useDriverDetails` / `Avatar` in Phase 4; ✅ `useUsers` (date filter) / `useUserDetails` in Phase 5. Still to do: `useSupport` (type filter + escalated view never sending `status=escalated` to `index`).
+- [x] ~~`useTrips` (paging)~~ ✅ done in Phase 3 (`tests/hooks/useTrips.test.ts`, `useBookings.test.ts`); ✅ `useDrivers` / `useDriverDetails` / `Avatar` in Phase 4; ✅ `useUsers` (date filter) / `useUserDetails` in Phase 5. ✅ `useSupport` (14 cases) and `useReviews` (9) in Phases 7–8, covering the type/date filters, the escalated-tab guard, the `counts`-driven badges, page-reset-on-filter-change and the `show()` side effect.
 - [ ] Extend `e2e/apiStubs.ts` for a full `system_admin` walkthrough: login → dashboard → trips (page 2) → ban a user → approve a verification → resolve a complaint → approve a wallet request → create an employee.
 - [ ] `npm run lint && npm run test && npm run build` clean before each phase is called done.
 
@@ -836,7 +1016,7 @@ All paths are relative to `VITE_API_BASE_URL`. Auth header: `Authorization: Bear
    the seeded employee.
 1. Is `GET/POST /admin/settings` planned? (Blocks the whole Settings page — Phase 11.)
 2. Is `POST /admin/broadcast-alert` planned? (Blocks the Staff broadcast modal — Phase 10.)
-3. Can `GET /staff/complaints/metrics` be added, registered **before** the `{id}` route? (Blocks the Support KPI row — Phase 7.)
+3. ~~Can `GET /staff/complaints/metrics` be added, registered **before** the `{id}` route?~~ ✅ **Answered on fact in Phase 7 and no longer blocking:** it does not exist and returns **500 with a stack trace**, not 404 ([BUG-8](docs/api/backend-issues.md)). The KPI row is now derived from `counts` and the unsupportable card removed ([REQ-5](docs/api/backend-issues.md)). What remains is a *request*, not a question — plus a genuine defect: constrain the route (`->whereNumber()`) so `/staff/complaints/abc` 404s instead of exploding.
 4. Is employee deletion intentionally absent, i.e. is `toggle-active` the final answer? (Phase 10.)
 5. Do the deployed complaint verbs `open` / `resolve` / `close` / `notes` exist? They are in the Postman collection but not in `origin/main`. (Phase 7.)
 6. `GET /admin/users` derives `admin_photo` from `$request->user()?->id`, which is `null` under `StaffJwtMiddleware` (the employee is on `$request->attributes`). Intentional?
@@ -856,9 +1036,9 @@ All paths are relative to `VITE_API_BASE_URL`. Auth header: `Authorization: Bear
 | 3 — Trips (+ bookings) | 1 | ✅ done 2026-08-11 |
 | 4 — Drivers | 1 | ✅ done 2026-08-12 |
 | 5 — Passengers | 1 | ✅ done 2026-08-12 |
-| 6 — Verifications | 1 | 0.5 d |
-| 7 — Support | 0, 1 | 1 d |
-| 8 — Reviews | 1 | 0.5 d |
+| 6 — Verifications | 1 | ✅ done 2026-08-12 |
+| 7 — Support | 0, 1 | ✅ done 2026-08-13 |
+| 8 — Reviews | 1 | ✅ done 2026-08-13 |
 | 9 — Reports & Wallet | 1 | 1.5 d |
 | 10 — Staff | 0, 1 | 1 d |
 | 11 — Settings | 0 | 0.25–1 d (depends on the answer) |

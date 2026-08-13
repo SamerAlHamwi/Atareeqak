@@ -91,7 +91,17 @@ export interface OpenComplaintResult {
   wasAssignedToMe: boolean;
 }
 
-export const useSupport = () => {
+interface UseSupportOptions {
+  /**
+   * Whether this employee may call `/staff/escalated-complaints` at all — that
+   * route is `staff:admin,system_admin`, so a `support_agent` would get a hard
+   * 403. When false the escalated counts are never fetched and stay null, and
+   * the KPI row renders three cards instead of inventing a fourth.
+   */
+  canSeeEscalated?: boolean;
+}
+
+export const useSupport = ({ canSeeEscalated = false }: UseSupportOptions = {}) => {
   const { t, i18n } = useTranslation();
   const language = i18n.language;
 
@@ -213,6 +223,29 @@ export const useSupport = () => {
 
   useFetchEffect(fetchComplaints);
 
+  /**
+   * The escalated counts feed a KPI card that is visible from the INBOX, so they
+   * cannot come from the escalated list request — that only fires once the user
+   * switches views. This reads the counts block on its own with the smallest
+   * legal page (`per_page=1`), since the rows are not needed here.
+   *
+   * Skipped entirely when the role cannot call the endpoint, so no 403 is ever
+   * provoked just to draw a card.
+   */
+  const loadEscalatedCounts = useCallback(async () => {
+    if (!canSeeEscalated) return;
+    try {
+      const response = await supportApi.getEscalatedComplaints({ per_page: 1, status: 'escalated' });
+      setEscalatedCounts(response.counts ?? null);
+    } catch {
+      // Non-blocking: the escalated KPI card is simply withheld rather than
+      // taking the whole page down over a secondary figure.
+      setEscalatedCounts(null);
+    }
+  }, [canSeeEscalated]);
+
+  useFetchEffect(loadEscalatedCounts);
+
   const applyUpdatedComplaint = useCallback(
     (updated: ComplaintResponse) => {
       const mapped = mapComplaint(updated, t, language);
@@ -269,10 +302,12 @@ export const useSupport = () => {
     async (mutate: () => Promise<{ data: ComplaintResponse }>) => {
       const response = await mutate();
       applyUpdatedComplaint(response.data);
-      await load(true);
+      // Both blocks move: escalate/respond bust `staff.complaint-counts`, and
+      // escalate/resolveEscalated change the escalated tally the KPI card shows.
+      await Promise.all([load(true), loadEscalatedCounts()]);
       applyUpdatedComplaint(response.data);
     },
-    [applyUpdatedComplaint, load]
+    [applyUpdatedComplaint, load, loadEscalatedCounts]
   );
 
   const respondToComplaint = useCallback(

@@ -212,7 +212,16 @@ const run = async () => {
 
   for (const lang of ['en', 'ar']) {
     const L = labelsFor(lang);
+    /**
+     * Every expectation is re-read PER LANGUAGE. The `--mutate` pass runs in
+     * `en` and permanently deletes a comment, so the `ar` pass legitimately
+     * faces a smaller dataset — reusing the figures captured during the
+     * contract phase made the `ar` run fail against its own earlier deletion.
+     */
     const live = (await get(token, '/staff/reviews?per_page=10&page=1')).body;
+    const liveAll = (await get(token, '/staff/reviews')).body;
+    const liveSearched = (await get(token, `/staff/reviews?search=${SEARCH_TOKEN}`)).body;
+    const liveD7 = (await get(token, '/staff/reviews?date=last_7_days')).body;
 
     const context = await browser.newContext({ viewport: { width: 1600, height: 1400 } });
     const page = await context.newPage();
@@ -309,9 +318,9 @@ const run = async () => {
       listRequests.at(-1)?.search ?? '—'
     );
     record(
-      `[${lang}] the search renders exactly the ${searched.meta.total} server-matched rows`,
-      await until(async () => (await page.getByTestId('review-row').count()) === searched.meta.total),
-      `${await page.getByTestId('review-row').count()} rows vs ${searched.meta.total}`
+      `[${lang}] the search renders exactly the ${liveSearched.meta.total} server-matched rows`,
+      await until(async () => (await page.getByTestId('review-row').count()) === liveSearched.meta.total),
+      `${await page.getByTestId('review-row').count()} rows vs ${liveSearched.meta.total}`
     );
 
     // ---- a search miss gets its OWN empty state -----------------------------
@@ -340,9 +349,9 @@ const run = async () => {
       listRequests.at(-1)?.search ?? '—'
     );
     record(
-      `[${lang}] last_7_days renders ${d7.meta.total} rows, fewer than the ${all.meta.total} unfiltered`,
-      await until(async () => (await page.getByTestId('review-row').count()) === d7.meta.total),
-      `${await page.getByTestId('review-row').count()} vs ${d7.meta.total}`
+      `[${lang}] last_7_days renders ${liveD7.meta.total} rows, fewer than the ${liveAll.meta.total} unfiltered`,
+      await until(async () => (await page.getByTestId('review-row').count()) === liveD7.meta.total),
+      `${await page.getByTestId('review-row').count()} vs ${liveD7.meta.total}`
     );
     await page.getByTestId('reviews-date-filter').selectOption('all');
     await until(async () => (await page.getByTestId('review-row').count()) === live.data.length);
