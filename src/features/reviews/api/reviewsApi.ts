@@ -25,7 +25,9 @@ export interface ReviewsListResponse {
   };
 }
 
-export type ReviewDateFilter = 'last_7_days' | 'last_30_days';
+/** `date => sometimes|in:last_7_days,last_30_days` — anything else 422s. */
+export const REVIEW_DATE_FILTERS = ['last_7_days', 'last_30_days'] as const;
+export type ReviewDateFilter = (typeof REVIEW_DATE_FILTERS)[number];
 
 export const reviewsApi = {
   /**

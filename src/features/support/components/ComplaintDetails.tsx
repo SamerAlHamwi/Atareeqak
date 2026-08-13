@@ -2,53 +2,74 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Complaint } from '../hooks/useSupport';
 import Avatar from '../../shared/components/Avatar';
+import ComplaintAttachments from './ComplaintAttachments';
 
 interface ComplaintDetailsProps {
   complaint: Complaint | null;
-  replyText: string;
-  setReplyText: (text: string) => void;
-  onSendReply: () => void;
-  onResolve: () => void;
+  /** True while `GET /staff/complaints/{id}` is in flight — that call mutates. */
+  isOpening: boolean;
+  onRespond: () => void;
   onEscalate: () => void;
+  onResolveEscalated: () => void;
   isBusy: (key: string) => boolean;
-  mode?: 'inbox' | 'escalated';
-  onCloseComplaint?: () => void;
+  mode: 'inbox' | 'escalated';
 }
 
 export const ComplaintDetails: React.FC<ComplaintDetailsProps> = ({
   complaint,
-  replyText,
-  setReplyText,
-  onSendReply,
-  onResolve,
+  isOpening,
+  onRespond,
   onEscalate,
+  onResolveEscalated,
   isBusy,
-  mode = 'inbox',
-  onCloseComplaint,
+  mode,
 }) => {
   const { t } = useTranslation();
 
   if (!complaint) {
     return (
-      <div className="lg:col-span-4 flex items-center justify-center p-12 text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant/10">
-        {t('common.no_data')}
+      <div
+        data-testid="complaint-select-hint"
+        className="lg:col-span-4 flex items-center justify-center p-12 text-center text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant/10 min-h-[280px]"
+      >
+        {t('support.select_hint')}
       </div>
     );
   }
 
-  const isClosed = complaint.status === 'resolved' || complaint.status === 'closed';
+  /**
+   * Hide-not-422, per the Phase 3 convention. The server mirrors these exactly:
+   *   • `respond`  → `ComplaintStatus::isAgentActionable()` → pending | in_review
+   *   • `escalate` → same gate, plus "already escalated" is rejected outright
+   *   • escalated `resolve` → only from `escalated`
+   * Showing a button for a state the service throws a DomainException on would
+   * be a guaranteed 422, so the button simply is not rendered.
+   */
+  const isAgentActionable = complaint.status === 'pending' || complaint.status === 'in_review';
+  const canRespond = mode === 'inbox' && isAgentActionable;
+  const canEscalate = mode === 'inbox' && isAgentActionable;
+  const canResolveEscalated = mode === 'escalated' && complaint.status === 'escalated';
+  const hasNoActions = !canRespond && !canEscalate && !canResolveEscalated;
 
   return (
     <div className="lg:col-span-4 space-y-6 sticky top-24">
-      <div className="bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/10 overflow-hidden">
+      <div
+        data-testid="complaint-detail"
+        className="bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/10 overflow-hidden"
+      >
         <div className="p-6 bg-primary text-on-primary">
-          <div className="flex justify-between items-start mb-4">
-            <div>
+          <div className="flex justify-between items-start mb-4 gap-3">
+            <div className="text-start">
               <p className="text-[10px] opacity-70 mb-1">{t('support.details_title')}</p>
-              <h4 className="text-lg font-bold">{complaint.id.replace('#', '')}</h4>
+              <h4 className="text-lg font-bold" data-testid="complaint-detail-id">
+                {complaint.id.replace('#', '')}
+              </h4>
             </div>
-            <span className="bg-white/20 text-[10px] px-2 py-1 rounded text-white font-bold">
-              {t(`support.${complaint.status}`)}
+            <span
+              data-testid="complaint-detail-status"
+              className="bg-white/20 text-[10px] px-3 py-1 rounded-full text-on-primary font-bold shrink-0"
+            >
+              {t(`common.status.${complaint.status}`)}
             </span>
           </div>
           <div className="flex items-center gap-3">
@@ -58,20 +79,36 @@ export const ComplaintDetails: React.FC<ComplaintDetailsProps> = ({
               size="md"
               className="border-2 border-secondary"
             />
-            <div className="text-start">
-              <p className="font-bold text-sm">{complaint.user}</p>
-              <p className="text-xs opacity-80">{complaint.userEmail}</p>
+            <div className="text-start min-w-0">
+              <p className="font-bold text-sm truncate">{complaint.user}</p>
+              <p className="text-xs opacity-80 truncate">{complaint.userEmail}</p>
             </div>
           </div>
         </div>
 
         <div className="p-6 space-y-6">
+          {isOpening && (
+            <p className="text-xs text-on-surface-variant text-start" data-testid="complaint-opening">
+              {t('common.loading')}
+            </p>
+          )}
+
+          {complaint.title && (
+            <div>
+              <h5 className="text-xs font-bold text-primary mb-2 flex items-center gap-2">
+                <span className="material-symbols-outlined text-sm">subject</span>
+                {t('support.title_label')}
+              </h5>
+              <p className="text-sm font-bold text-on-surface text-start">{complaint.title}</p>
+            </div>
+          )}
+
           <div>
-            <h5 className="text-xs font-bold text-indigo-900 mb-2 flex items-center gap-2">
+            <h5 className="text-xs font-bold text-primary mb-2 flex items-center gap-2">
               <span className="material-symbols-outlined text-sm">description</span>
               {t('support.content_title')}
             </h5>
-            <div className="bg-surface-container-low p-4 rounded-lg text-sm text-on-surface-variant leading-relaxed text-start">
+            <div className="bg-surface-container-low p-4 rounded-lg text-sm text-on-surface-variant leading-relaxed text-start whitespace-pre-line">
               {complaint.content}
             </div>
           </div>
@@ -87,103 +124,77 @@ export const ComplaintDetails: React.FC<ComplaintDetailsProps> = ({
             </div>
           </div>
 
+          <ComplaintAttachments attachments={complaint.attachments} />
+
           {complaint.resolutionNotes && (
             <div>
-              <h5 className="text-xs font-bold text-indigo-900 mb-2 text-start">
+              <h5 className="text-xs font-bold text-primary mb-2 text-start">
                 {t('support.resolution_notes')}
               </h5>
-              <div className="bg-tertiary-fixed/20 p-4 rounded-lg text-sm text-on-surface-variant leading-relaxed text-start whitespace-pre-line">
+              <div
+                data-testid="complaint-resolution-notes"
+                className="bg-tertiary-fixed/20 p-4 rounded-lg text-sm text-on-surface-variant leading-relaxed text-start whitespace-pre-line"
+              >
                 {complaint.resolutionNotes}
               </div>
             </div>
           )}
 
-          {complaint.assignedTo && (
-            <p className="text-xs text-on-surface-variant text-start">
-              {t('support.assigned_to')}: <span className="font-bold">{complaint.assignedTo}</span>
+          <p className="text-xs text-on-surface-variant text-start" data-testid="complaint-assignee">
+            {t('support.assigned_to')}:{' '}
+            <span className="font-bold">
+              {complaint.assignedTo ?? t('support.unassigned')}
+            </span>
+          </p>
+
+          {/* Actions */}
+          {canRespond && (
+            <button
+              onClick={onRespond}
+              disabled={isBusy(`respond-${complaint.id}`)}
+              data-testid="complaint-respond"
+              className="w-full bg-secondary text-on-secondary text-xs font-bold py-3 rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-sm">send</span>
+              {t('support.respond')}
+            </button>
+          )}
+
+          {canEscalate && (
+            <button
+              onClick={onEscalate}
+              disabled={isBusy(`escalate-${complaint.id}`)}
+              data-testid="complaint-escalate"
+              className="w-full bg-surface-container-high text-on-surface text-xs font-bold py-3 rounded-lg hover:bg-surface-container-highest transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-sm">priority_high</span>
+              {t('support.escalate')}
+            </button>
+          )}
+
+          {canResolveEscalated && (
+            <button
+              onClick={onResolveEscalated}
+              disabled={isBusy(`resolve-escalated-${complaint.id}`)}
+              data-testid="complaint-resolve-escalated"
+              className="w-full bg-secondary text-on-secondary text-xs font-bold py-3 rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-sm">task_alt</span>
+              {t('support.resolve_and_notify')}
+            </button>
+          )}
+
+          {hasNoActions && (
+            <p
+              data-testid="complaint-no-actions"
+              className="text-[11px] text-on-surface-variant text-start bg-surface-container-low rounded-lg p-3"
+            >
+              {mode === 'inbox' && complaint.status === 'escalated'
+                ? t('support.no_actions_escalated')
+                : t('support.no_actions_closed')}
             </p>
           )}
-
-          {!isClosed && mode === 'escalated' && (
-            <div>
-              <h5 className="text-xs font-bold text-indigo-900 mb-2 text-start">
-                {t('support.resolution_title')}
-              </h5>
-              <textarea
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                className="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm focus:ring-1 focus:ring-secondary min-h-[100px] outline-none mb-3 text-start"
-                placeholder={t('support.resolution_placeholder')}
-              ></textarea>
-              <div className="flex gap-2">
-                <button
-                  onClick={onResolve}
-                  disabled={replyText.trim().length < 10 || isBusy(`resolve-${complaint.id}`)}
-                  className="flex-1 bg-secondary text-on-secondary text-xs font-bold py-3 rounded-lg hover:bg-secondary/90 transition-all flex items-center justify-center gap-2 shadow-sm shadow-secondary/20 disabled:opacity-50"
-                >
-                  <span className="material-symbols-outlined text-sm">task_alt</span>
-                  {t('support.resolve_and_notify')}
-                </button>
-                <button
-                  onClick={onCloseComplaint}
-                  disabled={replyText.trim().length < 10 || isBusy(`close-${complaint.id}`)}
-                  className="bg-surface-container-high text-on-surface text-xs font-bold px-4 py-3 rounded-lg hover:bg-slate-200 transition-all disabled:opacity-50"
-                >
-                  {t('support.close_complaint')}
-                </button>
-              </div>
-              <p className="text-[10px] text-on-surface-variant mt-2 text-start">
-                {t('support.reply_min_hint')}
-              </p>
-            </div>
-          )}
-
-          {!isClosed && mode === 'inbox' && (
-            <div>
-              <h5 className="text-xs font-bold text-indigo-900 mb-2 text-start">
-                {t('support.quick_reply')}
-              </h5>
-              <textarea
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                className="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm focus:ring-1 focus:ring-secondary min-h-[100px] outline-none mb-3 text-start"
-                placeholder={t('support.reply_placeholder')}
-              ></textarea>
-              <div className="flex gap-2">
-                <button
-                  onClick={onSendReply}
-                  disabled={replyText.trim().length < 10 || isBusy(`reply-${complaint.id}`)}
-                  className="flex-1 bg-secondary text-on-secondary text-xs font-bold py-3 rounded-lg hover:bg-secondary/90 transition-all flex items-center justify-center gap-2 shadow-sm shadow-secondary/20 disabled:opacity-50"
-                >
-                  <span className="material-symbols-outlined text-sm">send</span>
-                  {t('support.send_reply')}
-                </button>
-                <button
-                  onClick={onResolve}
-                  disabled={replyText.trim().length < 10 || isBusy(`resolve-${complaint.id}`)}
-                  className="bg-primary text-on-primary text-xs font-bold px-4 py-3 rounded-lg hover:opacity-90 transition-all disabled:opacity-50"
-                >
-                  {t('support.mark_resolved')}
-                </button>
-                <button
-                  onClick={onEscalate}
-                  disabled={complaint.status === 'escalated' || isBusy(`escalate-${complaint.id}`)}
-                  className="bg-surface-container-high text-on-surface text-xs font-bold px-4 py-3 rounded-lg hover:bg-slate-200 transition-all disabled:opacity-50"
-                >
-                  {t('support.escalate')}
-                </button>
-              </div>
-              <p className="text-[10px] text-on-surface-variant mt-2 text-start">
-                {t('support.reply_min_hint')}
-              </p>
-            </div>
-          )}
         </div>
-      </div>
-
-      <div className="bg-tertiary-fixed text-on-tertiary-fixed p-4 rounded-xl flex gap-3 items-center">
-        <span className="material-symbols-outlined text-on-tertiary-fixed-variant">lightbulb</span>
-        <p className="text-xs leading-snug text-start">{t('support.driver_history_note')}</p>
       </div>
     </div>
   );

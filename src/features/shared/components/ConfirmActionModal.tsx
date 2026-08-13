@@ -5,6 +5,13 @@ export interface ConfirmActionPayload {
   reason: string;
   banType?: 'permanent' | 'temporary';
   expiresAt?: string;
+  /** Set only when `statusOptions` was supplied; the chosen target status. */
+  status?: string;
+}
+
+export interface ConfirmActionStatusOption {
+  value: string;
+  label: string;
 }
 
 interface ConfirmActionModalProps {
@@ -14,6 +21,18 @@ interface ConfirmActionModalProps {
   confirmLabel: string;
   /** Adds the ban-type selector (permanent/temporary) + expiry date picker. */
   showBanOptions?: boolean;
+  /**
+   * Adds a required target-status selector above the reason field, for actions
+   * whose validator takes a status alongside the free text — `PATCH
+   * /staff/complaints/{id}/respond` (`in_review|resolved|closed`) and
+   * `PATCH /staff/escalated-complaints/{id}/resolve` (`resolved|closed`).
+   * Options must mirror the server's `in:` list exactly; the first is preselected.
+   */
+  statusOptions?: readonly ConfirmActionStatusOption[];
+  /** Overrides the destructive red confirm button for non-destructive actions. */
+  confirmTone?: 'destructive' | 'primary';
+  /** Renders above the reason field — e.g. who a moderated comment belongs to. */
+  children?: React.ReactNode;
   isBusy?: boolean;
   /**
    * Backend validators require min 10 chars for ban/cancel/escalate reasons.
@@ -34,6 +53,9 @@ const ModalForm: React.FC<ModalFormProps> = ({
   description,
   confirmLabel,
   showBanOptions = false,
+  statusOptions,
+  confirmTone = 'destructive',
+  children,
   isBusy = false,
   minReasonLength = 10,
   maxReasonLength,
@@ -44,6 +66,7 @@ const ModalForm: React.FC<ModalFormProps> = ({
   const [reason, setReason] = useState('');
   const [banType, setBanType] = useState<'permanent' | 'temporary'>('permanent');
   const [expiresAt, setExpiresAt] = useState('');
+  const [status, setStatus] = useState(statusOptions?.[0]?.value ?? '');
   const [validationError, setValidationError] = useState('');
   const [minExpiryDate] = useState(() =>
     new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
@@ -67,6 +90,7 @@ const ModalForm: React.FC<ModalFormProps> = ({
     setValidationError('');
     await onConfirm({
       reason: trimmedReason,
+      ...(statusOptions ? { status } : {}),
       ...(showBanOptions
         ? {
             banType,
@@ -103,6 +127,32 @@ const ModalForm: React.FC<ModalFormProps> = ({
           )}
 
           <div className="space-y-4">
+            {children}
+
+            {statusOptions && (
+              <div>
+                <label
+                  htmlFor="confirm-action-status"
+                  className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2 block"
+                >
+                  {t('modal.status_label')}
+                </label>
+                <select
+                  id="confirm-action-status"
+                  data-testid="confirm-action-status"
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="w-full bg-surface-container-low border-none rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                >
+                  {statusOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div>
               <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2 block">
                 {t('modal.reason_label')}
@@ -165,7 +215,11 @@ const ModalForm: React.FC<ModalFormProps> = ({
               data-testid="confirm-action-submit"
               onClick={() => void handleConfirm()}
               disabled={isBusy}
-              className="flex-1 bg-error text-on-error py-3 rounded-2xl font-bold text-sm hover:opacity-90 transition-all disabled:opacity-50"
+              className={`flex-1 py-3 rounded-2xl font-bold text-sm hover:opacity-90 transition-all disabled:opacity-50 ${
+                confirmTone === 'primary'
+                  ? 'bg-primary text-on-primary'
+                  : 'bg-error text-on-error'
+              }`}
             >
               {isBusy ? t('common.loading') : confirmLabel}
             </button>

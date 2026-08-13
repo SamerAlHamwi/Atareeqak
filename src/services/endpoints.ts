@@ -90,7 +90,13 @@ export const ENDPOINTS = {
   },
   SETTINGS: '/admin/settings',
   BROADCAST_ALERT: '/admin/broadcast-alert',
-  SUPPORT_METRICS: '/staff/complaints/metrics',
+  // `SUPPORT_METRICS: '/staff/complaints/metrics'` was deleted in Phase 7.
+  // There is no such route. Worse than missing: `"metrics"` is matched by
+  // `GET /staff/complaints/{id}` and fails that action's `int` type hint, so the
+  // request returns **500** with a full Ignition stack trace (APP_DEBUG=true),
+  // not a 404. Filed as BUG-8 in docs/api/backend-issues.md. The Support KPI row
+  // is now derived from the two `counts` blocks the list endpoints already
+  // return; see SupportStats. Do not re-add this constant without a real route.
   REPORTS: '/admin/reports',
   EXPORT_PDF: '/admin/export/pdf',
 };

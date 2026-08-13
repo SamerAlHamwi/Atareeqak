@@ -28,6 +28,7 @@ const PerPageSelect: React.FC<PerPageSelectProps> = ({
       </label>
       <select
         id={id}
+        data-testid="per-page-select"
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(Number(e.target.value))}

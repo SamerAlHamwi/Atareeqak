@@ -1,17 +1,43 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
+import ConfirmActionModal from '../../shared/components/ConfirmActionModal';
 import ErrorBanner from '../../shared/components/ErrorBanner';
 import TableSkeleton from '../../shared/components/TableSkeleton';
-import { useReviews } from '../hooks/useReviews';
+import TablePagination from '../../shared/components/TablePagination';
+import PerPageSelect from '../../shared/components/PerPageSelect';
+import { useReviews, REVIEWS_PER_PAGE_OPTIONS } from '../hooks/useReviews';
 import type { Review, DateFilter } from '../hooks/useReviews';
+import { REVIEW_DATE_FILTERS } from '../api/reviewsApi';
 
 const Reviews: React.FC = () => {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language.startsWith('ar');
   const { runAction, isBusy, feedback, clearFeedback } = useApiAction();
-  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Review | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  /**
+   * `?user_id=` deep link, so a profile page can link to "reviews involving this
+   * user". A non-numeric value is ignored outright rather than sent — the server
+   * validates `integer|exists:users,id`, and a nonexistent id still 422s, which
+   * the hook surfaces through the ErrorBanner.
+   */
+  const userIdParam = searchParams.get('user_id');
+  const userId = useMemo(() => {
+    if (!userIdParam) return null;
+    const parsed = Number(userIdParam);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+  }, [userIdParam]);
+  const hasInvalidUserId = userIdParam !== null && userId === null;
+
+  const clearUserFilter = useCallback(() => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('user_id');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const {
     reviews,
@@ -22,30 +48,39 @@ const Reviews: React.FC = () => {
     setSearch,
     dateFilter,
     setDateFilter,
+    perPage,
+    setPerPage,
     page,
     setPage,
+    hasActiveSearch,
     refetch,
     deleteReview,
-  } = useReviews();
+  } = useReviews({ userId });
 
-  const handleDelete = useCallback(
-    async (review: Review) => {
-      await runAction({
-        key: `delete-${review.id}`,
-        action: () => deleteReview(review),
-        successMessage: t('reviews.delete_success', { id: review.id }),
-        errorMessage: t('reviews.delete_failed'),
-        onSuccess: () => setConfirmDeleteId(null),
-      });
-    },
-    [deleteReview, runAction, t]
-  );
+  const handleConfirmDelete = useCallback(async () => {
+    if (!pendingDelete) return;
+    const review = pendingDelete;
+    await runAction({
+      key: `delete-${review.id}`,
+      action: () => deleteReview(review),
+      successMessage: t('reviews.delete_success', { id: review.id }),
+      errorMessage: t('reviews.delete_failed'),
+    });
+    setPendingDelete(null);
+  }, [pendingDelete, deleteReview, runAction, t]);
+
+  const total = meta?.total ?? 0;
+  const rangeFrom = total === 0 ? 0 : (page - 1) * perPage + 1;
+  const rangeTo = total === 0 ? 0 : rangeFrom + reviews.length - 1;
 
   return (
     <div className="space-y-10">
       <ActionBanner feedback={feedback} onDismiss={clearFeedback} />
 
-      {error && <ErrorBanner onRetry={() => void refetch()} />}
+      {hasInvalidUserId && (
+        <ErrorBanner message={t('reviews.invalid_user_id', { value: userIdParam })} />
+      )}
+      {error && <ErrorBanner message={error} onRetry={() => void refetch()} />}
 
       {/* Header */}
       <section className="flex flex-wrap items-end justify-between gap-4">
@@ -59,11 +94,33 @@ const Reviews: React.FC = () => {
           <p className="text-[10px] uppercase tracking-wider font-semibold text-on-surface-variant">
             {t('reviews.total_comments')}
           </p>
-          <p className="text-2xl font-headline font-extrabold text-primary">
+          <p
+            data-testid="reviews-total"
+            className="text-2xl font-headline font-extrabold text-primary"
+          >
             {meta ? meta.total.toLocaleString() : '—'}
           </p>
         </div>
       </section>
+
+      {/* Active deep-link chip */}
+      {userId !== null && (
+        <div
+          data-testid="reviews-user-filter"
+          className="flex items-center gap-3 bg-secondary-container text-on-secondary-container px-5 py-3 rounded-2xl"
+        >
+          <span className="material-symbols-outlined text-lg">person_search</span>
+          <span className="text-sm font-medium">{t('reviews.filtered_by_user', { id: userId })}</span>
+          <button
+            onClick={clearUserFilter}
+            data-testid="reviews-clear-user-filter"
+            className="ms-auto flex items-center gap-1 text-xs font-bold hover:underline"
+          >
+            <span className="material-symbols-outlined text-sm">close</span>
+            {t('reviews.clear_user_filter')}
+          </button>
+        </div>
+      )}
 
       {/* Filters + Table */}
       <section className="bg-surface-container-low rounded-xl overflow-hidden shadow-sm">
@@ -79,6 +136,7 @@ const Reviews: React.FC = () => {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              data-testid="reviews-search"
               className={`block w-full ${
                 isRtl ? 'pr-12' : 'pl-12'
               } py-2.5 bg-surface border-none rounded-full text-xs ring-1 ring-outline-variant/30 focus:ring-secondary outline-none`}
@@ -86,15 +144,28 @@ const Reviews: React.FC = () => {
               type="text"
             />
           </div>
-          <select
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value as DateFilter)}
-            className="bg-surface border-none text-xs rounded-full px-4 py-2 ring-1 ring-outline-variant/30 focus:ring-secondary cursor-pointer"
-          >
-            <option value="all">{t('reviews.all_dates')}</option>
-            <option value="last_7_days">{t('reviews.last_7_days')}</option>
-            <option value="last_30_days">{t('reviews.last_30_days')}</option>
-          </select>
+          <div className="flex flex-wrap items-center gap-4">
+            <select
+              value={dateFilter}
+              data-testid="reviews-date-filter"
+              onChange={(e) => setDateFilter(e.target.value as DateFilter)}
+              disabled={isLoading}
+              className="bg-surface border-none text-xs rounded-full px-4 py-2 ring-1 ring-outline-variant/30 focus:ring-secondary cursor-pointer disabled:opacity-50"
+            >
+              <option value="all">{t('reviews.all_dates')}</option>
+              {REVIEW_DATE_FILTERS.map((value) => (
+                <option key={value} value={value}>
+                  {t(`reviews.${value}`)}
+                </option>
+              ))}
+            </select>
+            <PerPageSelect
+              value={perPage}
+              options={REVIEWS_PER_PAGE_OPTIONS}
+              onChange={setPerPage}
+              disabled={isLoading}
+            />
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -113,20 +184,28 @@ const Reviews: React.FC = () => {
                 <TableSkeleton rows={5} cols={5} />
               ) : reviews.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-on-surface-variant">
-                    {t('reviews.empty')}
+                  <td
+                    colSpan={5}
+                    data-testid="reviews-empty"
+                    className="py-12 text-center text-on-surface-variant"
+                  >
+                    {/* Distinct states: nothing to moderate vs. a search that missed. */}
+                    {hasActiveSearch
+                      ? t('reviews.empty_search', { query: search.trim() })
+                      : dateFilter !== 'all' || userId !== null
+                        ? t('reviews.empty_filtered')
+                        : t('reviews.empty')}
                   </td>
                 </tr>
               ) : (
                 reviews.map((review) => (
                   <tr
                     key={review.id}
-                    className="bg-surface-container-lowest hover:bg-slate-50 transition-colors rounded-lg"
+                    data-testid="review-row"
+                    className="bg-surface-container-lowest hover:bg-surface-container transition-colors rounded-lg"
                   >
                     <td
-                      className={`py-4 ${
-                        isRtl ? 'pr-4 rounded-r-lg' : 'pl-4 rounded-l-lg'
-                      } max-w-md`}
+                      className={`py-4 ${isRtl ? 'pr-4 rounded-r-lg' : 'pl-4 rounded-l-lg'} max-w-md`}
                     >
                       <p className="text-xs text-on-surface leading-relaxed text-start line-clamp-2">
                         {review.comment}
@@ -141,34 +220,17 @@ const Reviews: React.FC = () => {
                     <td className="py-4 text-start">
                       <span className="text-xs text-on-surface-variant">{review.date}</span>
                     </td>
-                    <td className={`py-4 ${isRtl ? 'pl-4 rounded-l-lg' : 'pr-4 rounded-r-lg'} text-start`}>
-                      {confirmDeleteId === review.id ? (
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleDelete(review)}
-                            disabled={isBusy(`delete-${review.id}`)}
-                            className="bg-error text-on-error text-[10px] font-bold px-3 py-1.5 rounded-lg hover:opacity-90 transition-all disabled:opacity-50"
-                          >
-                            {isBusy(`delete-${review.id}`)
-                              ? t('common.loading')
-                              : t('reviews.confirm_delete')}
-                          </button>
-                          <button
-                            onClick={() => setConfirmDeleteId(null)}
-                            className="bg-surface-container-high text-on-surface text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-slate-200 transition-all"
-                          >
-                            {t('reviews.cancel')}
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setConfirmDeleteId(review.id)}
-                          className="flex items-center gap-1 text-error text-xs font-bold hover:bg-error-container/50 px-3 py-1.5 rounded-lg transition-colors"
-                        >
-                          <span className="material-symbols-outlined text-sm">delete</span>
-                          {t('reviews.delete')}
-                        </button>
-                      )}
+                    <td
+                      className={`py-4 ${isRtl ? 'pl-4 rounded-l-lg' : 'pr-4 rounded-r-lg'} text-start`}
+                    >
+                      <button
+                        onClick={() => setPendingDelete(review)}
+                        data-testid="review-delete"
+                        className="flex items-center gap-1 text-error text-xs font-bold hover:bg-error-container/50 px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-sm">delete</span>
+                        {t('reviews.delete')}
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -177,35 +239,56 @@ const Reviews: React.FC = () => {
           </table>
         </div>
 
-        {/* Pagination */}
-        {meta && meta.lastPage > 1 && (
-          <div className="p-6 bg-surface-container-lowest border-t border-outline-variant/10 flex items-center justify-between">
-            <p className="text-xs text-on-surface-variant">
-              {t('reviews.pagination_info', { page: meta.currentPage, pages: meta.lastPage })}
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPage(page - 1)}
-                disabled={page <= 1 || isLoading}
-                className="w-9 h-9 rounded-full bg-surface flex items-center justify-center ring-1 ring-outline-variant/30 text-on-surface-variant hover:text-primary transition-colors disabled:opacity-40"
-              >
-                <span className="material-symbols-outlined text-lg">
-                  {isRtl ? 'chevron_right' : 'chevron_left'}
-                </span>
-              </button>
-              <button
-                onClick={() => setPage(page + 1)}
-                disabled={page >= meta.lastPage || isLoading}
-                className="w-9 h-9 rounded-full bg-surface flex items-center justify-center ring-1 ring-outline-variant/30 text-on-surface-variant hover:text-primary transition-colors disabled:opacity-40"
-              >
-                <span className="material-symbols-outlined text-lg">
-                  {isRtl ? 'chevron_left' : 'chevron_right'}
-                </span>
-              </button>
-            </div>
+        <TablePagination
+          page={page}
+          lastPage={meta?.lastPage ?? 1}
+          onPageChange={setPage}
+          isLoading={isLoading}
+          info={t('common.showing_range', { from: rangeFrom, to: rangeTo, count: total })}
+        />
+      </section>
+
+      {/*
+        Deletion is a moderation action against a real person's words, and there
+        is no undo: `deleteComment()` is a hard delete with no restore endpoint.
+        The dialog names both parties and says so explicitly, and a reason is
+        required so the moderator has to articulate why before the row goes.
+      */}
+      <ConfirmActionModal
+        open={pendingDelete !== null}
+        title={t('reviews.delete_modal_title')}
+        description={t('reviews.delete_modal_description')}
+        confirmLabel={t('reviews.confirm_delete')}
+        minReasonLength={1}
+        maxReasonLength={500}
+        isBusy={pendingDelete ? isBusy(`delete-${pendingDelete.id}`) : false}
+        onConfirm={handleConfirmDelete}
+        onClose={() => setPendingDelete(null)}
+      >
+        {pendingDelete && (
+          <div
+            data-testid="review-delete-summary"
+            className="bg-surface-container-low rounded-2xl p-4 space-y-3 text-start"
+          >
+            <p className="text-sm text-on-surface leading-relaxed">“{pendingDelete.comment}”</p>
+            <dl className="grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <dt className="text-on-surface-variant">{t('reviews.table_commenter')}</dt>
+                <dd className="font-bold" data-testid="review-delete-commenter">
+                  {pendingDelete.commenter}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-on-surface-variant">{t('reviews.table_recipient')}</dt>
+                <dd className="font-bold text-secondary" data-testid="review-delete-recipient">
+                  {pendingDelete.recipient}
+                </dd>
+              </div>
+            </dl>
+            <p className="text-[11px] font-bold text-error">{t('reviews.delete_no_undo')}</p>
           </div>
         )}
-      </section>
+      </ConfirmActionModal>
     </div>
   );
 };

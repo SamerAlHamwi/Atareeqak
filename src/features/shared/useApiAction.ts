@@ -29,6 +29,13 @@ interface UseApiActionResult {
   isBusy: (key: string) => boolean;
   clearFeedback: () => void;
   runAction: <T>(input: RunApiActionInput<T>) => Promise<void>;
+  /**
+   * Shows a banner for something that already happened, with no call to wrap.
+   * Added in Phase 7 for the complaint `show()` side effect: opening a pending
+   * complaint assigns it to the current employee as a side effect of a GET, so
+   * the user has to be told about a write that no action of theirs initiated.
+   */
+  notify: (tone: FeedbackTone, message: string) => void;
 }
 
 /**
@@ -65,8 +72,12 @@ export const useApiAction = (): UseApiActionResult => {
     []
   );
 
+  const notify = useCallback((tone: FeedbackTone, message: string) => {
+    setFeedback({ tone, message });
+  }, []);
+
   return useMemo(
-    () => ({ busyKey, feedback, isBusy, clearFeedback, runAction }),
-    [busyKey, clearFeedback, feedback, isBusy, runAction]
+    () => ({ busyKey, feedback, isBusy, clearFeedback, runAction, notify }),
+    [busyKey, clearFeedback, feedback, isBusy, runAction, notify]
   );
 };
