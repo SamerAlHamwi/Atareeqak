@@ -4,7 +4,11 @@ import TablePagination from '../../shared/components/TablePagination';
 import TableSkeleton from '../../shared/components/TableSkeleton';
 import ErrorBanner from '../../shared/components/ErrorBanner';
 import NoPermissionPanel from '../../shared/components/NoPermissionPanel';
-import { useWalletTransactions } from '../hooks/useWalletTransactions';
+import PerPageSelect from '../../shared/components/PerPageSelect';
+import {
+  useWalletTransactions,
+  WALLET_TRANSACTIONS_PER_PAGE_OPTIONS,
+} from '../hooks/useWalletTransactions';
 
 interface WalletTransactionsDrawerProps {
   walletId: number | null;
@@ -17,10 +21,6 @@ interface WalletTransactionsDrawerProps {
  * `walletApi.getWalletTransactions()` had existed since Phase 0 and had never
  * been called from anywhere. Wallet 1 alone carries 31 transactions across 4
  * pages, so this is fully verifiable against the seed.
- *
- * Deliberately **no `PerPageSelect`**: the backend hardcodes the page size to
- * 10 and ignores `per_page` entirely, so a page-size control here would be a
- * widget that does nothing (REQ-6). `TablePagination` alone is honest.
  */
 export const WalletTransactionsDrawer: React.FC<WalletTransactionsDrawerProps> = ({
   walletId,
@@ -34,6 +34,8 @@ export const WalletTransactionsDrawer: React.FC<WalletTransactionsDrawerProps> =
     setPage,
     lastPage,
     total,
+    perPage,
+    setPerPage,
     isLoading,
     error,
     isForbidden,
@@ -44,8 +46,8 @@ export const WalletTransactionsDrawer: React.FC<WalletTransactionsDrawerProps> =
     return null;
   }
 
-  const from = total === 0 ? 0 : (page - 1) * 10 + 1;
-  const to = Math.min(page * 10, total);
+  const from = total === 0 ? 0 : (page - 1) * perPage + 1;
+  const to = Math.min(page * perPage, total);
 
   return (
     <>
@@ -91,6 +93,15 @@ export const WalletTransactionsDrawer: React.FC<WalletTransactionsDrawerProps> =
           </div>
         ) : (
           <>
+            <div className="px-6 py-3 border-b border-outline-variant/10 flex justify-end">
+              <PerPageSelect
+                value={perPage}
+                options={WALLET_TRANSACTIONS_PER_PAGE_OPTIONS}
+                onChange={setPerPage}
+                disabled={isLoading}
+              />
+            </div>
+
             <div className="flex-1 overflow-y-auto">
               {error && (
                 <div className="p-6">

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { Complaint } from '../hooks/useSupport';
 import Avatar from '../../shared/components/Avatar';
 import ComplaintAttachments from './ComplaintAttachments';
+import PageLoader from '../../shared/components/PageLoader';
 
 interface ComplaintDetailsProps {
   complaint: Complaint | null;
@@ -88,9 +89,9 @@ export const ComplaintDetails: React.FC<ComplaintDetailsProps> = ({
 
         <div className="p-6 space-y-6">
           {isOpening && (
-            <p className="text-xs text-on-surface-variant text-start" data-testid="complaint-opening">
-              {t('common.loading')}
-            </p>
+            <div data-testid="complaint-opening">
+              <PageLoader size="sm" />
+            </div>
           )}
 
           {complaint.title && (

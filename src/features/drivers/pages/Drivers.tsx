@@ -301,7 +301,7 @@ const Drivers: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-5 text-start">
-                      <div className={`flex items-center gap-1 ${driver.rating ? 'text-amber-500' : 'text-slate-400'}`}>
+                      <div className={`flex items-center gap-1 ${driver.rating ? 'text-amber-500' : 'text-on-surface-variant/50'}`}>
                         <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: driver.rating ? "'FILL' 1" : "" }}>
                           {driver.rating ? 'star' : 'star_outline'}
                         </span>

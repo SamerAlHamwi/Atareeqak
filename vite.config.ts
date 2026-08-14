@@ -18,6 +18,15 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    resolve: {
+      alias: {
+        // lottie-react's `browser` field points at a UMD bundle whose default
+        // export is the whole CJS exports object, not the component — esbuild's
+        // dep pre-bundling picks that field over `module` and breaks the import.
+        // Force resolution to the ESM build instead.
+        'lottie-react': 'lottie-react/build/index.es.js',
+      },
+    },
     server: {
       proxy: {
         '/api': {

@@ -1,15 +1,16 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTripMonitoring } from '../hooks/useTripMonitoring';
+import PageLoader from '../../shared/components/PageLoader';
 
 const eventIcon = (status: string): { icon: string; classes: string } => {
   switch (status) {
     case 'completed':
-      return { icon: 'check_circle', classes: 'bg-teal-50 text-secondary' };
+      return { icon: 'check_circle', classes: 'bg-tertiary-fixed text-on-tertiary-fixed-variant' };
     case 'cancelled':
-      return { icon: 'warning', classes: 'bg-orange-50 text-orange-500' };
+      return { icon: 'warning', classes: 'bg-error-container text-on-error-container' };
     default:
-      return { icon: 'directions_car', classes: 'bg-indigo-50 text-primary' };
+      return { icon: 'directions_car', classes: 'bg-primary-fixed text-on-primary-fixed-variant' };
   }
 };
 
@@ -25,7 +26,7 @@ export const MonitoringSidebar: React.FC = () => {
           {t('trips.route_monitoring')}
         </h4>
         {isLoading ? (
-          <p className="text-sm text-on-surface-variant">{t('common.loading', 'Loading...')}</p>
+          <PageLoader size="sm" />
         ) : error ? (
           <p className="text-sm text-error">{t('common.load_failed')}</p>
         ) : popularRoutes.length === 0 ? (
@@ -72,7 +73,7 @@ export const MonitoringSidebar: React.FC = () => {
           {t('trips.recent_activity')}
         </h4>
         {isLoading ? (
-          <p className="text-sm text-on-surface-variant">{t('common.loading', 'Loading...')}</p>
+          <PageLoader size="sm" />
         ) : recentEvents.length === 0 ? (
           <p className="text-sm text-on-surface-variant">{t('common.no_data')}</p>
         ) : (
@@ -106,7 +107,7 @@ export const MonitoringSidebar: React.FC = () => {
           <span className="material-symbols-outlined opacity-50">star</span>
         </div>
         {isLoading ? (
-          <p className="text-sm opacity-80">{t('common.loading', 'Loading...')}</p>
+          <PageLoader size="sm" labelClassName="text-on-tertiary opacity-80" />
         ) : topDrivers.length === 0 ? (
           <p className="text-sm opacity-80">{t('common.no_data')}</p>
         ) : (

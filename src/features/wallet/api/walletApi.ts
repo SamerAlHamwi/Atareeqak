@@ -2,13 +2,11 @@ import api from '../../../services/api';
 import { ENDPOINTS } from '../../../services/endpoints';
 
 /**
- * ⚠️ `balance` is **pre-formatted server-side** — "135,600.00 SYP" — on
- * `/admin/wallet` and `/admin/wallets`. Do not re-parse it, and do not append
- * `t('users.currency')` to it: the string already carries its own unit.
- *
- * The one exception is the `wallet` block nested inside
- * `/admin/wallet/{id}/transactions`, which is the **raw model** and returns
- * "135600.00" with no separators and no unit — see `WalletTransactionsWallet`.
+ * ⚠️ `balance` is **pre-formatted server-side** — "135,600.00 SYP" — on every
+ * endpoint that returns a wallet, including the `wallet` block nested inside
+ * `/admin/wallet/{id}/transactions` (`WalletTransactionsWallet`). Do not
+ * re-parse it, and do not append `t('users.currency')` to it: the string
+ * already carries its own unit.
  */
 export interface Wallet {
   id: number;
@@ -27,58 +25,34 @@ export interface Wallet {
   updated_at?: string;
 }
 
-/** The raw `wallets` row returned alongside a transactions page. */
+/** The wallet returned alongside a transactions page. */
 export interface WalletTransactionsWallet {
   id: number;
   name: string | null;
-  user_id: number | null;
   wallet_number: string;
-  /** RAW, unformatted, no unit — e.g. "135600.00". Unlike `Wallet.balance`. */
+  /** Pre-formatted, e.g. "135,600.00 SYP" — consistent with `Wallet.balance`. */
   balance: string;
-  cash_ride_debt: string;
   phone_number: string;
-  created_at: string;
-  updated_at: string;
 }
 
-/** Amounts are decimal **strings** here, not numbers. */
 export interface WalletTransaction {
   id: number;
-  wallet_id: number;
-  user_id: number | null;
   type: string;
-  amount: string;
-  previous_balance: string;
-  new_balance: string;
+  amount: number;
+  previous_balance: number;
+  new_balance: number;
   description: string;
   transaction_id: string;
   status: string;
   reference: string | null;
   created_at: string;
-  updated_at: string;
 }
 
-/**
- * 🔴 `GET /admin/wallet/{id}/transactions` returns a **raw Laravel paginator**,
- * not the `{data, meta{…}}` envelope every other paginated endpoint in this
- * project uses. There is no `meta` — the page numbers sit at the top level of
- * `transactions`, alongside `links`, `first_page_url`, `path`, `from`, `to`…
- *
- * `per_page` is also **silently ignored**: `AdminWalletService::getWalletTransactions(int
- * $walletId, int $perPage = 10)` never receives the controller's request value,
- * so the page size is hardcoded to 10. Verified live: `?per_page=3` returns 10
- * rows. That is why this function takes no `perPage` argument and the drawer
- * ships `TablePagination` **without** a `PerPageSelect` — a page-size control
- * there would do nothing. Filed as REQ-6 in docs/api/backend-issues.md.
- */
-export interface WalletTransactionsPage {
+export interface WalletTransactionsMeta {
   current_page: number;
   last_page: number;
   per_page: number;
   total: number;
-  from: number | null;
-  to: number | null;
-  data: WalletTransaction[];
 }
 
 export type WalletRequestType = 'charge' | 'withdraw';
@@ -175,20 +149,18 @@ export const walletApi = {
     return response.data;
   },
 
-  /**
-   * Takes no `perPage` on purpose — the backend ignores it (see
-   * `WalletTransactionsPage`). `page` **is** honoured.
-   */
   getWalletTransactions: async (
     walletId: number,
-    page = 1
+    page = 1,
+    perPage = 10
   ): Promise<{
     status: string;
     wallet: WalletTransactionsWallet;
-    transactions: WalletTransactionsPage;
+    data: WalletTransaction[];
+    meta: WalletTransactionsMeta;
   }> => {
     const response = await api.get(ENDPOINTS.WALLET.TRANSACTIONS(walletId), {
-      params: { page },
+      params: { page, per_page: perPage },
     });
     return response.data;
   },

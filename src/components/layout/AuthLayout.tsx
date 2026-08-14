@@ -9,7 +9,7 @@ const AuthLayout: React.FC = () => {
   return (
     <div className="min-h-screen bg-surface flex flex-col relative overflow-hidden">
       {/* Decorative background elements matching the image style */}
-      <div className="absolute top-0 right-0 w-[50%] h-screen bg-gradient-to-l from-blue-50/50 to-transparent pointer-events-none"></div>
+      <div className="absolute top-0 right-0 w-[50%] h-screen bg-gradient-to-l from-primary-fixed/40 to-transparent pointer-events-none"></div>
 
       {/* Header */}
       <header className="w-full h-20 flex items-center justify-between px-10 z-20">

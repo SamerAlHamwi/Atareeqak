@@ -7,16 +7,13 @@ import RoleRoute from './RoleRoute';
 import { useAuth } from '../app/context/useAuth';
 import { defaultRouteForRole } from '../app/roles';
 import { SECTION_ROUTES } from './sectionRoutes';
+import PageLoader from '../features/shared/components/PageLoader';
 
 const Login = lazy(() => import('../features/auth/pages/Login'));
 
 const RouteFallback: React.FC = () => (
   <div className="min-h-[60vh] flex items-center justify-center">
-    <div
-      className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"
-      role="status"
-      aria-label="Loading"
-    />
+    <PageLoader size="lg" />
   </div>
 );
 

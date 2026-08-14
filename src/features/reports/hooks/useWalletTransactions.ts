@@ -23,16 +23,12 @@ export interface WalletTransactionRow {
   date: string;
 }
 
+/** Backend validates `per_page` as 1–50; its own default is 10. */
+export const WALLET_TRANSACTIONS_PER_PAGE_OPTIONS = [10, 25, 50] as const;
+export const DEFAULT_WALLET_TRANSACTIONS_PER_PAGE = 10;
+
 /**
  * Drives the wallet-transactions drawer.
- *
- * Two things about this endpoint are unlike every other list in the project and
- * are handled here rather than at the call site:
- *
- *  1. The payload is a **raw Laravel paginator** under `transactions` — page
- *     numbers at the top level, **no `meta`**. `mapPage` reads them from there.
- *  2. `per_page` is ignored server-side (hardcoded 10), so this hook exposes no
- *     page-size control and the drawer ships `TablePagination` alone.
  *
  * Passing `walletId: null` keeps the hook idle, which is how the closed drawer
  * avoids firing a request.
@@ -45,6 +41,7 @@ export const useWalletTransactions = (walletId: number | null) => {
   const [transactions, setTransactions] = useState<WalletTransactionRow[]>([]);
   const [lastPage, setLastPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [perPage, setPerPageState] = useState<number>(DEFAULT_WALLET_TRANSACTIONS_PER_PAGE);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /** A role change mid-session can 403 a page `RoleRoute` already let through. */
@@ -61,13 +58,21 @@ export const useWalletTransactions = (walletId: number | null) => {
     [walletId]
   );
 
+  const setPerPage = useCallback(
+    (next: number) => {
+      setPerPageState(next);
+      setPageState({ walletId, page: 1 });
+    },
+    [walletId]
+  );
+
   const mapTransaction = useCallback(
     (tx: WalletTransaction): WalletTransactionRow => ({
       id: tx.id,
       type: tx.type,
-      amount: Number(tx.amount),
-      previousBalance: Number(tx.previous_balance),
-      newBalance: Number(tx.new_balance),
+      amount: tx.amount,
+      previousBalance: tx.previous_balance,
+      newBalance: tx.new_balance,
       description: tx.description,
       transactionId: tx.transaction_id,
       status: tx.status,
@@ -85,16 +90,14 @@ export const useWalletTransactions = (walletId: number | null) => {
     setError(null);
     setIsForbidden(false);
     try {
-      const response = await walletApi.getWalletTransactions(walletId, page);
+      const response = await walletApi.getWalletTransactions(walletId, page, perPage);
       if (isStale()) {
         return;
       }
-      const paginator = response.transactions;
       setWallet(response.wallet ?? null);
-      setTransactions((paginator?.data ?? []).map(mapTransaction));
-      // Read straight off the paginator — there is no `meta` on this endpoint.
-      setLastPage(paginator?.last_page ?? 1);
-      setTotal(paginator?.total ?? 0);
+      setTransactions((response.data ?? []).map(mapTransaction));
+      setLastPage(response.meta?.last_page ?? 1);
+      setTotal(response.meta?.total ?? 0);
     } catch (err) {
       if (isStale()) {
         return;
@@ -111,7 +114,7 @@ export const useWalletTransactions = (walletId: number | null) => {
         setIsLoading(false);
       }
     }
-  }, [walletId, page, mapTransaction, t]);
+  }, [walletId, page, perPage, mapTransaction, t]);
 
   useFetchEffect(fetchTransactions);
   // Not part of the effect's sequence — a Retry button's click should always commit.
@@ -124,6 +127,8 @@ export const useWalletTransactions = (walletId: number | null) => {
     setPage,
     lastPage,
     total,
+    perPage,
+    setPerPage,
     isLoading,
     error,
     isForbidden,

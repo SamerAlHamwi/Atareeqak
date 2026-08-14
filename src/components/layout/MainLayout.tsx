@@ -43,19 +43,19 @@ const MainLayout: React.FC = () => {
     : null;
 
   return (
-    <div className="bg-[#f8fafc] text-slate-900 min-h-screen font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="bg-surface text-on-surface min-h-screen font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/40 z-[60] lg:hidden backdrop-blur-sm transition-opacity"
+          className="fixed inset-0 bg-primary-container/50 z-[60] lg:hidden backdrop-blur-sm transition-opacity"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       {/* SideNavBar Shell */}
       <aside className={`
-        fixed top-0 h-screen w-80 z-[70] bg-white transition-all duration-300 ease-in-out
-        ${isRtl ? 'right-0 border-l' : 'left-0 border-r'} border-slate-100
+        fixed top-0 h-screen w-80 z-[70] bg-surface-container-lowest transition-all duration-300 ease-in-out
+        ${isRtl ? 'right-0 border-l' : 'left-0 border-r'} border-outline-variant/20
         ${isSidebarOpen
             ? (isRtl ? 'translate-x-0' : 'translate-x-0')
             : (isRtl ? 'translate-x-full lg:translate-x-0' : '-translate-x-full lg:translate-x-0')
@@ -64,8 +64,8 @@ const MainLayout: React.FC = () => {
       `}>
         <div className="flex flex-col items-center py-12 px-6">
           <div className="flex flex-col items-center">
-             <span className="text-3xl font-black text-[#000666]">{t('auth.brand_name')}</span>
-             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+             <span className="text-3xl font-black text-primary">{t('auth.brand_name')}</span>
+             <p className="text-[11px] font-bold text-on-surface-variant/70 uppercase tracking-widest mt-1">
                {t('nav.smart_dashboard')}
              </p>
           </div>
@@ -80,8 +80,8 @@ const MainLayout: React.FC = () => {
               className={({ isActive }) =>
                 `flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-black transition-all duration-200 ${
                   isActive
-                    ? 'bg-[#d1f5ea] text-[#134e48]'
-                    : 'text-slate-500 hover:bg-slate-50'
+                    ? 'bg-primary-fixed text-on-primary-fixed-variant'
+                    : 'text-on-surface-variant hover:bg-surface-container-low'
                 }`
               }
             >
@@ -91,10 +91,10 @@ const MainLayout: React.FC = () => {
           ))}
         </nav>
 
-        <div className="p-6 border-t border-slate-50">
+        <div className="p-6 border-t border-outline-variant/10">
           <button
             onClick={logout}
-            className={`w-full flex items-center justify-between px-5 py-4 text-slate-500 font-black text-sm hover:bg-slate-50 rounded-2xl transition-colors`}
+            className={`w-full flex items-center justify-between px-5 py-4 text-on-surface-variant font-black text-sm hover:bg-surface-container-low rounded-2xl transition-colors`}
           >
              <span>{t('nav.logout')}</span>
              <span className={`material-symbols-outlined text-2xl ${isRtl ? 'rotate-180' : ''}`}>logout</span>
@@ -108,10 +108,10 @@ const MainLayout: React.FC = () => {
         min-h-screen flex flex-col transition-all duration-300
       `}>
         {/* TopAppBar */}
-        <header className="flex items-center justify-between px-6 lg:px-10 h-24 w-full sticky top-0 z-40 bg-[#f8fafc]/80 backdrop-blur-md">
+        <header className="flex items-center justify-between px-6 lg:px-10 h-24 w-full sticky top-0 z-40 bg-surface/80 backdrop-blur-md">
           {/* Mobile Menu Icon */}
           <button
-            className="lg:hidden p-2 text-slate-500 hover:bg-white rounded-xl transition-colors"
+            className="lg:hidden p-2 text-on-surface-variant hover:bg-surface-container-lowest rounded-xl transition-colors"
             onClick={() => setIsSidebarOpen(true)}
           >
              <span className="material-symbols-outlined text-3xl">menu</span>
@@ -130,10 +130,10 @@ const MainLayout: React.FC = () => {
                 className="flex items-center gap-4 rounded-2xl transition-colors hover:bg-white/60 p-1"
               >
                 <div className="hidden sm:flex text-right rtl flex flex-col">
-                  <p className="text-sm font-black text-[#000666] leading-none">
+                  <p className="text-sm font-black text-primary leading-none">
                     {user?.name || t('header.admin_name')}
                   </p>
-                  <p className="text-[11px] font-bold text-slate-400 mt-1.5">
+                  <p className="text-[11px] font-bold text-on-surface-variant/70 mt-1.5">
                     {user?.roleLabel || (role ? t(`roles.${role}`) : t('header.admin_role'))}
                   </p>
                 </div>
@@ -156,27 +156,27 @@ const MainLayout: React.FC = () => {
                 <div
                   role="menu"
                   data-testid="header-profile-menu"
-                  className={`absolute top-full mt-2 w-72 bg-white rounded-2xl shadow-ambient border border-slate-100 py-2 z-50 ${
+                  className={`absolute top-full mt-2 w-72 bg-surface-container-lowest rounded-2xl shadow-ambient border border-outline-variant/20 py-2 z-50 ${
                     isRtl ? 'left-0' : 'right-0'
                   }`}
                 >
-                  <div className="px-5 py-3 border-b border-slate-50">
-                    <p className="text-sm font-black text-[#000666]" data-testid="header-profile-name">
+                  <div className="px-5 py-3 border-b border-outline-variant/10">
+                    <p className="text-sm font-black text-primary" data-testid="header-profile-name">
                       {user?.name || t('header.admin_name')}
                     </p>
-                    <p className="text-xs font-bold text-slate-400 mt-0.5" data-testid="header-profile-role">
+                    <p className="text-xs font-bold text-on-surface-variant/70 mt-0.5" data-testid="header-profile-role">
                       {user?.roleLabel || (role ? t(`roles.${role}`) : t('header.admin_role'))}
                     </p>
                     {user?.email && (
                       <p
-                        className="text-xs text-slate-400 mt-2 truncate ltr:font-mono"
+                        className="text-xs text-on-surface-variant/70 mt-2 truncate ltr:font-mono"
                         dir="ltr"
                         data-testid="header-profile-email"
                       >
                         {user.email}
                       </p>
                     )}
-                    <p className="text-xs text-slate-400 mt-1" data-testid="header-profile-last-login">
+                    <p className="text-xs text-on-surface-variant/70 mt-1" data-testid="header-profile-last-login">
                       {t('header.last_login')}: {formattedLastLogin ?? t('staff.never_logged_in')}
                     </p>
                   </div>
@@ -189,10 +189,10 @@ const MainLayout: React.FC = () => {
                       setIsProfileMenuOpen(false);
                     }}
                     data-testid="header-toggle-language"
-                    className="w-full flex items-center justify-between px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+                    className="w-full flex items-center justify-between px-5 py-3 text-sm font-bold text-on-surface-variant hover:bg-surface-container-low transition-colors"
                   >
                     <span>{t('header.toggle_language')}</span>
-                    <span className="text-slate-400">{isRtl ? 'English' : 'العربية'}</span>
+                    <span className="text-on-surface-variant/60">{isRtl ? 'English' : 'العربية'}</span>
                   </button>
 
                   <button
@@ -220,7 +220,7 @@ const MainLayout: React.FC = () => {
         </div>
 
         {/* Footer */}
-        <footer className="w-full h-16 flex items-center justify-center px-10 text-slate-400 text-sm">
+        <footer className="w-full h-16 flex items-center justify-center px-10 text-on-surface-variant/70 text-sm">
            <p>{t('footer.copyright')}</p>
         </footer>
       </main>

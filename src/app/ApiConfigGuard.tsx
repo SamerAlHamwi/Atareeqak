@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
+import PageLoader from '../features/shared/components/PageLoader';
 
 type Status = 'checking' | 'ok' | 'unconfigured';
 
@@ -50,15 +51,7 @@ const ApiConfigGuard: React.FC<{ children: React.ReactNode }> = ({ children }) =
   }, []);
 
   if (status === 'checking') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-surface">
-        <div
-          className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"
-          role="status"
-          aria-label="Loading"
-        />
-      </div>
-    );
+    return <PageLoader size="lg" fullScreen className="bg-surface" />;
   }
 
   if (status === 'unconfigured') {

@@ -75,7 +75,7 @@ export const TripsTable: React.FC<TripsTableProps> = ({
                           ? 'bg-secondary/10 text-secondary'
                           : trip.status === 'scheduled'
                           ? 'bg-primary/10 text-primary'
-                          : 'bg-slate-200 text-slate-600'
+                          : 'bg-surface-container-high text-on-surface-variant'
                       } flex items-center justify-center font-bold text-xs`}
                     >
                       {trip.driverInitial}

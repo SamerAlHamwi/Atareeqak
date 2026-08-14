@@ -12,13 +12,13 @@ interface ActionBannerProps {
 }
 
 const defaultToneClasses: Record<ActionFeedback['tone'], string> = {
-  success: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  error: 'bg-red-50 text-red-700 border-red-200',
-  info: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  success: 'bg-tertiary-fixed text-on-tertiary-fixed-variant border-tertiary-fixed-dim',
+  error: 'bg-error-container text-on-error-container border-error/30',
+  info: 'bg-primary-fixed text-on-primary-fixed-variant border-primary-fixed-dim',
 };
 
 const compactToneClasses: Record<ActionFeedback['tone'], string> = {
-  success: 'bg-secondary-container/20 text-secondary',
+  success: 'bg-tertiary-fixed/60 text-on-tertiary-fixed-variant',
   error: 'bg-error-container text-error',
   info: 'bg-surface-container-high text-on-surface',
 };

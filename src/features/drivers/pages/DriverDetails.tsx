@@ -11,6 +11,7 @@ import NoPermissionPanel from '../../shared/components/NoPermissionPanel';
 import { useApiAction } from '../../shared/useApiAction';
 import { useDriverDetails } from '../hooks/useDriverDetails';
 import BanStatusBanner from '../../shared/components/BanStatusBanner';
+import PageLoader from '../../shared/components/PageLoader';
 
 const documentLabelKeys: Record<string, string> = {
   face_id: 'common.documents.face_id',
@@ -77,9 +78,7 @@ const DriverDetails: React.FC = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="py-24 text-center text-on-surface-variant">{t('common.loading')}</div>
-    );
+    return <PageLoader size="lg" className="py-24" />;
   }
 
   // `RoleRoute` already blocks navigation, but a role change mid-session can

@@ -13,11 +13,12 @@ interface LiveTripsMapProps {
 }
 
 // Palette hexes mirror tailwind.config.js (primary / secondary / error) —
-// Leaflet vector layers take raw color strings, not CSS classes.
+// Leaflet vector layers take raw color strings, not CSS classes. Pickup uses
+// the same "secondary" orange as the legend dot below (`bg-secondary`).
 const COLORS = {
-  route: '#000666',
-  routeSelected: '#006a6a',
-  pickup: '#006a6a',
+  route: '#1E3A5C',
+  routeSelected: '#E8830A',
+  pickup: '#E8830A',
   destination: '#ba1a1a',
 };
 

@@ -25,11 +25,11 @@ import type {
 } from '../api/staffApi';
 
 const roleBadgeClasses: Record<StaffRole, string> = {
-  system_admin: 'bg-indigo-50 text-indigo-700',
+  system_admin: 'bg-primary-fixed text-on-primary-fixed-variant',
   // Financial administrator — a restricted, seeded role like system_admin
   sycash: 'bg-violet-50 text-violet-700',
-  admin: 'bg-teal-50 text-teal-700',
-  support_agent: 'bg-amber-50 text-amber-700',
+  admin: 'bg-secondary-container text-on-secondary-container',
+  support_agent: 'bg-tertiary-fixed text-on-tertiary-fixed-variant',
 };
 
 interface NewEmployeeForm {
@@ -347,7 +347,7 @@ const Staff: React.FC = () => {
                           <td className="px-6 py-5 text-start">
                             <span
                               className={`text-xs font-semibold py-1 px-3 rounded-full ${
-                                roleBadgeClasses[emp.role] ?? 'bg-slate-50 text-slate-700'
+                                roleBadgeClasses[emp.role] ?? 'bg-surface-container-high text-on-surface-variant'
                               }`}
                             >
                               {t(`staff.roles.${emp.role}`, emp.roleLabel)}
