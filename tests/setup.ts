@@ -2,6 +2,7 @@ import { beforeAll, afterEach, afterAll } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import i18n from '../src/app/i18n';
 import { server } from './testServer';
+import api from '../src/services/api';
 
 /**
  * jsdom's `Blob` implements neither `stream()` nor `text()`.
@@ -46,6 +47,13 @@ afterEach(() => {
   cleanup();
   server.resetHandlers();
   localStorage.clear();
+  // The response interceptor sets this default on every successful refresh so
+  // it also covers requests that never went through the request interceptor's
+  // localStorage read. Without clearing it here, a token committed by one
+  // test's refresh silently wins over the next test's `localStorage` setup —
+  // the request interceptor treats an already-present header as caller-set
+  // and never looks at `localStorage` again for the rest of the suite.
+  delete api.defaults.headers.common['Authorization'];
 });
 
 afterAll(() => server.close());

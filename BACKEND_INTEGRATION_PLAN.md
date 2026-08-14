@@ -1112,31 +1112,123 @@ rendering an empty table.
 
 ---
 
-## Phase 11 — Settings
+## Phase 11 — Settings — ✅ **DONE 2026-08-14 — option (b), fully deleted**
 
-`GET/POST /admin/settings` does not exist. This whole page (`PlatformConfig`, `PaymentSettings`, `ModerationRules`, `NotificationRules`) is built on it.
+`GET/POST /admin/settings` does not exist (zero of 145 routes in `route-list.json` match `settings`;
+`decisions.md` C1/Q1 RESOLVED-absent). That was the smaller half of the problem — a full inventory of
+the page (see the table this prompt shipped with) found **only 5 of ~15 visible controls** were wired
+to `useSettings` even against a working endpoint: working hours (2 selects), accepted payments (4
+checkboxes), all 4 notification toggles, the auto-block thresholds + its "Active" badge, and the
+footer's `v2.4.0-stable`/last-update/"secure environment" strings were all `defaultValue`/
+`defaultChecked`/literal decoration that nothing ever read. Three of the five wired controls
+(Mada / Apple Pay / Visa-MC accepted payments) describe card-processor rails this product does not
+have at all — the only money path is the internal SYP wallet (`wallet_requests`,
+`wallet_transactions`, `CashRideFeeService`).
 
-Pick one based on Phase 0 §0.3(1):
+**Chose (b)** — not (a): a feature flag would have implied the page was finished and waiting for a
+route, which was false on both the layer-2 (unbound controls) and layer-3 (wrong product) evidence
+above. Not (c): a read-only placeholder would have kept a page whose entire content was invented.
 
-- **(a) Backend will build it** — keep `settingsApi` as-is, add optimistic save + dirty-state guard + per-field 422 handling, and gate the page behind a feature flag until the endpoint ships.
-- **(b) Backend will not build it** — remove the page, its route, and its nav entry. Preserve only what is genuinely client-side (language/RTL toggle, which `i18n.ts` already owns) and move it into a small profile menu.
-- **(c) Interim** — keep the page mounted but replace the failing fetch with a clearly-labelled read-only "not yet available" state. **Never** leave a Save button that silently 404s.
+- [x] Deleted `src/features/settings/` entirely (`settingsApi.ts`, `useSettings.ts`, `Settings.tsx`,
+      `PlatformConfig`, `PaymentSettings`, `ModerationRules`, `NotificationRules`).
+- [x] `ENDPOINTS.SETTINGS` deleted from `src/services/endpoints.ts`, replaced with an explanatory
+      comment following the `SUPPORT_METRICS`/`BROADCAST_ALERT` precedent.
+- [x] `/settings` route + lazy import removed from `src/routes/index.tsx`; `settings` nav entry
+      removed from `MainLayout.NAV_ITEMS`.
+- [x] `'settings'` removed from `AppSection` and `SECTION_ROLES` in `src/app/roles.ts`, including the
+      stale comment claiming settings was backed by `/admin/settings` "yet" (implying it was coming).
+- [x] All 43 `settings.*` keys deleted from **both** `ar` and `en` `translation.json`, plus the now-
+      orphaned `nav.settings` and `header.search_settings_placeholder` (44 keys total). Grepped first
+      for collateral use of `settings.active`/`settings.cash` outside the deleted feature — none found.
+- [x] `/settings` removed from `ROUTES_BY_ROLE` (`system_admin` and `admin`) in `e2e/smoke.spec.ts`,
+      and the `/admin/settings` success-fixture stub removed from `e2e/apiStubs.ts` (Phase 14 replaces
+      the rest of that file's stub list).
+- [x] A bookmarked `/settings` now hits the `*` fallback → `/`, which Phase 12 item 1 turns into a
+      role-based redirect rather than a blank shell.
+- [x] Preserved: the language/RTL toggle (`AuthLayout.tsx`), still login-screen-only until Phase 12
+      item 4 moves it into the header identity dropdown.
+- [x] Recorded in `decisions.md` Q1 (RESOLVED — built as (b), deleted) and its 2026-08-14 change-log
+      entry.
+- [x] `npx tsc -b`, `npm run lint`, `npm test` all clean — **198 passing, unchanged** (pure deletion,
+      no orphaned test referenced the feature).
 
-- [ ] Whichever path: `src/app/roles.ts` currently comments that settings is backed by `/admin/settings`. Fix or delete that comment.
-
-**DoD:** no user-visible control on this page produces a request to a non-existent route.
+**DoD:** ✅ `grep -r "admin/settings" src/ e2e/ tests/` returns only the deliberate comment in
+`endpoints.ts`.
 
 ---
 
-## Phase 12 — Shell: Home, layout, notifications
+## Phase 12 — Shell: Home, layout, notifications — ✅ **DONE 2026-08-14**
 
-- [ ] **Home** (`home/pages/Home.tsx`) — the two buttons ("Live data sync", "Notice center") are pure mocks. Either delete them or redirect `/` to `defaultRouteForRole(role)`, which for `system_admin` is `/dashboard`. Simplest correct answer: make `/` a redirect and delete the page.
-- [ ] **Header search** (`MainLayout.tsx:119`) — currently inert. Either wire it to a cross-entity search (users + drivers + trips share a `search` param) or remove it. An inert search box reads as broken.
-- [ ] **Admin avatar** (`MainLayout.tsx:150`) — hardcoded Unsplash URL. Use the logged-in employee, and wire `POST /admin/photo` (multipart) for upload.
-- [ ] Show the real name + role label from `AuthContext` in the header dropdown.
-- [ ] Logout must call `POST /staff/logout` (or `/admin/logout`) so `StaffJwtService::revokeAllTokens` runs server-side — `authApi.logout` does this; confirm the UI calls it rather than only clearing localStorage.
+### Trap 1 — notification bell — removed, filed as BUG-13 🔴
 
-**DoD:** nothing in the shell is a placeholder; logout invalidates the token server-side (a stored token stops working after logout).
+Probed live per the prompt's instructions before writing anything: `GET /api/notifications/unread-count`
+with employee 1's staff token returned `401 TOKEN_INVALIDATED` as issued — but only because this
+seed's `users.token_version` for id 1 (`1`) happened not to match the employee's `ver` claim (`0`).
+Setting `users.token_version = 0` to match and repeating the identical request returned `200` with
+that user's real (empty) notification payload, proving `JwtAuthMiddleware` really does accept a
+staff token as whatever `users` row shares its numeric id — there is no `sub_type` check. Reverted
+immediately. Filed as [BUG-13](docs/api/backend-issues.md) at 🔴. The bell (`MainLayout.tsx`'s
+hardcoded red dot, no handler, no dropdown, no data) is deleted, not built against this route.
+
+### Trap 2 — avatar upload — not built; BUG-12 extended with two new blockers
+
+`Employee` has no `photo`/`avatar` column (`create_employees_table` migration) and
+`EmployeeAuthService::formatEmployee()` (`GET /staff/me`) has no photo field either — so even a
+correct `POST /admin/photo` implementation would have nowhere to write to and no way to read it back.
+Both reasons added to [BUG-12](docs/api/backend-issues.md). The plan's original "wire `POST
+/admin/photo` for upload" item is struck; the shared `<Avatar name photo={null} />` initials fallback
+(Phase 4) is the permanent answer, not a placeholder.
+
+### Trap 3 — logout — wired, proven end-to-end
+
+`AuthContext.logout` now calls `authApi.logout(authKind, accessToken)` (endpoint picked by
+`authKind`, exactly as `authApi.logout` already supported), while still clearing React state and
+`localStorage` unconditionally and immediately so the browser session ends even on a dead network.
+**Found and fixed a real race in the process:** firing the request and synchronously clearing
+`localStorage` in the same tick meant axios's request interceptor — which reads the token from
+`localStorage` as a microtask — read `null` and sent the logout call unauthenticated. Fixed by
+passing the access token explicitly (mirroring `authApi.me(token?)`'s existing pattern) instead of
+relying on `localStorage` timing. **Proven live:** capture the access token, log out, replay it
+against `GET /staff/me` → `401` (was `200` before the fix).
+
+### Work items
+
+- [x] **Home** — `home/pages/Home.tsx` deleted along with its route and lazy import. `/` now renders
+      `RoleHome`, a `<Navigate>` to `defaultRouteForRole(role)`. The plan's premise (two mock buttons)
+      was already stale — Phase 1.5 had removed them, leaving a single real `/dashboard` CTA — but
+      that CTA still dead-ended a `support_agent`, who cannot open `/dashboard`, so the redirect is
+      still the right fix. `common.welcome`, referenced by the deleted page but never defined in
+      either locale (Phase 13's audit had already flagged it as a raw-key leak), is now moot.
+- [x] **Header search** — removed rather than built. The plan's justification was wrong: only
+      `/admin/users` and `/admin/drivers` accept a `search` param; `AdminTripController` has none
+      (grepped, zero matches), so "cross-entity search" would have spanned two entities through two
+      separate paginated endpoints with no combined route, not three through one.
+- [x] **Admin avatar** — left on the initials fallback (Trap 2). No upload control wired.
+- [x] **Header identity dropdown** — the static name/role block is now a real `role="menu"` dropdown
+      (click-to-open, click-outside-to-close) showing the employee's name, `role_label`, `email` and
+      `last_login_at` (all from `/staff/me` via `AuthContext`, locale-formatted with
+      `toLocaleString(i18n.language, …)` — not `'ar-SY'`-pinned), plus the language/RTL toggle rescued
+      from Phase 11 and Logout. Nothing else, per the requirement — no "profile", no "preferences", no
+      "account settings". `User.lastLoginAt` added to the shared type and `authApi`'s employee mapper
+      so this didn't need a new fetch. The login-screen language toggle (`AuthLayout.tsx`) and this
+      one now share one `toggleLanguage()` in `app/i18n.ts` instead of two copies.
+- [x] **Dead controls removed** — the second handler-less help button (`MainLayout.tsx`, next to the
+      bell) and `AuthLayout`'s help button + all three `href="#"` footer links (help centre, terms,
+      privacy). Their locale keys (`auth.help_center`, `auth.terms_of_use`, `auth.privacy_policy`)
+      deleted from both languages after confirming no other consumer.
+- [x] **Nav/route/role consistency, enforced structurally and tested.** `routes/index.tsx` used to
+      hand-write one `<Route>` block per section with no link back to `MainLayout.NAV_ITEMS` or
+      `roles.SECTION_ROLES`; a drift between them (wrong path, forgotten `RoleRoute`, orphaned nav
+      entry) had nothing to catch it. `NAV_ITEMS` moved to `components/layout/navItems.ts` and a new
+      `routes/sectionRoutes.ts` exports `SECTION_ROUTES: {section, path, Component, detail?}[]`; the
+      route tree is now generated from that array with every section uniformly wrapped in
+      `<RoleRoute>` (previously `/reviews` and `/support` were not). New `tests/app/nav.test.ts`
+      asserts the three lists (`NAV_ITEMS` sections, `SECTION_ROUTES` sections, `SECTION_ROLES` keys)
+      are exactly equal and that every nav `to` matches its section's route path — 4 new cases.
+
+**DoD:** ✅ nothing in the shell is a placeholder (bell, second help button, footer links and the
+inert search box are gone rather than dressed up); ✅ a stored token stops working after logout,
+proven by replaying it (`401`, previously `200`).
 
 ---
 

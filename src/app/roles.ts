@@ -31,8 +31,7 @@ export type AppSection =
   | 'reviews'
   | 'support'
   | 'reports'
-  | 'staff'
-  | 'settings';
+  | 'staff';
 
 /** Matches the `staff:admin,system_admin` middleware argument exactly. */
 const ADMIN_AND_UP: StaffRole[] = ['admin', 'system_admin'];
@@ -50,9 +49,6 @@ export const SECTION_ROLES: Record<AppSection, StaffRole[]> = {
   support: ALL_ROLES,
   reports: ['system_admin'],
   staff: ['system_admin'],
-  // No backend route exists for settings yet (decisions.md C1/Q1). Kept at
-  // admin+ so the nav entry matches the page's eventual gating.
-  settings: ADMIN_AND_UP,
 };
 
 export const canAccess = (role: StaffRole | null | undefined, section: AppSection): boolean =>

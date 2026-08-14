@@ -14,6 +14,7 @@ export type User = {
   username?: string;
   role?: StaffRole;
   roleLabel?: string;
+  lastLoginAt?: string | null;
 };
 
 export type StaffEmployee = {

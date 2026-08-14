@@ -25,6 +25,7 @@ const mapEmployeeToUser = (employee: StaffEmployee): User => ({
   username: employee.username,
   role: employee.role,
   roleLabel: employee.role_label,
+  lastLoginAt: employee.last_login_at,
 });
 
 export const authApi = {
@@ -117,9 +118,23 @@ export const authApi = {
     return response.data;
   },
 
-  logout: async (kind: AuthKind = 'admin'): Promise<void> => {
+  /**
+   * @param token Pass the in-memory access token explicitly. The request
+   *              interceptor falls back to `localStorage`, but a caller that
+   *              clears `localStorage` synchronously right after firing this
+   *              (as `AuthContext.logout` must, to end the local session even
+   *              on a dead network) would otherwise race it: axios dispatches
+   *              interceptors as a microtask, so the synchronous `removeItem`
+   *              would already have run by the time it reads the header,
+   *              silently sending the request unauthenticated.
+   */
+  logout: async (kind: AuthKind = 'admin', token?: string): Promise<void> => {
     try {
-      await api.post(kind === 'staff' ? ENDPOINTS.STAFF.LOGOUT : ENDPOINTS.AUTH.LOGOUT);
+      await api.post(
+        kind === 'staff' ? ENDPOINTS.STAFF.LOGOUT : ENDPOINTS.AUTH.LOGOUT,
+        undefined,
+        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+      );
     } finally {
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');

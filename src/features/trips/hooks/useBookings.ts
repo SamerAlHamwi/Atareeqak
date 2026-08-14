@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
+import type { IsStale } from '../../shared/hooks/useFetchEffect';
 import { tripsApi } from '../api/tripsApi';
 import type { BookingResponse, BookingFilterValue, BookingStatusValue } from '../api/tripsApi';
 
@@ -99,7 +100,7 @@ export const useBookings = (): UseBookingsReturn => {
     setPage(1);
   }, []);
 
-  const fetchBookings = useCallback(async () => {
+  const fetchBookings = useCallback(async (isStale: IsStale) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -108,20 +109,30 @@ export const useBookings = (): UseBookingsReturn => {
         status: statusFilter,
         per_page: perPage,
       });
+      if (isStale()) {
+        return;
+      }
       const mapped = (response.data || []).map((b) => mapBooking(b, t));
       setBookings(mapped);
       setLastPage(response.meta?.last_page ?? 1);
       setTotal(response.meta?.total ?? mapped.length);
     } catch (err) {
+      if (isStale()) {
+        return;
+      }
       const fetchError = err instanceof Error ? err : new Error('Failed to load bookings');
       setError(fetchError);
       console.error(fetchError.message);
     } finally {
-      setIsLoading(false);
+      if (!isStale()) {
+        setIsLoading(false);
+      }
     }
   }, [page, statusFilter, perPage, t]);
 
   useFetchEffect(fetchBookings);
+  // Not part of the effect's sequence — a Retry button's click should always commit.
+  const refetch = useCallback(() => fetchBookings(() => false), [fetchBookings]);
 
   const cancelBooking = useCallback(
     async (booking: Booking, reason: string) => {
@@ -133,9 +144,9 @@ export const useBookings = (): UseBookingsReturn => {
       );
       // Cancelling frees seats on the ride and may drop the row out of the
       // active filter — refetch instead of trusting the local patch.
-      void fetchBookings();
+      void refetch();
     },
-    [fetchBookings]
+    [refetch]
   );
 
   return {
@@ -150,7 +161,7 @@ export const useBookings = (): UseBookingsReturn => {
     setPerPage,
     isLoading,
     error,
-    refetch: fetchBookings,
+    refetch,
     cancelBooking,
   };
 };

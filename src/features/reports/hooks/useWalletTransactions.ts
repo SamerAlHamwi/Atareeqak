@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
+import type { IsStale } from '../../shared/hooks/useFetchEffect';
 import { extractApiError } from '../../../services/apiError';
 import { walletApi } from '../../wallet/api/walletApi';
 import type {
@@ -74,7 +75,7 @@ export const useWalletTransactions = (walletId: number | null) => {
     [locale]
   );
 
-  const fetchTransactions = useCallback(async () => {
+  const fetchTransactions = useCallback(async (isStale: IsStale) => {
     if (walletId === null) {
       return;
     }
@@ -82,6 +83,9 @@ export const useWalletTransactions = (walletId: number | null) => {
     setError(null);
     try {
       const response = await walletApi.getWalletTransactions(walletId, page);
+      if (isStale()) {
+        return;
+      }
       const paginator = response.transactions;
       setWallet(response.wallet ?? null);
       setTransactions((paginator?.data ?? []).map(mapTransaction));
@@ -89,14 +93,21 @@ export const useWalletTransactions = (walletId: number | null) => {
       setLastPage(paginator?.last_page ?? 1);
       setTotal(paginator?.total ?? 0);
     } catch (err) {
+      if (isStale()) {
+        return;
+      }
       setError(extractApiError(err, t('reports.transactions_load_failed')));
       setTransactions([]);
     } finally {
-      setIsLoading(false);
+      if (!isStale()) {
+        setIsLoading(false);
+      }
     }
   }, [walletId, page, mapTransaction, t]);
 
   useFetchEffect(fetchTransactions);
+  // Not part of the effect's sequence — a Retry button's click should always commit.
+  const refetch = useCallback(() => fetchTransactions(() => false), [fetchTransactions]);
 
   return {
     wallet,
@@ -107,6 +118,6 @@ export const useWalletTransactions = (walletId: number | null) => {
     total,
     isLoading,
     error,
-    refetch: fetchTransactions,
+    refetch,
   };
 };

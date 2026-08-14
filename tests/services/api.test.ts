@@ -150,6 +150,89 @@ describe('api service (axios interceptors)', () => {
     expect(response.data.auth).toBe('Bearer brand-new-token');
   });
 
+  it('shares one in-flight refresh across two concurrent 401s (Phase 13)', async () => {
+    // Refresh tokens are single-use and rotate server-side. Without a shared
+    // in-flight promise, two requests that 401 at the same moment (routine on
+    // Dashboard/Reports/Trips, which fire several parallel fetches on mount)
+    // would each call /refresh independently; the second replays a token the
+    // first already consumed and 401s, ending the session out from under a
+    // still-valid user. This asserts the fix: exactly one POST /refresh, and
+    // both original requests still succeed via the single rotated token.
+    localStorage.setItem('access_token', 'expired-token');
+    localStorage.setItem('refresh_token', 'refresh-token');
+    localStorage.setItem('auth_kind', 'admin');
+
+    let refreshCalls = 0;
+    server.use(
+      http.get(`${API_BASE}/admin/dashboard`, ({ request }) =>
+        request.headers.get('Authorization') === 'Bearer expired-token'
+          ? HttpResponse.json({ message: 'Unauthenticated' }, { status: 401 })
+          : HttpResponse.json({ ok: true, from: 'dashboard' })
+      ),
+      http.get(`${API_BASE}/admin/reports`, ({ request }) =>
+        request.headers.get('Authorization') === 'Bearer expired-token'
+          ? HttpResponse.json({ message: 'Unauthenticated' }, { status: 401 })
+          : HttpResponse.json({ ok: true, from: 'reports' })
+      ),
+      http.post(`${API_BASE}/admin/refresh`, async ({ request }) => {
+        refreshCalls += 1;
+        const body = (await request.json()) as { refresh_token: string };
+        // A real backend would reject this on the second call (single-use,
+        // rotated) — asserting it here makes the test fail the way the old
+        // per-request refresh actually failed if single-flight regresses.
+        expect(body.refresh_token).toBe('refresh-token');
+        return HttpResponse.json({
+          tokens: { access_token: 'fresh-token', refresh_token: 'fresh-refresh' },
+        });
+      })
+    );
+
+    const [dashboard, reports] = await Promise.all([
+      api.get('/admin/dashboard'),
+      api.get('/admin/reports'),
+    ]);
+
+    expect(refreshCalls).toBe(1);
+    expect(dashboard.data).toEqual({ ok: true, from: 'dashboard' });
+    expect(reports.data).toEqual({ ok: true, from: 'reports' });
+    expect(localStorage.getItem('access_token')).toBe('fresh-token');
+  });
+
+  it('starts a fresh refresh for a later, non-concurrent 401', async () => {
+    // The shared promise must reset once settled — otherwise every 401 for
+    // the rest of the session would resolve against the first, long-stale
+    // refresh response instead of ever calling /refresh again. Every
+    // *odd* call 401s (the original token, then that call's retry-refreshed
+    // token expiring later in the session too) and every even call — the
+    // retry right after a refresh — succeeds.
+    localStorage.setItem('access_token', 'expired-token-1');
+    localStorage.setItem('refresh_token', 'refresh-token-1');
+    localStorage.setItem('auth_kind', 'admin');
+
+    let refreshCalls = 0;
+    let dashboardCalls = 0;
+    server.use(
+      http.get(`${API_BASE}/admin/dashboard`, () => {
+        dashboardCalls += 1;
+        return dashboardCalls % 2 === 1
+          ? HttpResponse.json({ message: 'Unauthenticated' }, { status: 401 })
+          : HttpResponse.json({ ok: true });
+      }),
+      http.post(`${API_BASE}/admin/refresh`, () => {
+        refreshCalls += 1;
+        return HttpResponse.json({
+          tokens: { access_token: `fresh-token-${refreshCalls}`, refresh_token: `fresh-refresh-${refreshCalls}` },
+        });
+      })
+    );
+
+    await api.get('/admin/dashboard');
+    expect(refreshCalls).toBe(1);
+
+    await api.get('/admin/dashboard');
+    expect(refreshCalls).toBe(2);
+  });
+
   it('does not attempt a refresh for failed login requests', async () => {
     let refreshCalled = false;
     server.use(

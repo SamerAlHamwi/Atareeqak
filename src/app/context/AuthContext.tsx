@@ -50,7 +50,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem(AUTH_KIND_STORAGE_KEY, kind);
   };
 
+  // `authApi.logout` calls POST /staff/logout or /admin/logout (picked by
+  // `authKind`) so StaffJwtService::revokeAllTokens() runs server-side and the
+  // token actually dies, instead of only disappearing from this browser.
+  // Fired without awaiting: the local session must clear even on a dead
+  // network, so React state and localStorage are wiped unconditionally here
+  // while the request (and its own localStorage cleanup in a `finally`) races
+  // in the background. Its rejection is deliberately swallowed — there is
+  // nothing left to react to once the local session is already gone.
   const logout = useCallback(() => {
+    void authApi.logout(authKind ?? 'admin', accessToken ?? undefined).catch(() => {});
     setUser(null);
     setAccessToken(null);
     setRefreshToken(null);
@@ -59,7 +68,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem(AUTH_KIND_STORAGE_KEY);
-  }, []);
+  }, [authKind, accessToken]);
 
   // Re-fetch the profile on mount so the role is always current (e.g. the
   // system admin changed it since the last login). Runs for BOTH session kinds:

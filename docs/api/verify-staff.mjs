@@ -52,7 +52,7 @@ const APP = 'http://127.0.0.1:5173';
 const API = 'http://127.0.0.1:8000/api';
 const MUTATE = process.argv.includes('--mutate');
 
-const MYSQL = 'C:/Users/Tech/mysql-portable/mysql-8.0.40-winx64/bin/mysql.exe';
+const MYSQL = process.env.MYSQL_BIN || 'mysql';
 const DB = '4th_year_project_db';
 
 /** The seeded, RESTRICTED system_admin — the decoy that makes BUG-1 look fixed. */

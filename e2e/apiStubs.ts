@@ -32,16 +32,32 @@ const dashboardFixture = {
   },
 };
 
+/**
+ * Matches the REAL `GET /admin/reports` payload shape, confirmed live 2026-08-14
+ * (`curl .../admin/reports`) and by `verify-reports.mjs` (155/155). The previous
+ * version of this fixture had `financial_stats.primary_admin.total_collected`
+ * and `.total_disbursed` — fields Phase 9 proved the live API does not return
+ * (it returns `total_platform_fees` instead) — so the e2e suite was asserting
+ * against a shape the backend was already confirmed not to produce.
+ */
 const reportFixture = {
   status: 'success',
   report_data: {
     ride_stats: { total: 0, active: 0, completed: 0, cancelled: 0, awaiting_confirmation: 0 },
     financial_stats: {
-      sycash: { current_balance: '0', total_creation_fees: '0' },
-      primary_admin: { current_balance: '0', total_collected: '0', total_disbursed: '0' },
-      active_rides_locked: '0',
+      sycash: {
+        current_balance: '0.00 SYP',
+        total_escrow_in: '0.00 SYP',
+        total_escrow_out: '0.00 SYP',
+        total_refunds_paid: '0.00 SYP',
+      },
+      primary_admin: {
+        current_balance: '0.00 SYP',
+        total_platform_fees: '0.00 SYP',
+      },
+      active_rides_locked: '0.00 SYP',
     },
-    date_range: { start: '2024-01-01', end: '2024-12-31' },
+    date_range: { start: null, end: null },
   },
 };
 
@@ -76,18 +92,6 @@ const usersFixture = {
  * empty states without console errors.
  */
 const rules: [string, unknown][] = [
-  ['/admin/settings', {
-    status: 'success',
-    data: {
-      app_name: 'Atareeqak',
-      support_email: 'support@atareeqak.com',
-      commission_rate: 15,
-      min_withdrawal: 100,
-      moderation_words: '',
-      alert_message: '',
-      maintenance_mode: false,
-    },
-  }],
   ['/staff/complaints/metrics', {
     status: 'success',
     data: {

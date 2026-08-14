@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
+import type { IsStale } from '../../shared/hooks/useFetchEffect';
 import { tripsApi } from '../api/tripsApi';
 import type { PopularRouteResponse, TopDriverResponse } from '../api/tripsApi';
 import { dashboardApi } from '../../dashboard/api/dashboardApi';
@@ -50,7 +51,7 @@ export const useTripMonitoring = (): UseTripMonitoringReturn => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchMonitoring = useCallback(async () => {
+  const fetchMonitoring = useCallback(async (isStale: IsStale) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -59,6 +60,9 @@ export const useTripMonitoring = (): UseTripMonitoringReturn => {
         tripsApi.getTopDrivers(3),
         dashboardApi.getRecentActivities(4),
       ]);
+      if (isStale()) {
+        return;
+      }
 
       setPopularRoutes(
         routes.map((route: PopularRouteResponse) => ({
@@ -88,11 +92,16 @@ export const useTripMonitoring = (): UseTripMonitoringReturn => {
         }))
       );
     } catch (err) {
+      if (isStale()) {
+        return;
+      }
       const fetchError = err instanceof Error ? err : new Error('Failed to fetch monitoring data');
       setError(fetchError);
       console.error(fetchError.message);
     } finally {
-      setIsLoading(false);
+      if (!isStale()) {
+        setIsLoading(false);
+      }
     }
   }, [t]);
 

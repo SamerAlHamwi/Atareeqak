@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
+import type { IsStale } from '../../shared/hooks/useFetchEffect';
 import { extractApiError } from '../../../services/apiError';
 import { verificationsApi } from '../api/verificationsApi';
 import type {
@@ -86,13 +87,16 @@ export const useVerifications = (): UseVerificationsReturn => {
    * blank the list that was just optimistically updated.
    */
   const load = useCallback(
-    async (silent: boolean) => {
+    async (silent: boolean, isStale: IsStale) => {
       if (!silent) {
         setIsLoading(true);
       }
       setError(null);
       try {
         const response = await verificationsApi.listPendingVerifications();
+        if (isStale()) {
+          return;
+        }
         const mapped = (response.data || []).map((item) => mapRequest(item, t, language));
         setRequests(mapped);
         // The server's own count, not mapped.length — the two are asserted equal
@@ -106,9 +110,12 @@ export const useVerifications = (): UseVerificationsReturn => {
           return mapped[0] ?? null;
         });
       } catch (err) {
+        if (isStale()) {
+          return;
+        }
         setError(extractApiError(err, t('verifications.load_failed')));
       } finally {
-        if (!silent) {
+        if (!silent && !isStale()) {
           setIsLoading(false);
         }
       }
@@ -116,9 +123,11 @@ export const useVerifications = (): UseVerificationsReturn => {
     [t, language]
   );
 
-  const fetchRequests = useCallback(() => load(false), [load]);
+  const fetchRequests = useCallback((isStale: IsStale) => load(false, isStale), [load]);
 
   useFetchEffect(fetchRequests);
+  // Not part of the effect's sequence — a Retry button's click should always commit.
+  const refresh = useCallback(() => load(false, () => false), [load]);
 
   /**
    * Client-side filter, and deliberately so: `GET /staff/verifications/pending`
@@ -170,7 +179,7 @@ export const useVerifications = (): UseVerificationsReturn => {
     async (request: VerificationRequest, nationalId: string) => {
       const response = await verificationsApi.approveVerification(request.userId, nationalId);
       removeLocally(request.userId);
-      await load(true);
+      await load(true, () => false);
       return response;
     },
     [removeLocally, load]
@@ -180,7 +189,7 @@ export const useVerifications = (): UseVerificationsReturn => {
     async (request: VerificationRequest, reason?: string) => {
       const response = await verificationsApi.rejectVerification(request.userId, reason);
       removeLocally(request.userId);
-      await load(true);
+      await load(true, () => false);
       return response;
     },
     [removeLocally, load]
@@ -201,6 +210,6 @@ export const useVerifications = (): UseVerificationsReturn => {
     passengerCount,
     approveRequest,
     rejectRequest,
-    refresh: fetchRequests,
+    refresh,
   };
 };

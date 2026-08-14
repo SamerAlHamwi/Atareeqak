@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
+import type { IsStale } from '../../shared/hooks/useFetchEffect';
 import { tripsApi } from '../api/tripsApi';
 import type { TripResponse, TripsListResponse, TripFilterValue } from '../api/tripsApi';
 
@@ -79,7 +80,7 @@ export const useTrips = (): UseTripsReturn => {
     setPage(1);
   }, []);
 
-  const fetchTrips = useCallback(async () => {
+  const fetchTrips = useCallback(async (isStale: IsStale) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -88,6 +89,9 @@ export const useTrips = (): UseTripsReturn => {
         filter: activeFilter,
         per_page: perPage,
       });
+      if (isStale()) {
+        return;
+      }
       const data = response.data || [];
       const formattedTrips: Trip[] = data.map((trip: TripResponse) => ({
         id: trip.trip_ref,
@@ -117,15 +121,23 @@ export const useTrips = (): UseTripsReturn => {
           : formattedTrips[0]?.id ?? ''
       );
     } catch (err) {
+      if (isStale()) {
+        return;
+      }
       const fetchError = err instanceof Error ? err : new Error('Failed to fetch trips');
       setError(fetchError);
       console.error(fetchError.message);
     } finally {
-      setIsLoading(false);
+      if (!isStale()) {
+        setIsLoading(false);
+      }
     }
   }, [activeFilter, page, perPage, t]);
 
   useFetchEffect(fetchTrips);
+  // Callers outside the effect (a Retry button, a post-mutation reconcile)
+  // are not part of the sequence useFetchEffect tracks — always commit.
+  const refetch = useCallback(() => fetchTrips(() => false), [fetchTrips]);
 
   const selectedTrip = useMemo(
     () => trips.find((trip) => trip.id === selectedTripId) ?? (trips.length > 0 ? trips[0] : null),
@@ -139,8 +151,8 @@ export const useTrips = (): UseTripsReturn => {
     );
     // The row may now fall outside the active filter and every badge shifted —
     // reconcile with the server rather than hand-patching `counts`.
-    void fetchTrips();
-  }, [fetchTrips]);
+    void refetch();
+  }, [refetch]);
 
   return {
     trips,
@@ -158,7 +170,7 @@ export const useTrips = (): UseTripsReturn => {
     setPerPage,
     isLoading,
     error,
-    refetch: fetchTrips,
+    refetch,
     cancelTrip,
   };
 };

@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
+import type { IsStale } from '../../shared/hooks/useFetchEffect';
 import { extractApiError } from '../../../services/apiError';
 import { reportsApi } from '../api/reportsApi';
 import type { ReportData, ReportDateRange, PdfSection } from '../api/reportsApi';
@@ -98,7 +99,7 @@ export const useReports = () => {
   const [requestsError, setRequestsError] = useState<string | null>(null);
 
   // ── Report + wallets (their own request; the request filters must not refetch them)
-  const fetchReport = useCallback(async () => {
+  const fetchReport = useCallback(async (isStale: IsStale) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -107,21 +108,31 @@ export const useReports = () => {
         walletApi.getAllWallets(),
         walletApi.getMyWallet(),
       ]);
+      if (isStale()) {
+        return;
+      }
       setReport(reportResponse.report_data);
       setReportUpdatedAt(new Date());
       setWallets(walletsResponse.all_wallets || []);
       setMyWallet(myWalletResponse.wallet ?? null);
     } catch (err) {
+      if (isStale()) {
+        return;
+      }
       setError(extractApiError(err, t('reports.load_failed_hint')));
     } finally {
-      setIsLoading(false);
+      if (!isStale()) {
+        setIsLoading(false);
+      }
     }
   }, [range, t]);
 
   useFetchEffect(fetchReport);
+  // Not part of the effect's sequence — a Retry button's click should always commit.
+  const refetch = useCallback(() => fetchReport(() => false), [fetchReport]);
 
   // ── Wallet requests (own request, own loading + error state)
-  const fetchRequests = useCallback(async () => {
+  const fetchRequests = useCallback(async (isStale: IsStale) => {
     setIsRequestsLoading(true);
     setRequestsError(null);
     try {
@@ -131,18 +142,28 @@ export const useReports = () => {
         status: statusFilter,
         ...(typeFilter === 'all' ? {} : { type: typeFilter }),
       });
+      if (isStale()) {
+        return;
+      }
       setRequests((response.data || []).map((r) => mapRequest(r, t, locale)));
       setRequestCounts(response.counts ?? null);
       setRequestsLastPage(response.meta?.last_page ?? 1);
       setRequestsTotal(response.meta?.total ?? 0);
     } catch (err) {
+      if (isStale()) {
+        return;
+      }
       setRequestsError(extractApiError(err, t('reports.requests_load_failed')));
     } finally {
-      setIsRequestsLoading(false);
+      if (!isStale()) {
+        setIsRequestsLoading(false);
+      }
     }
   }, [statusFilter, typeFilter, requestsPage, requestsPerPage, t, locale]);
 
   useFetchEffect(fetchRequests);
+  // Not part of the effect's sequence — a Retry button's click should always commit.
+  const refetchRequests = useCallback(() => fetchRequests(() => false), [fetchRequests]);
 
   // Every filter change resets to page 1 — otherwise page 3 of `pending` asks
   // for a page 3 of `approved` that may not exist and renders an empty table.
@@ -196,29 +217,30 @@ export const useReports = () => {
       const response = await walletApi.approveWalletRequest(request.id, adminNotes);
       // An approval moves real money, so the list AND the wallet balances are
       // both stale afterwards — re-read rather than patching state locally.
-      await Promise.all([fetchRequests(), fetchReport()]);
+      // Not part of the effect's sequence — always commit.
+      await Promise.all([refetchRequests(), refetch()]);
       return response;
     },
-    [fetchRequests, fetchReport]
+    [refetchRequests, refetch]
   );
 
   const rejectRequest = useCallback(
     async (request: WalletRequestRow, adminNotes?: string) => {
       const response = await walletApi.rejectWalletRequest(request.id, adminNotes);
-      await fetchRequests();
+      await refetchRequests();
       return response;
     },
-    [fetchRequests]
+    [refetchRequests]
   );
 
   const chargeWalletByPhone = useCallback(
     async (phoneNumber: string, amount: number): Promise<ChargeWalletResponse> => {
       const response = await walletApi.chargeUserWallet(phoneNumber, amount);
       // Refetch so the sidebar list and the balance cards reflect the new total.
-      await fetchReport();
+      await refetch();
       return response;
     },
-    [fetchReport]
+    [refetch]
   );
 
   const exportPdf = useCallback(
@@ -265,8 +287,8 @@ export const useReports = () => {
     isRequestsLoading,
     error,
     requestsError,
-    refetch: fetchReport,
-    refetchRequests: fetchRequests,
+    refetch,
+    refetchRequests,
     approveRequest,
     rejectRequest,
     chargeWalletByPhone,

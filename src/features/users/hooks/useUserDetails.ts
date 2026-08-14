@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
+import type { IsStale } from '../../shared/hooks/useFetchEffect';
 import { extractApiError } from '../../../services/apiError';
 import { usersApi } from '../api/usersApi';
 import type {
@@ -231,10 +232,13 @@ export const useUserDetails = (userId: string | undefined): UseUserDetailsReturn
    * directions — BUG-6), so it comes from the dedicated status endpoint.
    * Server-cached for 5 minutes, but ban/unban bust that key.
    */
-  const fetchStatus = useCallback(async () => {
+  const fetchStatus = useCallback(async (isStale: IsStale) => {
     if (!userId) return;
     try {
       const response = await usersApi.getUserStatus(userId);
+      if (isStale()) {
+        return;
+      }
       setStatus(response.data);
     } catch (err) {
       // A missing status must not blank out a profile that otherwise loaded.
@@ -243,12 +247,15 @@ export const useUserDetails = (userId: string | undefined): UseUserDetailsReturn
   }, [userId]);
 
   /** The BFF: one call that seeds every section. */
-  const fetchProfile = useCallback(async () => {
+  const fetchProfile = useCallback(async (isStale: IsStale) => {
     if (!userId) return;
     setIsLoading(true);
     setError(null);
     try {
       const response = await usersApi.getPassengerFullProfile(userId);
+      if (isStale()) {
+        return;
+      }
       const data = response.data;
       setPassenger(mapIdentity(data.user, t, i18n.language));
       setStats(mapStats(data.stats));
@@ -262,14 +269,21 @@ export const useUserDetails = (userId: string | undefined): UseUserDetailsReturn
       setComplaintFilterState('all');
       setComplaintCounts(null);
     } catch (err) {
+      if (isStale()) {
+        return;
+      }
       setError(extractApiError(err, t('common.load_failed')));
     } finally {
-      setIsLoading(false);
+      if (!isStale()) {
+        setIsLoading(false);
+      }
     }
-    await fetchStatus();
+    await fetchStatus(isStale);
   }, [userId, t, i18n.language, fetchStatus]);
 
   useFetchEffect(fetchProfile);
+  // Not part of the effect's sequence — a Retry button's click should always commit.
+  const refetch = useCallback(() => fetchProfile(() => false), [fetchProfile]);
 
   /**
    * Reloads one section through its own endpoint instead of re-fetching the
@@ -370,8 +384,9 @@ export const useUserDetails = (userId: string | undefined): UseUserDetailsReturn
       const response = await usersApi.chargePassengerWallet(userId, amount, notes);
 
       // The charge busts the full-profile and stats caches server-side, so this
-      // reload shows the new balance rather than a five-minute-old one.
-      await fetchProfile();
+      // reload shows the new balance rather than a five-minute-old one. Not part
+      // of the effect's sequence — always commit.
+      await refetch();
 
       // Then the charge log is re-read from its own (uncached) endpoint: it is
       // the only place the transaction id and previous balance exist, since the
@@ -402,7 +417,7 @@ export const useUserDetails = (userId: string | undefined): UseUserDetailsReturn
         transactionId,
       };
     },
-    [userId, walletCharges, fetchProfile]
+    [userId, walletCharges, refetch]
   );
 
   /**
@@ -415,7 +430,8 @@ export const useUserDetails = (userId: string | undefined): UseUserDetailsReturn
       if (!userId) return;
       const response = await usersApi.banUser(userId, ban);
       setStatus(response.data);
-      await fetchStatus();
+      // Not part of the effect's sequence — always commit.
+      await fetchStatus(() => false);
     },
     [userId, fetchStatus]
   );
@@ -424,7 +440,8 @@ export const useUserDetails = (userId: string | undefined): UseUserDetailsReturn
     if (!userId) return;
     const response = await usersApi.unbanUser(userId);
     setStatus(response.data);
-    await fetchStatus();
+    // Not part of the effect's sequence — always commit.
+    await fetchStatus(() => false);
   }, [userId, fetchStatus]);
 
   return {
@@ -446,7 +463,7 @@ export const useUserDetails = (userId: string | undefined): UseUserDetailsReturn
     refreshSection,
     isLoading,
     error,
-    refetch: fetchProfile,
+    refetch,
     chargeWallet,
     banUser,
     unbanUser,

@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
+import type { IsStale } from '../../shared/hooks/useFetchEffect';
 import { extractApiError } from '../../../services/apiError';
 import { driversApi } from '../api/driversApi';
 import type { DriverDashboardDetailResponse, DriverStatus } from '../api/driversApi';
@@ -113,10 +114,13 @@ export const useDriverDetails = (driverId: string | undefined): UseDriverDetails
    * dedicated status endpoint. Server-cached for 5 minutes, but ban/unban bust
    * that key, so a refetch right after a mutation is always fresh.
    */
-  const fetchStatus = useCallback(async () => {
+  const fetchStatus = useCallback(async (isStale: IsStale) => {
     if (!driverId) return;
     try {
       const response = await usersApi.getUserStatus(driverId);
+      if (isStale()) {
+        return;
+      }
       setStatus(response.data);
     } catch (err) {
       // A missing status must not blank out a driver page that otherwise loaded.
@@ -124,19 +128,27 @@ export const useDriverDetails = (driverId: string | undefined): UseDriverDetails
     }
   }, [driverId]);
 
-  const fetchDriver = useCallback(async () => {
+  const fetchDriver = useCallback(async (isStale: IsStale) => {
     if (!driverId) return;
     setIsLoading(true);
     setError(null);
     try {
       const response = await driversApi.getDriverDashboard(driverId);
+      if (isStale()) {
+        return;
+      }
       setDriver(mapDriver(response.data, t, i18n.language));
     } catch (err) {
+      if (isStale()) {
+        return;
+      }
       setError(extractApiError(err, t('common.load_failed')));
     } finally {
-      setIsLoading(false);
+      if (!isStale()) {
+        setIsLoading(false);
+      }
     }
-    await fetchStatus();
+    await fetchStatus(isStale);
   }, [driverId, t, i18n.language, fetchStatus]);
 
   useFetchEffect(fetchDriver);
@@ -152,7 +164,8 @@ export const useDriverDetails = (driverId: string | undefined): UseDriverDetails
       if (!driverId) return;
       const response = await usersApi.banUser(driverId, ban);
       setStatus(response.data);
-      await fetchStatus();
+      // Not part of the effect's sequence — always commit.
+      await fetchStatus(() => false);
     },
     [driverId, fetchStatus]
   );
@@ -161,7 +174,8 @@ export const useDriverDetails = (driverId: string | undefined): UseDriverDetails
     if (!driverId) return;
     const response = await usersApi.unbanUser(driverId);
     setStatus(response.data);
-    await fetchStatus();
+    // Not part of the effect's sequence — always commit.
+    await fetchStatus(() => false);
   }, [driverId, fetchStatus]);
 
   return { driver, status, isLoading, error, banDriver, unbanDriver };

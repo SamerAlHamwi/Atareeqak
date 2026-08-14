@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
+import type { IsStale } from '../../shared/hooks/useFetchEffect';
 import { tripsApi } from '../api/tripsApi';
 import type { LiveTripResponse, LatLng } from '../api/tripsApi';
 
@@ -78,27 +79,37 @@ export const useLiveTrips = (): UseLiveTripsReturn => {
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const hasLoadedRef = useRef(false);
 
-  const fetchLiveTrips = useCallback(async () => {
+  const fetchLiveTrips = useCallback(async (isStale: IsStale) => {
     if (!hasLoadedRef.current) {
       setIsLoading(true);
     }
     try {
       const trips = await tripsApi.getLiveTrips();
+      if (isStale()) {
+        return;
+      }
       setLiveTrips((trips || []).map((trip) => mapLiveTrip(trip, t)));
       setError(null);
       setUpdatedAt(new Date());
       hasLoadedRef.current = true;
     } catch (err) {
+      if (isStale()) {
+        return;
+      }
       const fetchError = err instanceof Error ? err : new Error('Failed to load live trips');
       setError(fetchError);
       console.error(fetchError.message);
     } finally {
-      setIsLoading(false);
+      if (!isStale()) {
+        setIsLoading(false);
+      }
     }
   }, [t]);
 
   // Polls every 30s; useFetchEffect pauses the interval while the tab is hidden.
   useFetchEffect(fetchLiveTrips, REFRESH_INTERVAL_MS);
+  // Not part of the effect's sequence — a manual refresh should always commit.
+  const refresh = useCallback(() => fetchLiveTrips(() => false), [fetchLiveTrips]);
 
   return {
     liveTrips,
@@ -106,6 +117,6 @@ export const useLiveTrips = (): UseLiveTripsReturn => {
     error,
     updatedAt,
     refreshIntervalMs: REFRESH_INTERVAL_MS,
-    refresh: fetchLiveTrips,
+    refresh,
   };
 };

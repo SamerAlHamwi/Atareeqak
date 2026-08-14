@@ -60,6 +60,48 @@ api.interceptors.request.use(
   }
 );
 
+/**
+ * Refresh tokens are single-use and rotate server-side (verified live,
+ * NOTE-1 in docs/api/backend-issues.md), so two 401s that both fire their own
+ * `POST /refresh` is not just wasteful — the second one replays a token the
+ * first already consumed and fails, throwing that request's user to /login
+ * out from under them. Dashboard, Reports and Trips all fire several parallel
+ * requests on mount, so this is routine, not an edge case.
+ *
+ * `refreshPromise` is the fix: the first 401 starts a refresh and stores the
+ * in-flight promise here; every 401 that lands while it is still pending
+ * awaits that same promise instead of starting its own. It resets to `null`
+ * once settled, so the *next* (non-concurrent) 401 gets a fresh refresh.
+ */
+let refreshPromise: Promise<string> | null = null;
+
+const refreshAccessToken = (): Promise<string> => {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      const refreshToken = localStorage.getItem('refresh_token');
+      if (!refreshToken) {
+        throw new Error('NO_REFRESH_TOKEN');
+      }
+
+      const response = await api.post(refreshEndpoint(), { refresh_token: refreshToken });
+      const tokens = response.data.tokens;
+      if (!tokens) {
+        throw new Error('REFRESH_RESPONSE_MISSING_TOKENS');
+      }
+
+      localStorage.setItem('access_token', tokens.access_token);
+      if (tokens.refresh_token) {
+        localStorage.setItem('refresh_token', tokens.refresh_token);
+      }
+      api.defaults.headers.common['Authorization'] = `Bearer ${tokens.access_token}`;
+      return tokens.access_token as string;
+    })().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+};
+
 // Response interceptor
 api.interceptors.response.use(
   (response) => response,
@@ -89,24 +131,9 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (refreshToken) {
-          const response = await api.post(refreshEndpoint(), {
-            refresh_token: refreshToken,
-          });
-
-          if (response.data.tokens) {
-            localStorage.setItem('access_token', response.data.tokens.access_token);
-            if (response.data.tokens.refresh_token) {
-              localStorage.setItem('refresh_token', response.data.tokens.refresh_token);
-            }
-            api.defaults.headers.common['Authorization'] = `Bearer ${response.data.tokens.access_token}`;
-            originalRequest.headers['Authorization'] = `Bearer ${response.data.tokens.access_token}`;
-            return api(originalRequest);
-          }
-        }
-
-        endSession();
+        const accessToken = await refreshAccessToken();
+        originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
+        return api(originalRequest);
       } catch (refreshError) {
         endSession();
         return Promise.reject(refreshError);

@@ -32,4 +32,11 @@ i18n
     },
   });
 
+/** The only genuinely client-side "setting" in the app — no backend concept of it exists. */
+export const toggleLanguage = (): void => {
+  const nextLang = i18n.language === 'ar' ? 'en' : 'ar';
+  i18n.changeLanguage(nextLang);
+  document.dir = nextLang === 'ar' ? 'rtl' : 'ltr';
+};
+
 export default i18n;

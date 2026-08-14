@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
+import type { IsStale } from '../../shared/hooks/useFetchEffect';
 import { initialsOf } from '../../shared/initials';
 import { extractApiError } from '../../../services/apiError';
 import { dashboardApi } from '../api/dashboardApi';
@@ -122,11 +123,14 @@ export const useDashboard = () => {
    * stats, growth chart, city distribution and recent activity together.
    * The server caches it for 5 minutes, so a refresh may return identical data.
    */
-  const fetchDashboard = useCallback(async () => {
+  const fetchDashboard = useCallback(async (isStale: IsStale) => {
     setIsLoading(true);
     setError(null);
     try {
       const response = await dashboardApi.getFullDashboard();
+      if (isStale()) {
+        return;
+      }
       const data = response.data;
       setStats(data.stats);
       setGrowth(data.growth_chart?.data ?? []);
@@ -134,13 +138,20 @@ export const useDashboard = () => {
       setActivities(data.recent_activities ?? []);
       setLastUpdated(new Date());
     } catch (err) {
+      if (isStale()) {
+        return;
+      }
       setError(extractApiError(err, t('common.load_failed')));
     } finally {
-      setIsLoading(false);
+      if (!isStale()) {
+        setIsLoading(false);
+      }
     }
   }, [t]);
 
   useFetchEffect(fetchDashboard);
+  // Not part of the effect's sequence — a Retry button's click should always commit.
+  const refetch = useCallback(() => fetchDashboard(() => false), [fetchDashboard]);
 
   /**
    * Changing the period refetches only the growth series, not the whole page.
@@ -245,6 +256,6 @@ export const useDashboard = () => {
     isGrowthLoading,
     error,
     lastUpdated,
-    refetch: fetchDashboard,
+    refetch,
   };
 };

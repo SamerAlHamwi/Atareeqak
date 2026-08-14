@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
+import type { IsStale } from '../../shared/hooks/useFetchEffect';
 import { extractApiError } from '../../../services/apiError';
 import { staffApi } from '../api/staffApi';
 import type {
@@ -112,24 +113,34 @@ export const useStaff = (): UseStaffReturn => {
   const [error, setError] = useState<string | null>(null);
   const [isBackendAvailable, setIsBackendAvailable] = useState<boolean | null>(null);
 
-  const fetchStaff = useCallback(async () => {
+  const fetchStaff = useCallback(async (isStale: IsStale) => {
     setIsLoading(true);
     setError(null);
     try {
       const response = await staffApi.getAllStaff();
+      if (isStale()) {
+        return;
+      }
       setStaff((response.data || []).map((e) => mapEmployee(e, locale)));
       setIsBackendAvailable(true);
     } catch (err) {
+      if (isStale()) {
+        return;
+      }
       setError(extractApiError(err, t('staff.load_failed')));
       // The list is the availability probe for the whole feature — see BUG-1.
       setIsBackendAvailable(false);
       setStaff([]);
     } finally {
-      setIsLoading(false);
+      if (!isStale()) {
+        setIsLoading(false);
+      }
     }
   }, [t, locale]);
 
   useFetchEffect(fetchStaff);
+  // Not part of the effect's sequence — a Retry button's click should always commit.
+  const refetch = useCallback(() => fetchStaff(() => false), [fetchStaff]);
 
   const createEmployee = useCallback(
     async (payload: CreateEmployeeRequest) => {
@@ -138,26 +149,26 @@ export const useStaff = (): UseStaffReturn => {
       // Re-read rather than trusting the optimistic insert: `create` is one of
       // the write-then-500 paths, so the server is the only trustworthy source
       // of what actually landed.
-      await fetchStaff();
+      await refetch();
       return employee;
     },
-    [fetchStaff, locale]
+    [refetch, locale]
   );
 
   const updateEmployee = useCallback(
     async (employee: Employee, payload: UpdateEmployeeRequest) => {
       await staffApi.updateEmployee(employee.id, payload);
-      await fetchStaff();
+      await refetch();
     },
-    [fetchStaff]
+    [refetch]
   );
 
   const toggleActive = useCallback(
     async (employee: Employee) => {
       await staffApi.toggleStaffStatus(employee.id);
-      await fetchStaff();
+      await refetch();
     },
-    [fetchStaff]
+    [refetch]
   );
 
   const resetPassword = useCallback(async (employee: Employee, newPassword: string) => {
@@ -176,7 +187,7 @@ export const useStaff = (): UseStaffReturn => {
     isLoading,
     error,
     isBackendAvailable,
-    refetch: fetchStaff,
+    refetch,
     createEmployee,
     updateEmployee,
     toggleActive,

@@ -19,9 +19,8 @@ const ROUTES_BY_ROLE: Record<Role, string[]> = {
     '/support',
     '/reports',
     '/staff',
-    '/settings',
   ],
-  admin: ['/dashboard', '/trips', '/drivers', '/passengers', '/verifications', '/reviews', '/support', '/settings'],
+  admin: ['/dashboard', '/trips', '/drivers', '/passengers', '/verifications', '/reviews', '/support'],
   // sycash passes the bare `staff` middleware but not `staff:admin,system_admin`,
   // so it sees the same sections as a support agent (docs/api/decisions.md Q8).
   sycash: ['/reviews', '/support'],

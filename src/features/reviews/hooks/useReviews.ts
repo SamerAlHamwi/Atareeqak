@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
+import type { IsStale } from '../../shared/hooks/useFetchEffect';
 import { extractApiError } from '../../../services/apiError';
 import { reviewsApi } from '../api/reviewsApi';
 import type { ReviewResponse, ReviewDateFilter } from '../api/reviewsApi';
@@ -106,7 +107,7 @@ export const useReviews = ({ userId = null }: UseReviewsOptions = {}): UseReview
     setPage(1);
   }, []);
 
-  const fetchReviews = useCallback(async () => {
+  const fetchReviews = useCallback(async (isStale: IsStale) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -117,6 +118,9 @@ export const useReviews = ({ userId = null }: UseReviewsOptions = {}): UseReview
         ...(debouncedSearch ? { search: debouncedSearch } : {}),
         ...(dateFilter !== 'all' ? { date: dateFilter } : {}),
       });
+      if (isStale()) {
+        return;
+      }
       setReviews((response.data || []).map((item) => mapReview(item, t, language)));
       setMeta(
         response.meta
@@ -129,6 +133,9 @@ export const useReviews = ({ userId = null }: UseReviewsOptions = {}): UseReview
           : null
       );
     } catch (err) {
+      if (isStale()) {
+        return;
+      }
       // `user_id` is validated `exists:users,id`, so a deep link carrying a
       // stale or hand-typed id 422s. That message now reaches the ErrorBanner
       // instead of console.error, which is where it used to go.
@@ -136,11 +143,15 @@ export const useReviews = ({ userId = null }: UseReviewsOptions = {}): UseReview
       setReviews([]);
       setMeta(null);
     } finally {
-      setIsLoading(false);
+      if (!isStale()) {
+        setIsLoading(false);
+      }
     }
   }, [page, perPage, userId, debouncedSearch, dateFilter, t, language]);
 
   useFetchEffect(fetchReviews);
+  // Not part of the effect's sequence — a Retry button's click should always commit.
+  const refetch = useCallback(() => fetchReviews(() => false), [fetchReviews]);
 
   /**
    * Deleting a profile comment is irreversible — there is no restore endpoint
@@ -168,7 +179,7 @@ export const useReviews = ({ userId = null }: UseReviewsOptions = {}): UseReview
     page,
     setPage,
     hasActiveSearch: debouncedSearch.length > 0,
-    refetch: fetchReviews,
+    refetch,
     deleteReview,
   };
 };

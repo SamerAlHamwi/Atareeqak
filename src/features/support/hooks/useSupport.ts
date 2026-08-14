@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
+import type { IsStale } from '../../shared/hooks/useFetchEffect';
 import { extractApiError } from '../../../services/apiError';
 import {
   supportApi,
@@ -159,7 +160,7 @@ export const useSupport = ({ canSeeEscalated = false }: UseSupportOptions = {}) 
    * after `show()` does not blank the table the user is looking at.
    */
   const load = useCallback(
-    async (silent: boolean) => {
+    async (silent: boolean, isStale: IsStale) => {
       if (!silent) {
         setIsLoading(true);
       }
@@ -174,13 +175,15 @@ export const useSupport = ({ canSeeEscalated = false }: UseSupportOptions = {}) 
 
         let mapped: Complaint[];
         let meta;
+        let nextCounts: ComplaintCounts | null | undefined;
+        let nextEscalatedCounts: EscalatedCounts | null | undefined;
 
         if (view === 'escalated') {
           // Guard: only the escalated vocabulary can reach this endpoint.
           const status = isEscalatedStatus(statusFilter) ? statusFilter : 'escalated';
           const response = await supportApi.getEscalatedComplaints({ ...shared, status });
           mapped = (response.data || []).map((c) => mapComplaint(c, t, language));
-          setEscalatedCounts(response.counts ?? null);
+          nextEscalatedCounts = response.counts ?? null;
           meta = response.meta;
         } else {
           /**
@@ -196,10 +199,19 @@ export const useSupport = ({ canSeeEscalated = false }: UseSupportOptions = {}) 
             ...(status ? { status } : {}),
           });
           mapped = (response.data || []).map((c) => mapComplaint(c, t, language));
-          setCounts(response.counts ?? null);
+          nextCounts = response.counts ?? null;
           meta = response.meta;
         }
 
+        if (isStale()) {
+          return;
+        }
+        if (nextEscalatedCounts !== undefined) {
+          setEscalatedCounts(nextEscalatedCounts);
+        }
+        if (nextCounts !== undefined) {
+          setCounts(nextCounts);
+        }
         setLastPage(meta?.last_page ?? 1);
         setTotal(meta?.total ?? mapped.length);
         setComplaints(mapped);
@@ -209,9 +221,12 @@ export const useSupport = ({ canSeeEscalated = false }: UseSupportOptions = {}) 
           prev ? mapped.find((c) => c.rawId === prev.rawId) ?? null : null
         );
       } catch (err) {
+        if (isStale()) {
+          return;
+        }
         setError(extractApiError(err, t('support.load_failed')));
       } finally {
-        if (!silent) {
+        if (!silent && !isStale()) {
           setIsLoading(false);
         }
       }
@@ -219,9 +234,11 @@ export const useSupport = ({ canSeeEscalated = false }: UseSupportOptions = {}) 
     [view, statusFilter, typeFilter, dateFilter, page, perPage, t, language]
   );
 
-  const fetchComplaints = useCallback(() => load(false), [load]);
+  const fetchComplaints = useCallback((isStale: IsStale) => load(false, isStale), [load]);
 
   useFetchEffect(fetchComplaints);
+  // Not part of the effect's sequence — a Retry button's click should always commit.
+  const refetch = useCallback(() => load(false, () => false), [load]);
 
   /**
    * The escalated counts feed a KPI card that is visible from the INBOX, so they
@@ -232,15 +249,16 @@ export const useSupport = ({ canSeeEscalated = false }: UseSupportOptions = {}) 
    * Skipped entirely when the role cannot call the endpoint, so no 403 is ever
    * provoked just to draw a card.
    */
-  const loadEscalatedCounts = useCallback(async () => {
+  const loadEscalatedCounts = useCallback(async (isStale: IsStale = () => false) => {
     if (!canSeeEscalated) return;
     try {
       const response = await supportApi.getEscalatedComplaints({ per_page: 1, status: 'escalated' });
+      if (isStale()) return;
       setEscalatedCounts(response.counts ?? null);
     } catch {
       // Non-blocking: the escalated KPI card is simply withheld rather than
       // taking the whole page down over a secondary figure.
-      setEscalatedCounts(null);
+      if (!isStale()) setEscalatedCounts(null);
     }
   }, [canSeeEscalated]);
 
@@ -274,7 +292,7 @@ export const useSupport = ({ canSeeEscalated = false }: UseSupportOptions = {}) 
         complaint.status === 'pending' && mapped.status === 'in_review' && !!mapped.assignedTo;
 
       if (wasAssignedToMe) {
-        await load(true);
+        await load(true, () => false);
         // Re-assert AFTER the reconcile. `load()` rebuilds the selection from
         // the list rows, and the list is served from a 1-minute cache the open
         // only just busted — the `show()` response is the fresher, authoritative
@@ -304,7 +322,7 @@ export const useSupport = ({ canSeeEscalated = false }: UseSupportOptions = {}) 
       applyUpdatedComplaint(response.data);
       // Both blocks move: escalate/respond bust `staff.complaint-counts`, and
       // escalate/resolveEscalated change the escalated tally the KPI card shows.
-      await Promise.all([load(true), loadEscalatedCounts()]);
+      await Promise.all([load(true, () => false), loadEscalatedCounts()]);
       applyUpdatedComplaint(response.data);
     },
     [applyUpdatedComplaint, load, loadEscalatedCounts]
@@ -364,7 +382,7 @@ export const useSupport = ({ canSeeEscalated = false }: UseSupportOptions = {}) 
     setPage,
     lastPage,
     total,
-    refetch: fetchComplaints,
+    refetch,
     respondToComplaint,
     escalateComplaint,
     resolveEscalatedComplaint,

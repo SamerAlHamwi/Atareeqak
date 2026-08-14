@@ -999,7 +999,7 @@ absent here **by defect, not by design** — so a future refactor does not "fix"
 
 ---
 
-## 🟠 BUG-12 — `POST /admin/photo` is a stub that reports success without doing anything (found Phase 9)
+## 🟠 BUG-12 — `POST /admin/photo` is a stub that reports success without doing anything (found Phase 9, extended Phase 12)
 
 `AdminDashboardController::uploadAdminPhoto()` is, in its entirety:
 
@@ -1024,11 +1024,97 @@ photo that was never stored, and the avatar would silently stay on its initials 
 Either implement it (validate `image|max:2048`, store, write the path to the employee row) or remove
 the route so it 404s honestly.
 
+### 🔴 Two more reasons this can never be completed as currently written (found Phase 12)
+
+Even a correct implementation of the stub above would have nowhere to land:
+
+1. **`employees` has no photo column.** The table (`database/migrations/2026_05_15_230503_create_employees_table.php`)
+   is exactly `id, username, email, password, first_name, last_name, role, is_active, created_by,
+   token_version, last_login_at, timestamps` — no `photo`/`avatar`/`image` column, and the `Employee`
+   model defines no such accessor either. There is nowhere to write the path even if the controller
+   stored the file.
+2. **`GET /staff/me` cannot return one either.** `EmployeeAuthService::formatEmployee()` is a fixed
+   list — `id, username, email, full_name, role, role_label, is_active, last_login_at, created_at` —
+   with no photo field, so even a successfully stored path would never reach the client that needs to
+   render it.
+
+This is why the missing column, not just the empty controller body, is the real blocker: adding
+validation and a `Storage::put()` call to `uploadAdminPhoto()` alone would still 500 or silently drop
+the value on the next save.
+
 ### What the dashboard does about it
 
-**No upload control is wired to it in any phase.** It belongs to Phase 12; this entry exists so that
-phase does not discover it the hard way. The shared `<Avatar>` initials fallback already covers the
-null case (Phase 4).
+**No upload control is wired to it, in any phase — this is a removal, not a deferral.** The plan's
+original Phase 12 item ("wire `POST /admin/photo` (multipart) for upload") was struck for the three
+reasons above. The shared `<Avatar>` initials fallback (Phase 4) is the header photo's permanent,
+correct final state, not a placeholder waiting on this endpoint.
+
+---
+
+## 🔴 BUG-13 — A staff (employee) JWT authenticates against the `users` table: cross-realm identity confusion (found Phase 12)
+
+The eight `/api/notifications/*` routes are guarded by `jwt` (`JwtAuthMiddleware`), the **end-user**
+middleware — not `staff`. `JwtAuthMiddleware::handle()` does `User::find($payload['sub'])` and never
+inspects the `sub_type` claim. `StaffJwtService` and `JwtService` both derive their signing key from
+`config('jwt.secret')` **raw** — `StaffJwtService::secret()` carries a comment explaining the base64
+decode was removed *specifically so the two match*. A staff-issued token therefore has a valid
+signature under the end-user middleware too, decodes cleanly, and is resolved against whatever row in
+`users` happens to share its numeric `sub`.
+
+### Verified live (2026-08-14)
+
+Employee `system_admin` (employee id **1**) logged in via `POST /staff/login` → JWT payload
+`{"sub":1,"sub_type":"employee","role":"system_admin","type":"access","ver":0,...}`.
+
+This local seed also has a **`users` row with id 1** (the admin account `AdminUserSeeder`/config
+creates so `UserObserver` has a rater to attribute the base 3.0 rating to). Presenting the staff
+token to the end-user route as-is returned:
+
+```
+GET /api/notifications/unread-count
+401 {"status":"error","code":"TOKEN_INVALIDATED","message":"Your session has been invalidated. Please log in again."}
+```
+
+— **not** because of a `sub_type` check (there is none), but because `JwtAuthMiddleware` also
+compares the token's `ver` claim (employee `token_version`, `0`) against `users.token_version` for
+user 1 (`1` in this seed), and `validateTokenVersion()` rejects the mismatch. That is a coincidence of
+this seed's two independent `token_version` counters, not a guard against the identity confusion.
+Setting `users.token_version = 0` for user 1 — matching the employee's `ver` — and repeating the exact
+same request (immediately reverted after):
+
+```
+GET /api/notifications/unread-count
+200 {"success":true,"unread_count":0}
+GET /api/notifications
+200 {"success":true,"data":{"current_page":1,"data":[],...},"unread_count":0}
+```
+
+**A `system_admin` employee token was accepted as passenger/driver user 1 and returned that user's
+real (empty, in this seed) notification data.** The two `token_version` counters (`employees` vs
+`users`) are independent and both commonly start at `0` for a freshly created row, so on a database
+where an employee id and a `users` id collide *and neither account has ever had its tokens revoked*,
+this is not a coincidence anyone controls — it fires by default.
+
+### Consequence
+
+Any employee (any role, since none of the eight routes carry a `staff:` role gate — they carry `jwt`)
+whose numeric id collides with a `users.id` can read, mark read/unread, bulk-act on, and delete that
+person's private ride/booking/wallet notifications, and mark their own **employee** session as
+"read" against a stranger's inbox. This is an authentication defect, not an authorization one — no
+staff role should reach these routes at all.
+
+### Suggested fix
+
+`JwtAuthMiddleware` must reject any token carrying a `sub_type` other than the end-user type it
+expects (mirroring the check `StaffJwtMiddleware` already does in the other direction), **not** rely
+on the two token-version counters happening to disagree.
+
+### What the dashboard does about it
+
+**No staff-reachable notifications endpoint exists**, so `MainLayout`'s bell — a hardcoded red unread
+dot with no handler, no dropdown, no data — is removed rather than wired to a route that authenticates
+as the wrong person (Phase 12 Trap 1). Restore it only once the backend gates these routes by role, or
+adds a genuinely staff-scoped notifications endpoint.
 
 ---
 
@@ -1130,3 +1216,24 @@ Also present: `APP_URL=https://api.onwayride.me`, which is a different service (
   were all re-run — Phase 10 added an optional `hideReason` prop to the shared `ConfirmActionModal` —
   and all five still pass. The Phase 7/8 seed was re-applied for the support/reviews runs and
   reverted again afterwards.
+- **Phase 11–15 environment (new machine, 2026-08-14):** macOS, PHP 8.5.0, MySQL 9.5.0 (Homebrew),
+  same backend checkout re-cloned (`cae097b`, "v 5.8.0 with seeder" — later than `3eb54ad`, no schema
+  changes relevant to the routes above). Fresh `.env` for local dev (`DB_HOST=127.0.0.1`,
+  `CACHE_DRIVER=file`, `SESSION_DRIVER=file`, `QUEUE_CONNECTION=sync`); `config/database.php`'s
+  `PDO::MYSQL_ATTR_SSL_CA` reference was made conditional on `MYSQL_ATTR_SSL_CA` actually being set —
+  PHP 8.5 deprecates unconditional access to that constant and, with `APP_DEBUG=true`, the deprecation
+  notice was being prepended as HTML to every JSON response body, breaking the frontend's `axios`
+  parsing. Database migrated fresh and reseeded via `AdminUserSeeder` (adapted inline — its
+  `config('admin.system_admin.*')` keys no longer exist in `config/admin.php`, which Phase 9 narrowed
+  to wallet-routing only) + `SystemWalletSeeder` + `Atarikaktestseeder`: **36 users, 71 rides, 58
+  bookings, 32 wallets, 194 wallet transactions, 2 pending verifications, 0 complaints, 0 reviews, 3
+  employees** (`system_admin`, `sycash`, and `agent01`/id 3 re-created as the non-restricted employee
+  `verify-staff.mjs` expects). `employees.role` ENUM needed the same BUG-3 widening. `verify-dashboard.mjs`,
+  `verify-reports.mjs` (155/155, `wallet_requests` re-seeded from a locally id-shifted copy of
+  `seed-phase-9.sql` and reverted after) and `verify-staff.mjs` (50/50) all re-run clean.
+- **Phase 12 Trap 1 probe (BUG-13, 2026-08-14):** `GET /api/notifications/unread-count` with employee
+  1's staff token returned `401 TOKEN_INVALIDATED` as-issued (this seed's `users.token_version` for id
+  1 happened to be `1` against the employee's `ver:0`). Setting `users.token_version = 0` for user 1 to
+  match and repeating the identical request returned `200` with that user's real notification payload,
+  confirming the cross-realm defect is real and merely not triggered by this seed's coincidental
+  counters. `users.token_version` was reverted to `1` immediately after.

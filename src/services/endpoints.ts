@@ -88,7 +88,19 @@ export const ENDPOINTS = {
     TOGGLE_ACTIVE: (id: string | number) => `/employees/${id}/toggle-active`,
     RESET_PASSWORD: (id: string | number) => `/employees/${id}/reset-password`,
   },
-  SETTINGS: '/admin/settings',
+  // `SETTINGS: '/admin/settings'` was deleted in Phase 11. There is no such
+  // route — zero of the 145 routes in docs/api/route-list.json match
+  // `settings` (decisions.md C1/Q1, RESOLVED-absent). Worse than a missing
+  // endpoint: only 5 of the ~15 controls on the old Settings page were even
+  // wired to `useSettings`, and 3 of those (Mada/Apple Pay/Visa/MC accepted
+  // payments) described payment rails this product does not have — the only
+  // money path is the internal SYP wallet. The whole feature (`settingsApi`,
+  // `useSettings`, `Settings.tsx`, its 4 components, the `/settings` route
+  // and nav entry) was removed rather than built behind a flag, because a
+  // flag would have implied the page was finished and waiting for a route,
+  // which was false. The client-side language/RTL toggle was preserved and
+  // moved into the header identity dropdown (Phase 12). Do not re-add this
+  // constant without a real route AND a rebuilt page wired control-by-control.
   // `BROADCAST_ALERT: '/admin/broadcast-alert'` was deleted in Phase 10.
   // There is no such route — `POST /admin/broadcast-alert` returns a clean
   // **404** (confirmed live 2026-08-13), unlike the SUPPORT_METRICS case above

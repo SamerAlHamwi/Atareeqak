@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
+import type { IsStale } from '../../shared/hooks/useFetchEffect';
 import { extractApiError } from '../../../services/apiError';
 import { usersApi } from '../api/usersApi';
 import type {
@@ -143,7 +144,7 @@ export const useUsers = (): UseUsersReturn => {
     return () => clearTimeout(handle);
   }, [search]);
 
-  const fetchUsers = useCallback(async () => {
+  const fetchUsers = useCallback(async (isStale: IsStale) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -155,15 +156,23 @@ export const useUsers = (): UseUsersReturn => {
         per_page: perPage,
         ...(debouncedSearch ? { search: debouncedSearch } : {}),
       });
+      if (isStale()) {
+        return;
+      }
       setRows(response.data.users || []);
       setStats(response.data.stats ?? null);
       setAdminPhoto(response.data.admin_photo ?? null);
       setLastPage(response.data.meta?.last_page ?? 1);
       setTotal(response.data.meta?.total ?? 0);
     } catch (err) {
+      if (isStale()) {
+        return;
+      }
       setError(extractApiError(err, t('common.load_failed')));
     } finally {
-      setIsLoading(false);
+      if (!isStale()) {
+        setIsLoading(false);
+      }
     }
   }, [typeFilter, statusFilter, dateFilter, page, perPage, debouncedSearch, t]);
 
@@ -184,6 +193,8 @@ export const useUsers = (): UseUsersReturn => {
   );
 
   useFetchEffect(fetchUsers);
+  // Not part of the effect's sequence — a Retry button's click should always commit.
+  const refetch = useCallback(() => fetchUsers(() => false), [fetchUsers]);
 
   const setTypeFilter = useCallback((filter: UserTypeFilter) => {
     setTypeFilterState(filter);
@@ -226,18 +237,18 @@ export const useUsers = (): UseUsersReturn => {
     async (user: UserRow, ban: BanRequest) => {
       const response = await usersApi.banUser(user.id, ban);
       applyStatus(user.id, response.data);
-      void fetchUsers();
+      void refetch();
     },
-    [applyStatus, fetchUsers]
+    [applyStatus, refetch]
   );
 
   const unbanUser = useCallback(
     async (user: UserRow) => {
       const response = await usersApi.unbanUser(user.id);
       applyStatus(user.id, response.data);
-      void fetchUsers();
+      void refetch();
     },
-    [applyStatus, fetchUsers]
+    [applyStatus, refetch]
   );
 
   return {
@@ -260,7 +271,7 @@ export const useUsers = (): UseUsersReturn => {
     total,
     isLoading,
     error,
-    refetch: fetchUsers,
+    refetch,
     banUser,
     unbanUser,
   };

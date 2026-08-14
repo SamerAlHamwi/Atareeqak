@@ -4,23 +4,11 @@ import MainLayout from '../components/layout/MainLayout';
 import AuthLayout from '../components/layout/AuthLayout';
 import ProtectedRoute from './ProtectedRoute';
 import RoleRoute from './RoleRoute';
+import { useAuth } from '../app/context/useAuth';
+import { defaultRouteForRole } from '../app/roles';
+import { SECTION_ROUTES } from './sectionRoutes';
 
-// Route-level code splitting: each page becomes its own chunk so the initial
-// bundle only carries the shell (layouts, router, auth context).
 const Login = lazy(() => import('../features/auth/pages/Login'));
-const Dashboard = lazy(() => import('../features/dashboard/pages/Dashboard'));
-const Home = lazy(() => import('../features/home/pages/Home'));
-const Users = lazy(() => import('../features/users/pages/Users'));
-const UserDetails = lazy(() => import('../features/users/pages/UserDetails'));
-const Drivers = lazy(() => import('../features/drivers/pages/Drivers'));
-const DriverDetails = lazy(() => import('../features/drivers/pages/DriverDetails'));
-const Trips = lazy(() => import('../features/trips/pages/Trips'));
-const Reports = lazy(() => import('../features/reports/pages/Reports'));
-const Support = lazy(() => import('../features/support/pages/Support'));
-const Settings = lazy(() => import('../features/settings/pages/Settings'));
-const Staff = lazy(() => import('../features/staff/pages/Staff'));
-const Verifications = lazy(() => import('../features/verification/pages/Verifications'));
-const Reviews = lazy(() => import('../features/reviews/pages/Reviews'));
 
 const RouteFallback: React.FC = () => (
   <div className="min-h-[60vh] flex items-center justify-center">
@@ -31,6 +19,18 @@ const RouteFallback: React.FC = () => (
     />
   </div>
 );
+
+/**
+ * `/` has no content of its own — it only exists to send a logged-in employee
+ * to the first section their role can actually see. There used to be a
+ * marketing-splash Home page here; it rendered to admins who never see it
+ * (they already land on `/dashboard`) and dead-ended a `support_agent` whose
+ * only button pointed at a page they cannot open.
+ */
+const RoleHome: React.FC = () => {
+  const { role } = useAuth();
+  return <Navigate to={defaultRouteForRole(role)} replace />;
+};
 
 const AppRoutes: React.FC = () => {
   return (
@@ -47,39 +47,14 @@ const AppRoutes: React.FC = () => {
           {/* Protected Routes */}
           <Route element={<ProtectedRoute />}>
             <Route element={<MainLayout />}>
-              <Route path="/" element={<Home />} />
+              <Route path="/" element={<RoleHome />} />
 
-              {/* admin + system_admin (backed by /admin/* endpoints) */}
-              <Route element={<RoleRoute section="dashboard" />}>
-                <Route path="/dashboard" element={<Dashboard />} />
-              </Route>
-              <Route element={<RoleRoute section="passengers" />}>
-                <Route path="/passengers" element={<Users />} />
-                <Route path="/passengers/:userId" element={<UserDetails />} />
-              </Route>
-              <Route element={<RoleRoute section="drivers" />}>
-                <Route path="/drivers" element={<Drivers />} />
-                <Route path="/drivers/:driverId" element={<DriverDetails />} />
-              </Route>
-              <Route element={<RoleRoute section="trips" />}>
-                <Route path="/trips" element={<Trips />} />
-              </Route>
-              <Route element={<RoleRoute section="verifications" />}>
-                <Route path="/verifications" element={<Verifications />} />
-              </Route>
-
-              {/* system_admin only */}
-              <Route element={<RoleRoute section="staff" />}>
-                <Route path="/staff" element={<Staff />} />
-              </Route>
-              <Route element={<RoleRoute section="reports" />}>
-                <Route path="/reports" element={<Reports />} />
-              </Route>
-
-              {/* any staff role */}
-              <Route path="/reviews" element={<Reviews />} />
-              <Route path="/support" element={<Support />} />
-              <Route path="/settings" element={<Settings />} />
+              {SECTION_ROUTES.map(({ section, path, Component, detail }) => (
+                <Route key={section} element={<RoleRoute section={section} />}>
+                  <Route path={path} element={<Component />} />
+                  {detail && <Route path={detail.path} element={<detail.Component />} />}
+                </Route>
+              ))}
             </Route>
           </Route>
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
+import type { IsStale } from '../../shared/hooks/useFetchEffect';
 import { extractApiError } from '../../../services/apiError';
 import { driversApi } from '../api/driversApi';
 import type {
@@ -155,9 +156,12 @@ export const useDrivers = (): UseDriversReturn => {
   /** id → authoritative status, from whatever ban/unban calls this session made. */
   const [banStatuses, setBanStatuses] = useState<Record<string, UserStatusResponse>>({});
 
-  const fetchDashboard = useCallback(async () => {
+  const fetchDashboard = useCallback(async (isStale: IsStale) => {
     try {
       const response = await driversApi.getDriversDashboard();
+      if (isStale()) {
+        return;
+      }
       setStats(response.data.stats);
       setActivity(response.data.recent_activity || []);
       setEfficiency(response.data.verification_efficiency || null);
@@ -174,7 +178,7 @@ export const useDrivers = (): UseDriversReturn => {
     return () => clearTimeout(handle);
   }, [search]);
 
-  const fetchDrivers = useCallback(async () => {
+  const fetchDrivers = useCallback(async (isStale: IsStale) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -184,13 +188,21 @@ export const useDrivers = (): UseDriversReturn => {
         per_page: perPage,
         ...(debouncedSearch ? { search: debouncedSearch } : {}),
       });
+      if (isStale()) {
+        return;
+      }
       setRows(response.data || []);
       setLastPage(response.meta?.last_page ?? 1);
       setTotal(response.meta?.total ?? 0);
     } catch (err) {
+      if (isStale()) {
+        return;
+      }
       setError(extractApiError(err, t('common.load_failed')));
     } finally {
-      setIsLoading(false);
+      if (!isStale()) {
+        setIsLoading(false);
+      }
     }
   }, [statusFilter, page, perPage, debouncedSearch, t]);
 
@@ -206,6 +218,8 @@ export const useDrivers = (): UseDriversReturn => {
 
   useFetchEffect(fetchDashboard);
   useFetchEffect(fetchDrivers);
+  // Not part of the effect's sequence — a Retry button's click should always commit.
+  const refetch = useCallback(() => fetchDrivers(() => false), [fetchDrivers]);
 
   /**
    * Changing the period refetches only this widget. The BFF payload is
@@ -255,18 +269,18 @@ export const useDrivers = (): UseDriversReturn => {
     async (driver: Driver, ban: BanRequest) => {
       const response = await usersApi.banUser(driver.id, ban);
       applyStatus(driver.id, response.data);
-      void fetchDrivers();
+      void refetch();
     },
-    [applyStatus, fetchDrivers]
+    [applyStatus, refetch]
   );
 
   const unbanDriver = useCallback(
     async (driver: Driver) => {
       const response = await usersApi.unbanUser(driver.id);
       applyStatus(driver.id, response.data);
-      void fetchDrivers();
+      void refetch();
     },
-    [applyStatus, fetchDrivers]
+    [applyStatus, refetch]
   );
 
   return {
@@ -290,7 +304,7 @@ export const useDrivers = (): UseDriversReturn => {
     total,
     isLoading,
     error,
-    refetch: fetchDrivers,
+    refetch,
     banDriver,
     unbanDriver,
   };
