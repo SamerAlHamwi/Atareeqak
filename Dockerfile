@@ -1,7 +1,7 @@
 # ============================================================
 # Stage 1: build the Vite/React static bundle
 # ============================================================
-FROM node:20-alpine AS builder
+FROM node:20 AS builder
 WORKDIR /app
 
 ARG VITE_API_BASE_URL=/api
