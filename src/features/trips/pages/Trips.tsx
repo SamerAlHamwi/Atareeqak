@@ -70,6 +70,7 @@ const Trips: React.FC = () => {
 
   const {
     bookings,
+    counts: bookingCounts,
     statusFilter: bookingFilter,
     setStatusFilter: setBookingFilter,
     page: bookingPage,
@@ -141,18 +142,14 @@ const Trips: React.FC = () => {
     [counts, t]
   );
 
-  /**
-   * GET /staff/bookings returns no `counts` block, so these tabs carry no
-   * badges. Deriving them would mean one request per status — filed as REQ-2
-   * in docs/api/backend-issues.md rather than faked here.
-   */
   const bookingFilterItems = useMemo<FilterTabItem<BookingFilter>[]>(
     () =>
       BOOKING_FILTERS.map((filter) => ({
         value: filter,
         label: t(`bookings.filter_${filter}`),
+        count: bookingCounts ? bookingCounts[filter] : undefined,
       })),
-    [t]
+    [bookingCounts, t]
   );
 
   const rangeInfo = (currentPage: number, size: number, totalRows: number): string => {
@@ -181,7 +178,7 @@ const Trips: React.FC = () => {
         <FilterTabs
           items={[
             { value: 'trips', label: t('trips.tab_trips'), count: counts?.all },
-            { value: 'bookings', label: t('trips.tab_bookings'), count: undefined },
+            { value: 'bookings', label: t('trips.tab_bookings'), count: bookingCounts?.all },
           ]}
           active={tab}
           onChange={(next) => setTab(next as TripsTab)}

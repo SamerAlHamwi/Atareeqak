@@ -2,13 +2,18 @@ import api from '../../../services/api';
 import { ENDPOINTS } from '../../../services/endpoints';
 
 /**
- * `AdminDriverService::resolveDriverStatus()` can return five values, not the
+ * `AdminDriverService::resolveDriverStatus()` can return six values, not the
  * three the filter vocabulary offers — `rejected` and `unverified` have no
- * matching filter tab but do reach the table. They were missing from this union,
- * so a row in either state fell through the status-badge map and rendered a raw
- * i18n key.
+ * matching filter tab but do reach the table. `banned` and `logged_out` are
+ * the two states behind the `suspended` filter (see `DriverFilterValue`).
  */
-export type DriverStatus = 'verified' | 'pending' | 'suspended' | 'rejected' | 'unverified';
+export type DriverStatus =
+  | 'verified'
+  | 'pending'
+  | 'banned'
+  | 'logged_out'
+  | 'rejected'
+  | 'unverified';
 
 /** The subset `GET /admin/drivers?filter=` accepts (validated `in:` server-side). */
 export type DriverFilterValue = 'all' | 'verified' | 'pending' | 'suspended';
@@ -21,6 +26,7 @@ export interface DriverRowResponse {
   phone: string | null;
   vehicle: string | null;
   status: DriverStatus;
+  is_banned: boolean;
   avg_rating: number | null;
   is_verified_driver: boolean;
   verification_status: string | null;
@@ -95,6 +101,12 @@ export interface DriversListResponse {
     per_page: number;
     total: number;
     filter: string;
+  };
+  counts: {
+    all: number;
+    verified: number;
+    pending: number;
+    suspended: number;
   };
 }
 

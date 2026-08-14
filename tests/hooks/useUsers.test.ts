@@ -13,6 +13,7 @@ const userRow = (overrides: Partial<UserRowResponse> = {}): UserRowResponse => (
   profile_photo: null,
   type: 'passenger',
   status: 'verified',
+  is_banned: false,
   joined_at: '2024-01-01T00:00:00Z',
   joined_label: '2024-01-01',
   ...overrides,
@@ -33,6 +34,7 @@ const usersResponse = (
       suspended_users: 0,
     },
     users,
+    counts: { all: users.length, verified: users.length, pending: 0, suspended: 0 },
     meta: {
       current_page: 1,
       last_page: 1,
@@ -85,7 +87,7 @@ describe('useUsers', () => {
       email: 'ali@example.com',
       type: 'driver',
       status: 'pending',
-      ban: null,
+      isBanned: false,
     });
     expect(result.current.stats?.total_registered).toBe(1);
     expect(result.current.error).toBeNull();
@@ -240,12 +242,12 @@ describe('useUsers', () => {
   });
 
   it('renders every server-filtered row — no client-side re-filter', async () => {
-    // `status=suspended` is a server-side filter; the rows it returns may carry
-    // any UI status (BUG-6), and all of them must still be rendered.
+    // `status=suspended` is a server-side filter; the hook must render
+    // whatever page the server returns without re-deriving membership locally.
     recordingList([
-      userRow({ id: 1, status: 'verified' }),
-      userRow({ id: 2, status: 'unverified' }),
-      userRow({ id: 3, status: 'suspended' }),
+      userRow({ id: 1, status: 'banned', is_banned: true }),
+      userRow({ id: 2, status: 'logged_out' }),
+      userRow({ id: 3, status: 'logged_out' }),
     ]);
 
     const { result } = renderHook(() => useUsers());
@@ -256,7 +258,7 @@ describe('useUsers', () => {
     expect(result.current.users).toHaveLength(3);
   });
 
-  it('stores the authoritative ban status and refetches, without faking the row status', async () => {
+  it('sends the ban body and refetches the list', async () => {
     const requests = recordingList([userRow({ id: 9 })]);
     let banBody: Record<string, unknown> | null = null;
     server.use(
@@ -283,51 +285,47 @@ describe('useUsers', () => {
       type: 'temporary',
       expires_at: '2026-08-19 10:00:00',
     });
-    // The list is re-read rather than patched: `status` stays what the server
-    // says (BUG-6 makes it untrustworthy either way), and the ban is carried
-    // separately.
+    // The row's truth comes from the next list fetch, never a hand-patch.
     await waitFor(() => expect(requests.length).toBeGreaterThan(requestsBefore));
-    await waitFor(() => expect(result.current.users[0].ban).not.toBeNull());
-    expect(result.current.users[0].status).toBe('verified');
-    expect(isBannedUser(result.current.users[0])).toBe(true);
   });
 
-  it('clears the known ban state after an unban', async () => {
-    recordingList([userRow({ id: 9 })]);
-    server.use(
-      http.post(`${API_BASE}/admin/users/9/ban`, () =>
-        HttpResponse.json({ status: 'success', message: 'ok', data: bannedStatus(9) })
-      ),
-      http.post(`${API_BASE}/admin/users/9/unban`, () =>
-        HttpResponse.json({
-          status: 'success',
-          message: 'ok',
-          data: { ...bannedStatus(9), account_status: 'logged_out', status_code: 0, ban: null },
-        })
-      )
-    );
+  it('reflects is_banned straight from the list response', async () => {
+    recordingList([userRow({ id: 9, status: 'banned', is_banned: true })]);
 
     const { result } = renderHook(() => useUsers());
     await waitFor(() => expect(result.current.users).toHaveLength(1));
 
-    await act(async () => {
-      await result.current.banUser(result.current.users[0], {
-        reason: 'spamming the platform repeatedly',
-        type: 'permanent',
-      });
-    });
-    await waitFor(() => expect(isBannedUser(result.current.users[0])).toBe(true));
+    expect(isBannedUser(result.current.users[0])).toBe(true);
+    expect(result.current.users[0].status).toBe('banned');
+  });
+
+  it('calls the unban endpoint and refetches the list', async () => {
+    const requests = recordingList([userRow({ id: 9, status: 'banned', is_banned: true })]);
+    let unbanCalled = false;
+    server.use(
+      http.post(`${API_BASE}/admin/users/9/unban`, () => {
+        unbanCalled = true;
+        return HttpResponse.json({
+          status: 'success',
+          message: 'ok',
+          data: { ...bannedStatus(9), account_status: 'logged_out', status_code: 0, ban: null },
+        });
+      })
+    );
+
+    const { result } = renderHook(() => useUsers());
+    await waitFor(() => expect(result.current.users).toHaveLength(1));
+    const requestsBefore = requests.length;
 
     await act(async () => {
       await result.current.unbanUser(result.current.users[0]);
     });
 
-    await waitFor(() => expect(isBannedUser(result.current.users[0])).toBe(false));
-    // An unban lands on logged_out (0), never on active (1).
-    expect(result.current.users[0].ban?.status_code).toBe(0);
+    expect(unbanCalled).toBe(true);
+    await waitFor(() => expect(requests.length).toBeGreaterThan(requestsBefore));
   });
 
-  it('exposes admin_photo as null rather than inventing one (BUG-5)', async () => {
+  it('exposes admin_photo as returned by the server rather than inventing one', async () => {
     recordingList();
 
     const { result } = renderHook(() => useUsers());

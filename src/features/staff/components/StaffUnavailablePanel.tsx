@@ -9,15 +9,9 @@ interface StaffUnavailablePanelProps {
 
 /**
  * Rendered instead of the staff table — and instead of every write control —
- * whenever `GET /employees` fails.
- *
- * This is the "degrade honestly" half of the BUG-1 decision documented in
- * `useStaff`. The alternative the plan warned against was rendering an empty
- * table, which would read as "this platform has no staff" when in fact the
- * directory could not be loaded at all. It says what is broken, shows the
- * server's own error, states plainly that the write actions are withheld on
- * purpose, and offers a retry that will light the page up again the moment the
- * backend is fixed.
+ * whenever `GET /employees` fails. An empty table would read as "this
+ * platform has no staff" when the directory just couldn't be loaded; this
+ * shows the server's own error and offers a retry instead.
  */
 export const StaffUnavailablePanel: React.FC<StaffUnavailablePanelProps> = ({
   message,

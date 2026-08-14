@@ -28,13 +28,6 @@ export const NAME_MAX_LENGTH = 100;
 export const EMAIL_MAX_LENGTH = 255;
 
 /**
- * The shape `EmployeeManagementController` *intends* to return.
- *
- * 🔴 Nothing has ever returned it. Every action formats its output through
- * `EmployeeManagementService::formatEmployee()`, which **does not exist** — see
- * BUG-1 in docs/api/backend-issues.md. This interface is the documented
- * contract the UI is built against, not an observed payload.
- *
  * `created_by` is deliberately **not rendered**: it is NULL for all three seeded
  * employees, so a column for it would read "Unknown" on every row. Same call
  * Phase 4 made for `banned_by` (BUG-5).
@@ -71,19 +64,8 @@ export type UpdateEmployeeRequest = Partial<{
 }>;
 
 /**
- * ⚠️ There is deliberately **no `deleteEmployee`** here.
- *
- * `DELETE /employees/{id}` returns **405 MethodNotAllowed** — confirmed live.
- * The route was never registered. Deactivation via
- * `PATCH /employees/{id}/toggle-active` is what the backend intends instead.
- *
- * Note this is a *routing* gap, not a design decision:
- * `EmployeeManagementService::delete()` is **fully implemented** and simply has
- * no route pointing at it (BUG-4). Do not describe deletion as unsupported by
- * design — it is unsupported by omission.
- *
- * `sendBroadcastAlert` is gone for the same class of reason:
- * `POST /admin/broadcast-alert` returns **404**, confirmed live 2026-08-13.
+ * `sendBroadcastAlert` is gone: `POST /admin/broadcast-alert` returns **404**,
+ * confirmed live 2026-08-13.
  */
 export const staffApi = {
   getAllStaff: async (): Promise<{ status: string; data: EmployeeResponse[] }> => {
@@ -127,6 +109,11 @@ export const staffApi = {
     const response = await api.patch(ENDPOINTS.EMPLOYEES.RESET_PASSWORD(id), {
       new_password: newPassword,
     });
+    return response.data;
+  },
+
+  deleteEmployee: async (id: string | number): Promise<{ status: string; message: string }> => {
+    const response = await api.delete(ENDPOINTS.EMPLOYEES.SINGLE(id));
     return response.data;
   },
 };

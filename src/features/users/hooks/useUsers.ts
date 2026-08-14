@@ -11,7 +11,7 @@ import type {
   UserRowResponse,
   UserRowStatus,
   UserStatusFilterValue,
-  UserStatusResponse,
+  UsersListResponse,
   UsersStatsResponse,
   UserTypeFilterValue,
 } from '../api/usersApi';
@@ -23,15 +23,9 @@ export interface UserRow {
   type: 'driver' | 'passenger';
   joinDate: string;
   status: UserRowStatus;
+  isBanned: boolean;
   /** Server photo URL, or null — the initials <Avatar> covers the gap. */
   photo: string | null;
-  /**
-   * Ban state, present only for rows this session has acted on. `GET
-   * /admin/users` carries no ban field, and its `status` is wrong in both
-   * directions (BUG-6), so for every other row this is null — meaning
-   * "unknown", not "not banned".
-   */
-  ban: UserStatusResponse | null;
 }
 
 export type UserTypeFilter = UserTypeFilterValue;
@@ -69,14 +63,7 @@ export const USER_DATE_FILTERS: readonly UserDateFilter[] = [
 export const USERS_PER_PAGE_OPTIONS = [5, 10, 25, 50] as const;
 export const DEFAULT_USERS_PER_PAGE = 10;
 
-/**
- * `POST /admin/users/{id}/ban` 422s with "This user is already banned" when the
- * account is already at status -1, and `unban` 422s when it is not. Only rows
- * whose real status we know can be resolved; for the rest the list offers ban,
- * which is correct for the overwhelming majority and surfaces the backend's own
- * message otherwise.
- */
-export const isBannedUser = (user: UserRow): boolean => user.ban?.ban != null;
+export const isBannedUser = (user: UserRow): boolean => user.isBanned;
 
 interface UseUsersReturn {
   users: UserRow[];
@@ -101,29 +88,27 @@ interface UseUsersReturn {
   error: string | null;
   /** A role change mid-session can 403 a page `RoleRoute` already let through. */
   isForbidden: boolean;
+  counts: UsersListResponse['data']['counts'] | null;
   refetch: () => Promise<void>;
   banUser: (user: UserRow, ban: BanRequest) => Promise<void>;
   unbanUser: (user: UserRow) => Promise<void>;
 }
 
-const mapUser = (
-  u: UserRowResponse,
-  t: TFunction,
-  ban: UserStatusResponse | null
-): UserRow => ({
+const mapUser = (u: UserRowResponse, t: TFunction): UserRow => ({
   id: String(u.id),
   name: u.full_name || t('common.unknown'),
   email: u.email || '',
   type: u.type,
   joinDate: u.joined_label || '',
   status: u.status,
+  isBanned: u.is_banned,
   photo: u.profile_photo,
-  ban,
 });
 
 export const useUsers = (): UseUsersReturn => {
   const { t } = useTranslation();
   const [rows, setRows] = useState<UserRowResponse[]>([]);
+  const [counts, setCounts] = useState<UsersListResponse['data']['counts'] | null>(null);
   const [stats, setStats] = useState<UsersStatsResponse | null>(null);
   const [adminPhoto, setAdminPhoto] = useState<string | null>(null);
   const [typeFilter, setTypeFilterState] = useState<UserTypeFilter>('all');
@@ -139,8 +124,6 @@ export const useUsers = (): UseUsersReturn => {
   const [error, setError] = useState<string | null>(null);
   /** A role change mid-session can 403 a page `RoleRoute` already let through. */
   const [isForbidden, setIsForbidden] = useState(false);
-  /** id → authoritative status, from whatever ban/unban calls this session made. */
-  const [banStatuses, setBanStatuses] = useState<Record<string, UserStatusResponse>>({});
 
   // Debounce the search input so we don't hit the API on every keystroke
   useEffect(() => {
@@ -167,6 +150,7 @@ export const useUsers = (): UseUsersReturn => {
       setRows(response.data.users || []);
       setStats(response.data.stats ?? null);
       setAdminPhoto(response.data.admin_photo ?? null);
+      setCounts(response.data.counts ?? null);
       setLastPage(response.data.meta?.last_page ?? 1);
       setTotal(response.data.meta?.total ?? 0);
     } catch (err) {
@@ -189,17 +173,9 @@ export const useUsers = (): UseUsersReturn => {
    * The list is **server-filtered**: every row the API returned is rendered.
    * There is deliberately no client-side re-filter here (the `visibleTrips` /
    * `visibleDrivers` bug class removed in Phases 3 and 4) — re-filtering a page
-   * on a UI status would blank the table, and with BUG-6 the row status does
-   * not even agree with the filter that produced it.
-   *
-   * Known ban state is merged at render rather than inside the fetch, so a
-   * refetch triggered right after a ban cannot race a stale closure and drop
-   * the status the mutation just returned.
+   * on a UI status would blank the table.
    */
-  const users = useMemo(
-    () => rows.map((row) => mapUser(row, t, banStatuses[String(row.id)] ?? null)),
-    [rows, t, banStatuses]
-  );
+  const users = useMemo(() => rows.map((row) => mapUser(row, t)), [rows, t]);
 
   useFetchEffect(fetchUsers);
   // Not part of the effect's sequence — a Retry button's click should always commit.
@@ -230,38 +206,25 @@ export const useUsers = (): UseUsersReturn => {
     setPage(1);
   }, []);
 
-  /**
-   * Nothing is optimistically patched onto the row status: `GET /admin/users`
-   * maps `status == 0` to "suspended" and ignores `-1` entirely, so a banned
-   * user still reads "verified" and an unbanned one reads "suspended"
-   * (BUG-6, verified live). Instead the authoritative status the mutation
-   * itself returns is stored, and the list is refetched so every other column
-   * stays server-truthful.
-   */
-  const applyStatus = useCallback((id: string, status: UserStatusResponse) => {
-    setBanStatuses((prev) => ({ ...prev, [id]: status }));
-  }, []);
-
   const banUser = useCallback(
     async (user: UserRow, ban: BanRequest) => {
-      const response = await usersApi.banUser(user.id, ban);
-      applyStatus(user.id, response.data);
+      await usersApi.banUser(user.id, ban);
       void refetch();
     },
-    [applyStatus, refetch]
+    [refetch]
   );
 
   const unbanUser = useCallback(
     async (user: UserRow) => {
-      const response = await usersApi.unbanUser(user.id);
-      applyStatus(user.id, response.data);
+      await usersApi.unbanUser(user.id);
       void refetch();
     },
-    [applyStatus, refetch]
+    [refetch]
   );
 
   return {
     users,
+    counts,
     stats,
     adminPhoto,
     typeFilter,

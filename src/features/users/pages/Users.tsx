@@ -34,7 +34,7 @@ const statusBadgeClasses = (status: UserRow['status']): string => {
       return 'bg-tertiary-fixed text-on-tertiary-fixed-variant';
     case 'pending':
       return 'bg-surface-container-high text-on-surface-variant';
-    case 'suspended':
+    case 'banned':
     case 'rejected':
       return 'bg-error-container text-error';
     default:
@@ -52,6 +52,7 @@ const Users: React.FC = () => {
 
   const {
     users,
+    counts,
     stats,
     adminPhoto,
     typeFilter,
@@ -76,18 +77,14 @@ const Users: React.FC = () => {
     unbanUser,
   } = useUsers();
 
-  /**
-   * No count badges: `GET /admin/users` returns no `counts` block (verified
-   * live) and `meta.total` only describes the requested filter, so four badges
-   * would mean four extra requests — filed as REQ-2.
-   */
   const statusTabs = useMemo<FilterTabItem<UserStatusFilter>[]>(
     () =>
       USER_STATUS_FILTERS.map((filter) => ({
         value: filter,
         label: t(`users.filter_status_${filter}`),
+        count: counts ? counts[filter] : undefined,
       })),
-    [t]
+    [counts, t]
   );
 
   const closePanel = () => setSelectedUser(null);
@@ -159,12 +156,6 @@ const Users: React.FC = () => {
       {/* Page Header */}
       <section className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div className="flex items-center gap-4">
-          {/*
-            `admin_photo` is null on every response (BUG-5): the controller reads
-            `$request->user()?->id`, which StaffJwtMiddleware never populates.
-            Rendered through the Avatar fallback rather than worked around, so
-            it lights up on its own once the backend is fixed.
-          */}
           <Avatar
             name={t('users.admin_avatar_alt')}
             photo={adminPhoto}
@@ -238,10 +229,6 @@ const Users: React.FC = () => {
           </select>
         </div>
         <div className="bg-surface-container-lowest p-4 rounded-2xl flex flex-col gap-2 border border-outline-variant/10">
-          {/*
-            `suspended_users` counts `status = 0` (logged out), not banned
-            accounts — the label says so rather than implying a ban count.
-          */}
           <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
             {t('users.suspended_users')}
           </label>
@@ -333,24 +320,11 @@ const Users: React.FC = () => {
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap items-center gap-2">
                         <span
+                          data-testid={isBannedUser(user) ? `user-banned-${user.id}` : undefined}
                           className={`px-3 py-1 text-xs font-bold rounded-full ${statusBadgeClasses(user.status)}`}
                         >
                           {statusLabel(user.status)}
                         </span>
-                        {/*
-                          Shown only for rows whose ban state we actually know —
-                          i.e. ones banned in this session. The list payload
-                          reports ban state backwards (BUG-6), so absence of
-                          this chip means "unknown", never "not banned".
-                        */}
-                        {isBannedUser(user) && (
-                          <span
-                            data-testid={`user-banned-${user.id}`}
-                            className="px-3 py-1 rounded-full text-xs font-bold bg-error text-on-error"
-                          >
-                            {t('users.account_banned')}
-                          </span>
-                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -454,9 +428,7 @@ const Users: React.FC = () => {
                   </div>
                   <div className="p-4 flex justify-between items-center">
                     <span className="text-sm text-on-surface-variant">{t('users.table_status')}</span>
-                    <span className="text-sm font-bold">
-                      {isBannedUser(panelUser) ? t('users.account_banned') : statusLabel(panelUser.status)}
-                    </span>
+                    <span className="text-sm font-bold">{statusLabel(panelUser.status)}</span>
                   </div>
                   <div className="p-4 flex justify-between items-center">
                     <span className="text-sm text-on-surface-variant">{t('auth.email')}</span>

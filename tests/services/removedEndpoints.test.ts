@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { ENDPOINTS } from '../../src/services/endpoints';
-import { staffApi } from '../../src/features/staff/api/staffApi';
 
 /**
  * Every route confirmed absent from the backend and deliberately dropped from
@@ -73,10 +72,6 @@ describe('removed routes never come back', () => {
       }
     }
     expect(offenders).toEqual([]);
-  });
-
-  it('staffApi has no deleteEmployee — DELETE /employees/{id} is a confirmed 405 (BUG-4)', () => {
-    expect((staffApi as Record<string, unknown>).deleteEmployee).toBeUndefined();
   });
 
   it('roles.ts has no settings section left over from the deleted feature', () => {

@@ -2,16 +2,20 @@ import api from '../../../services/api';
 import { ENDPOINTS } from '../../../services/endpoints';
 
 /**
- * The five values `AdminUserService::resolveUserStatus()` can return.
+ * The six values `AdminUserService::resolveUserStatus()` can return.
  *
  * `rejected` and `unverified` are **not** valid `status=` filter values
  * (`in:all,verified,pending,suspended`), so those rows are reachable in the
  * "all" tab but cannot be filtered for — same gap the drivers list has.
- *
- * ⚠️ `suspended` here means `users.status == 0` (logged out), **not** banned
- * (`-1`). See BUG-6: the list mislabels ban state in both directions.
+ * `banned` and `logged_out` are the two states behind the `suspended` filter.
  */
-export type UserRowStatus = 'verified' | 'pending' | 'suspended' | 'rejected' | 'unverified';
+export type UserRowStatus =
+  | 'verified'
+  | 'pending'
+  | 'banned'
+  | 'logged_out'
+  | 'rejected'
+  | 'unverified';
 
 export interface UserRowResponse {
   id: number;
@@ -20,6 +24,7 @@ export interface UserRowResponse {
   profile_photo: string | null;
   type: 'driver' | 'passenger';
   status: UserRowStatus;
+  is_banned: boolean;
   joined_at: string;
   joined_label: string;
 }
@@ -29,7 +34,7 @@ export interface UsersStatsResponse {
   active_drivers: number;
   pending_drivers: number;
   passengers: number;
-  /** `COUNT(status = 0)` — logged-out accounts, not banned ones (BUG-6). */
+  /** `COUNT(status IN (-1, 0))` — banned or logged-out. */
   suspended_users: number;
 }
 
@@ -45,9 +50,6 @@ export type UserDateFilterValue =
 /**
  * Note the whole payload is nested under `data` — unlike `/admin/drivers`,
  * where `data` is the row array and `meta` is a sibling.
- *
- * There is **no `counts` block** (verified live), so the filter tabs ship
- * without badges — see REQ-2.
  */
 export interface UsersListResponse {
   status: string;
@@ -56,6 +58,12 @@ export interface UsersListResponse {
     admin_photo: string | null;
     stats: UsersStatsResponse;
     users: UserRowResponse[];
+    counts: {
+      all: number;
+      verified: number;
+      pending: number;
+      suspended: number;
+    };
     meta: {
       current_page: number;
       last_page: number;

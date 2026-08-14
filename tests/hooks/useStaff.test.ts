@@ -3,10 +3,7 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import i18n from '../../src/app/i18n';
 import { useStaff } from '../../src/features/staff/hooks/useStaff';
-import {
-  staffApi,
-  CREATABLE_STAFF_ROLES,
-} from '../../src/features/staff/api/staffApi';
+import { CREATABLE_STAFF_ROLES } from '../../src/features/staff/api/staffApi';
 import type { EmployeeResponse } from '../../src/features/staff/api/staffApi';
 import { API_BASE, server } from '../testServer';
 
@@ -125,47 +122,32 @@ describe('useStaff', () => {
     expect(CREATABLE_STAFF_ROLES).not.toContain('sycash');
   });
 
-  it('exposes no code path that can issue DELETE /employees/{id}', async () => {
-    // DELETE /employees/{id} returns 405 — the route was never registered.
-    // A handler is registered here purely so that any accidental call would be
-    // observed rather than silently unmatched.
-    let deleteCalls = 0;
-    server.use(
-      http.get(`${API_BASE}/employees`, () => HttpResponse.json(listResponse())),
-      http.delete(`${API_BASE}/employees/:id`, () => {
-        deleteCalls += 1;
-        return HttpResponse.json({ message: 'Method Not Allowed' }, { status: 405 });
-      })
-    );
+  it('deletes an employee and refetches the list', async () => {
+    server.use(http.get(`${API_BASE}/employees`, () => HttpResponse.json(listResponse())));
 
-    // 1. The api object must not expose a delete wrapper at all.
-    expect('deleteEmployee' in staffApi).toBe(false);
-    // 2. Nor must the hook.
     const { result } = renderHook(() => useStaff());
     await waitFor(() => expect(result.current.staff).toHaveLength(1));
-    expect('deleteEmployee' in result.current).toBe(false);
 
-    // 3. Exercising every mutating path the hook does expose issues no DELETE.
+    let deleteCalls = 0;
+    let refetchCalls = 0;
     server.use(
-      http.put(`${API_BASE}/employees/:id`, () =>
-        HttpResponse.json({ status: 'success', message: 'ok', employee: employee() })
-      ),
-      http.patch(`${API_BASE}/employees/:id/toggle-active`, () =>
-        HttpResponse.json({ status: 'success', message: 'ok', employee: employee() })
-      ),
-      http.patch(`${API_BASE}/employees/:id/reset-password`, () =>
-        HttpResponse.json({ status: 'success', message: 'ok' })
-      )
+      http.delete(`${API_BASE}/employees/:id`, () => {
+        deleteCalls += 1;
+        return HttpResponse.json({ status: 'success', message: 'Employee deleted successfully.' });
+      }),
+      http.get(`${API_BASE}/employees`, () => {
+        refetchCalls += 1;
+        return HttpResponse.json(listResponse());
+      })
     );
 
     const row = result.current.staff[0];
     await act(async () => {
-      await result.current.updateEmployee(row, { first_name: 'Renamed' });
-      await result.current.toggleActive(row);
-      await result.current.resetPassword(row, 'longenoughpw');
+      await result.current.deleteEmployee(row);
     });
 
-    expect(deleteCalls).toBe(0);
+    expect(deleteCalls).toBe(1);
+    expect(refetchCalls).toBe(1);
   });
 
   it('sends only the changed fields on update, matching the `sometimes` rules', async () => {

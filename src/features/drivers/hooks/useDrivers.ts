@@ -11,11 +11,12 @@ import type {
   DriverActivityResponse,
   DriverStatus,
   DriverFilterValue,
+  DriversListResponse,
   EfficiencyPeriod,
   VerificationEfficiencyResponse,
 } from '../api/driversApi';
 import { usersApi } from '../../users/api/usersApi';
-import type { BanRequest, UserStatusResponse } from '../../users/api/usersApi';
+import type { BanRequest } from '../../users/api/usersApi';
 
 export interface Driver {
   id: string;
@@ -24,15 +25,10 @@ export interface Driver {
   phone: string;
   vehicle: string;
   status: DriverStatus;
+  isBanned: boolean;
   rating: number | null;
   /** Server photo URL, or null — the initials `<Avatar>` covers the gap. */
   photo: string | null;
-  /**
-   * Ban state, present only for rows this session has acted on. `GET
-   * /admin/drivers` carries no ban field at all (BUG-6), so for every other row
-   * this is null — meaning "unknown", not "not banned".
-   */
-  ban: UserStatusResponse | null;
 }
 
 export type DriverStatusFilter = DriverFilterValue;
@@ -85,14 +81,7 @@ export const efficiencyDeltaOf = (
   };
 };
 
-/**
- * `POST /admin/users/{id}/ban` 422s with "This user is already banned" when the
- * account is already at status -1, and `unban` 422s when it is not. Only rows
- * whose real status we know can be resolved; for the rest the list offers ban,
- * which is correct for the overwhelming majority and surfaces the backend's own
- * message otherwise.
- */
-export const isBannedDriver = (driver: Driver): boolean => driver.ban?.ban != null;
+export const isBannedDriver = (driver: Driver): boolean => driver.isBanned;
 
 interface UseDriversReturn {
   drivers: Driver[];
@@ -117,30 +106,28 @@ interface UseDriversReturn {
   error: string | null;
   /** A role change mid-session can 403 a page `RoleRoute` already let through. */
   isForbidden: boolean;
+  counts: DriversListResponse['counts'] | null;
   refetch: () => Promise<void>;
   banDriver: (driver: Driver, ban: BanRequest) => Promise<void>;
   unbanDriver: (driver: Driver) => Promise<void>;
 }
 
-const mapDriver = (
-  d: DriverRowResponse,
-  t: TFunction,
-  ban: UserStatusResponse | null
-): Driver => ({
+const mapDriver = (d: DriverRowResponse, t: TFunction): Driver => ({
   id: String(d.id),
   name: d.full_name || t('common.unknown'),
   displayId: d.driver_ref,
   phone: d.phone || '',
   vehicle: d.vehicle || t('common.unknown'),
   status: d.status,
+  isBanned: d.is_banned,
   rating: d.avg_rating,
   photo: d.profile_photo,
-  ban,
 });
 
 export const useDrivers = (): UseDriversReturn => {
   const { t } = useTranslation();
   const [rows, setRows] = useState<DriverRowResponse[]>([]);
+  const [counts, setCounts] = useState<DriversListResponse['counts'] | null>(null);
   const [stats, setStats] = useState<DriverStatsResponse | null>(null);
   const [activity, setActivity] = useState<DriverActivityResponse[]>([]);
   const [efficiency, setEfficiency] = useState<VerificationEfficiencyResponse | null>(null);
@@ -157,8 +144,6 @@ export const useDrivers = (): UseDriversReturn => {
   const [error, setError] = useState<string | null>(null);
   /** A role change mid-session can 403 a page `RoleRoute` already let through. */
   const [isForbidden, setIsForbidden] = useState(false);
-  /** id → authoritative status, from whatever ban/unban calls this session made. */
-  const [banStatuses, setBanStatuses] = useState<Record<string, UserStatusResponse>>({});
 
   const fetchDashboard = useCallback(async (isStale: IsStale) => {
     try {
@@ -199,6 +184,7 @@ export const useDrivers = (): UseDriversReturn => {
       setRows(response.data || []);
       setLastPage(response.meta?.last_page ?? 1);
       setTotal(response.meta?.total ?? 0);
+      setCounts(response.counts ?? null);
     } catch (err) {
       if (isStale()) {
         return;
@@ -215,15 +201,7 @@ export const useDrivers = (): UseDriversReturn => {
     }
   }, [statusFilter, page, perPage, debouncedSearch, t]);
 
-  /**
-   * Known ban state is merged at render rather than inside the fetch, so a
-   * refetch triggered right after a ban cannot race a stale closure and drop
-   * the status the mutation just returned.
-   */
-  const drivers = useMemo(
-    () => rows.map((row) => mapDriver(row, t, banStatuses[String(row.id)] ?? null)),
-    [rows, t, banStatuses]
-  );
+  const drivers = useMemo(() => rows.map((row) => mapDriver(row, t)), [rows, t]);
 
   useFetchEffect(fetchDashboard);
   useFetchEffect(fetchDrivers);
@@ -263,37 +241,25 @@ export const useDrivers = (): UseDriversReturn => {
     setPage(1);
   }, []);
 
-  /**
-   * The row status returned by `GET /admin/drivers` does not reflect bans
-   * (BUG-6), so nothing is optimistically patched onto it — that would be a
-   * figure the server disagrees with on the very next fetch. Instead the
-   * authoritative status the mutation itself returns is stored, and the list is
-   * refetched so every other column stays server-truthful.
-   */
-  const applyStatus = useCallback((id: string, status: UserStatusResponse) => {
-    setBanStatuses((prev) => ({ ...prev, [id]: status }));
-  }, []);
-
   const banDriver = useCallback(
     async (driver: Driver, ban: BanRequest) => {
-      const response = await usersApi.banUser(driver.id, ban);
-      applyStatus(driver.id, response.data);
+      await usersApi.banUser(driver.id, ban);
       void refetch();
     },
-    [applyStatus, refetch]
+    [refetch]
   );
 
   const unbanDriver = useCallback(
     async (driver: Driver) => {
-      const response = await usersApi.unbanUser(driver.id);
-      applyStatus(driver.id, response.data);
+      await usersApi.unbanUser(driver.id);
       void refetch();
     },
-    [applyStatus, refetch]
+    [refetch]
   );
 
   return {
     drivers,
+    counts,
     stats,
     activity,
     efficiency,

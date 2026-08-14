@@ -28,7 +28,7 @@ const statusBadgeClasses = (status: Driver['status']): string => {
       return 'bg-secondary-fixed text-on-secondary-container';
     case 'pending':
       return 'bg-tertiary-fixed text-on-tertiary-fixed-variant';
-    case 'suspended':
+    case 'banned':
     case 'rejected':
       return 'bg-error-container text-on-error-container';
     default:
@@ -71,6 +71,7 @@ const Drivers: React.FC = () => {
 
   const {
     drivers,
+    counts,
     stats,
     activity,
     efficiency,
@@ -96,18 +97,14 @@ const Drivers: React.FC = () => {
     unbanDriver,
   } = useDrivers();
 
-  /**
-   * No count badges: unlike `GET /admin/trips`, `GET /admin/drivers` returns no
-   * `counts` block, and `meta.total` only describes the requested filter. Four
-   * badges would mean four extra requests — filed as REQ-2.
-   */
   const filterItems = useMemo<FilterTabItem<DriverStatusFilter>[]>(
     () =>
       DRIVER_FILTERS.map((filter) => ({
         value: filter,
         label: t(`drivers.filter_${filter}`),
+        count: counts ? counts[filter] : undefined,
       })),
-    [t]
+    [counts, t]
   );
 
   const handleToggleStatus = async (driver: Driver) => {
@@ -295,23 +292,12 @@ const Drivers: React.FC = () => {
                     </td>
                     <td className="px-6 py-5 text-start">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${statusBadgeClasses(driver.status)}`}>
+                        <span
+                          data-testid={isBannedDriver(driver) ? `driver-banned-${driver.id}` : undefined}
+                          className={`px-3 py-1 rounded-full text-[10px] font-bold ${statusBadgeClasses(driver.status)}`}
+                        >
                           {t(`drivers.status_${driver.status}`)}
                         </span>
-                        {/*
-                          Shown only for rows whose ban state we actually know —
-                          i.e. ones banned in this session. The list payload
-                          carries no ban field (BUG-6), so absence of this chip
-                          means "unknown", never "not banned".
-                        */}
-                        {isBannedDriver(driver) && (
-                          <span
-                            data-testid={`driver-banned-${driver.id}`}
-                            className="px-3 py-1 rounded-full text-[10px] font-bold bg-error text-on-error"
-                          >
-                            {t('drivers.account_banned')}
-                          </span>
-                        )}
                       </div>
                     </td>
                     <td className="px-6 py-5 text-start">

@@ -5,7 +5,12 @@ import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
 import type { IsStale } from '../../shared/hooks/useFetchEffect';
 import { isForbiddenError } from '../../../services/apiError';
 import { tripsApi } from '../api/tripsApi';
-import type { BookingResponse, BookingFilterValue, BookingStatusValue } from '../api/tripsApi';
+import type {
+  BookingResponse,
+  BookingFilterValue,
+  BookingStatusValue,
+  BookingsListResponse,
+} from '../api/tripsApi';
 
 export interface Booking {
   id: string;
@@ -25,6 +30,7 @@ export interface Booking {
 }
 
 export type BookingFilter = BookingFilterValue;
+export type BookingCounts = BookingsListResponse['counts'];
 
 export const BOOKING_FILTERS: readonly BookingFilter[] = [
   'all',
@@ -65,6 +71,7 @@ const mapBooking = (b: BookingResponse, t: TFunction): Booking => ({
 
 interface UseBookingsReturn {
   bookings: Booking[];
+  counts: BookingCounts | null;
   statusFilter: BookingFilter;
   setStatusFilter: (filter: BookingFilter) => void;
   page: number;
@@ -83,6 +90,7 @@ interface UseBookingsReturn {
 export const useBookings = (): UseBookingsReturn => {
   const { t } = useTranslation();
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [counts, setCounts] = useState<BookingCounts | null>(null);
   const [statusFilter, setStatusFilterState] = useState<BookingFilter>('all');
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
@@ -120,6 +128,7 @@ export const useBookings = (): UseBookingsReturn => {
       setBookings(mapped);
       setLastPage(response.meta?.last_page ?? 1);
       setTotal(response.meta?.total ?? mapped.length);
+      setCounts(response.counts ?? null);
     } catch (err) {
       if (isStale()) {
         return;
@@ -159,6 +168,7 @@ export const useBookings = (): UseBookingsReturn => {
 
   return {
     bookings,
+    counts,
     statusFilter,
     setStatusFilter,
     page,

@@ -23,6 +23,7 @@ const driverRow = (overrides: Partial<DriverRowResponse> = {}): DriverRowRespons
   phone: '+963983337214',
   vehicle: 'suv | silver',
   status: 'verified',
+  is_banned: false,
   avg_rating: null,
   is_verified_driver: true,
   verification_status: 'approved',
@@ -182,10 +183,11 @@ describe('useDrivers', () => {
   });
 
   it('does not re-filter the server-filtered page client-side', async () => {
-    // A banned driver still reports status "verified" from the list endpoint
-    // (BUG-6). The old `visibleDrivers` memo dropped exactly this row when the
-    // suspended tab was active, blanking a table the server had filled.
-    const requests = captureDriverRequests([driverRow({ id: 10, status: 'verified' })]);
+    // The hook trusts whatever page the server's `filter` query returned —
+    // it never re-derives membership from `status` locally.
+    const requests = captureDriverRequests([
+      driverRow({ id: 10, status: 'banned', is_banned: true }),
+    ]);
     const { result } = renderHook(() => useDrivers());
 
     await waitFor(() => expect(result.current.drivers).toHaveLength(1));
@@ -195,7 +197,7 @@ describe('useDrivers', () => {
       expect(requests.some((u) => u.searchParams.get('filter') === 'suspended')).toBe(true)
     );
     await waitFor(() => expect(result.current.drivers).toHaveLength(1));
-    expect(result.current.drivers[0].status).toBe('verified');
+    expect(result.current.drivers[0].status).toBe('banned');
   });
 
   it('debounces search into the `search` param', async () => {
@@ -278,7 +280,7 @@ describe('useDrivers', () => {
   });
 
   describe('ban / unban', () => {
-    it('sends a temporary ban with its expiry and stores the returned status', async () => {
+    it('sends a temporary ban with its expiry and refetches the list', async () => {
       const driverRequests = captureDriverRequests();
       let banBody: Record<string, unknown> | null = null;
       server.use(
@@ -287,16 +289,7 @@ describe('useDrivers', () => {
           return HttpResponse.json({
             status: 'success',
             message: 'User has been banned successfully.',
-            data: userStatus({
-              ban: {
-                reason: 'repeatedly cancelling confirmed rides',
-                type: 'temporary',
-                banned_at: '2026-08-11T15:47:52+03:00',
-                expires_at: '2026-08-20T00:00:00+03:00',
-                is_expired: false,
-                banned_by: null,
-              },
-            }),
+            data: userStatus(),
           });
         })
       );
@@ -318,71 +311,46 @@ describe('useDrivers', () => {
         type: 'temporary',
         expires_at: '2026-08-20 00:00:00',
       });
-      // the list is reconciled with the server rather than hand-patched
+      // The row's truth comes from the next list fetch, never a hand-patch.
       await waitFor(() => expect(driverRequests.length).toBeGreaterThan(callsBefore));
-      await waitFor(() => expect(isBannedDriver(result.current.drivers[0])).toBe(true));
-      expect(result.current.drivers[0].ban?.ban?.type).toBe('temporary');
-      expect(result.current.drivers[0].ban?.ban?.expires_at).toBe('2026-08-20T00:00:00+03:00');
     });
 
-    it('keeps the ban chip after the post-ban refetch returns the unchanged row', async () => {
-      // Regression guard: the list payload does not reflect bans, so a refetch
-      // returns `status: verified`. Merging ban state at render (not inside the
-      // fetch) is what stops that refetch from erasing the chip.
-      captureDriverRequests([driverRow({ status: 'verified' })]);
-      server.use(
-        http.post(`${API_BASE}/admin/users/10/ban`, () =>
-          HttpResponse.json({ status: 'success', message: 'ok', data: userStatus() })
-        )
-      );
-
+    it('reflects is_banned straight from the list response', async () => {
+      captureDriverRequests([driverRow({ status: 'banned', is_banned: true })]);
       const { result } = renderHook(() => useDrivers());
+
       await waitFor(() => expect(result.current.drivers).toHaveLength(1));
-
-      await act(async () => {
-        await result.current.banDriver(result.current.drivers[0], {
-          reason: 'violating platform policies repeatedly',
-          type: 'permanent',
-        });
-      });
-
-      await waitFor(() => expect(isBannedDriver(result.current.drivers[0])).toBe(true));
-      // still "verified" per the server — the chip is the only ban signal
-      expect(result.current.drivers[0].status).toBe('verified');
+      expect(isBannedDriver(result.current.drivers[0])).toBe(true);
+      expect(result.current.drivers[0].status).toBe('banned');
     });
 
-    it('clears the ban state on unban', async () => {
-      captureDriverRequests();
+    it('calls the unban endpoint and refetches the list', async () => {
+      const driverRequests = captureDriverRequests([
+        driverRow({ status: 'banned', is_banned: true }),
+      ]);
+      let unbanCalled = false;
       server.use(
-        http.post(`${API_BASE}/admin/users/10/ban`, () =>
-          HttpResponse.json({ status: 'success', message: 'ok', data: userStatus() })
-        ),
-        http.post(`${API_BASE}/admin/users/10/unban`, () =>
-          HttpResponse.json({
+        http.post(`${API_BASE}/admin/users/10/unban`, () => {
+          unbanCalled = true;
+          // an unban lands on logged_out (0), not active (1)
+          return HttpResponse.json({
             status: 'success',
             message: 'ok',
-            // an unban lands on logged_out (0), not active (1)
             data: userStatus({ account_status: 'logged_out', status_code: 0, ban: null }),
-          })
-        )
+          });
+        })
       );
 
       const { result } = renderHook(() => useDrivers());
       await waitFor(() => expect(result.current.drivers).toHaveLength(1));
-
-      await act(async () => {
-        await result.current.banDriver(result.current.drivers[0], {
-          reason: 'violating platform policies repeatedly',
-          type: 'permanent',
-        });
-      });
-      await waitFor(() => expect(isBannedDriver(result.current.drivers[0])).toBe(true));
+      const callsBefore = driverRequests.length;
 
       await act(async () => {
         await result.current.unbanDriver(result.current.drivers[0]);
       });
-      await waitFor(() => expect(isBannedDriver(result.current.drivers[0])).toBe(false));
-      expect(result.current.drivers[0].ban?.status_code).toBe(0);
+
+      expect(unbanCalled).toBe(true);
+      await waitFor(() => expect(driverRequests.length).toBeGreaterThan(callsBefore));
     });
   });
 
@@ -423,22 +391,13 @@ describe('isBannedDriver', () => {
     phone: '',
     vehicle: '',
     status: 'verified',
+    isBanned: false,
     rating: null,
     photo: null,
-    ban: null,
   };
 
-  it('treats unknown ban state as not-banned so the ban action stays available', () => {
+  it('reflects the isBanned field directly', () => {
     expect(isBannedDriver(base)).toBe(false);
-  });
-
-  it('is true only when the status payload carries a ban block', () => {
-    expect(isBannedDriver({ ...base, ban: userStatus() })).toBe(true);
-    expect(
-      isBannedDriver({
-        ...base,
-        ban: userStatus({ account_status: 'logged_out', status_code: 0, ban: null }),
-      })
-    ).toBe(false);
+    expect(isBannedDriver({ ...base, isBanned: true, status: 'banned' })).toBe(true);
   });
 });

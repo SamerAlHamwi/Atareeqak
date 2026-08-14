@@ -58,6 +58,7 @@ const Staff: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [editTarget, setEditTarget] = useState<Employee | null>(null);
   const [toggleTarget, setToggleTarget] = useState<Employee | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
   const [createErrors, setCreateErrors] = useState<Record<string, string>>({});
   const [editErrors, setEditErrors] = useState<Record<string, string>>({});
 
@@ -74,19 +75,11 @@ const Staff: React.FC = () => {
     updateEmployee,
     toggleActive,
     resetPassword,
+    deleteEmployee,
   } = useStaff();
 
-  /**
-   * 🔴 The BUG-1 gate. Three of the six `/employees` endpoints **write the row
-   * and then return 500**, so no create / edit / deactivate control may be
-   * reachable until the backend is proven usable. `isBackendAvailable` is
-   * derived from the live `GET /employees`, which exercises both of the missing
-   * service methods the write paths need — see the long note in `useStaff`.
-   *
-   * Password reset is gated by the same flag. It dies *before* its write, so it
-   * cannot corrupt anything, but a button that can only ever fail is still a
-   * lie about what the page can do.
-   */
+  // Every write control requires a proven-usable backend — see
+  // `isBackendAvailable` in useStaff.
   const canManage = isBackendAvailable === true;
 
   const usernameValid =
@@ -179,6 +172,20 @@ const Staff: React.FC = () => {
     });
   };
 
+  const handleDelete = async (employee: Employee) => {
+    if (!canManage) return;
+    await runAction({
+      key: `staff-delete-${employee.id}`,
+      action: () => deleteEmployee(employee),
+      successMessage: t('staff.delete_success', { name: employee.name }),
+      errorMessage: t('staff.delete_failed'),
+      onSuccess: () => {
+        setDeleteTarget(null);
+        setSelectedEmployee((prev) => (prev && prev.id === employee.id ? null : prev));
+      },
+    });
+  };
+
   const handleResetPassword = async () => {
     if (!selectedEmployee || newPassword.length < PASSWORD_MIN_LENGTH || !canManage) return;
     await runAction({
@@ -210,10 +217,6 @@ const Staff: React.FC = () => {
         */}
       </div>
 
-      {/*
-        🔴 BUG-1: the read path degrades to a labelled panel carrying the real
-        server error, never to an empty table.
-      */}
       {isBackendAvailable === false ? (
         <StaffUnavailablePanel message={error} onRetry={() => void refetch()} />
       ) : (
@@ -390,12 +393,6 @@ const Staff: React.FC = () => {
                               >
                                 <span className="material-symbols-outlined text-sm">edit</span>
                               </button>
-                              {/*
-                                The delete button is gone. DELETE /employees/{id}
-                                returns 405 — the route does not exist. The
-                                backend's intended equivalent is deactivation,
-                                which is this control.
-                              */}
                               <button
                                 data-testid={`staff-toggle-${emp.id}`}
                                 onClick={(event) => {
@@ -413,6 +410,18 @@ const Staff: React.FC = () => {
                                 <span className="material-symbols-outlined text-sm">
                                   {emp.isActive ? 'person_off' : 'how_to_reg'}
                                 </span>
+                              </button>
+                              <button
+                                data-testid={`staff-delete-${emp.id}`}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setDeleteTarget(emp);
+                                }}
+                                disabled={isBusy(`staff-delete-${emp.id}`)}
+                                className="p-1.5 rounded-lg text-error hover:bg-error-container/20 disabled:opacity-40"
+                                title={t('staff.delete')}
+                              >
+                                <span className="material-symbols-outlined text-sm">delete</span>
                               </button>
                             </div>
                           </td>
@@ -633,6 +642,25 @@ const Staff: React.FC = () => {
               }
             }}
             onClose={() => setToggleTarget(null)}
+          />
+
+          <ConfirmActionModal
+            open={deleteTarget !== null}
+            title={t('staff.delete_confirm_title')}
+            description={
+              deleteTarget ? t('staff.delete_confirm_desc', { name: deleteTarget.name }) : undefined
+            }
+            confirmLabel={t('staff.delete')}
+            confirmTone="destructive"
+            // DELETE /employees/{id} takes no body — same reasoning as toggle-active above.
+            hideReason
+            isBusy={deleteTarget ? isBusy(`staff-delete-${deleteTarget.id}`) : false}
+            onConfirm={async () => {
+              if (deleteTarget) {
+                await handleDelete(deleteTarget);
+              }
+            }}
+            onClose={() => setDeleteTarget(null)}
           />
         </>
       )}

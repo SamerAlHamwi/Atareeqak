@@ -35,7 +35,7 @@ interface UseStaffReturn {
   isLoading: boolean;
   error: string | null;
   /**
-   * Whether the `/employees` backend is usable at all — see BUG-1 below.
+   * Whether the `/employees` backend is usable at all.
    * `null` while the first request is still in flight.
    */
   isBackendAvailable: boolean | null;
@@ -44,51 +44,15 @@ interface UseStaffReturn {
   updateEmployee: (employee: Employee, payload: UpdateEmployeeRequest) => Promise<void>;
   toggleActive: (employee: Employee) => Promise<void>;
   resetPassword: (employee: Employee, newPassword: string) => Promise<void>;
+  deleteEmployee: (employee: Employee) => Promise<void>;
 }
 
 /**
- * 🔴 BUG-1 — why this hook has an `isBackendAvailable` flag.
- *
- * `EmployeeManagementController` calls three methods that do not exist on
- * `EmployeeManagementService`: `list()`, `resetPassword()` and
- * `formatEmployee()`. The service defines `getAll · getById · create · update ·
- * rotatePassword · toggleActive · delete`. Every one of the six `/employees`
- * endpoints therefore fails — and *where* in each action the missing call sits
- * decides whether the request corrupts data on its way out:
- *
- *   GET    /employees              list() ✗              → dies immediately
- *   GET    /employees/{id}         formatEmployee() ✗    → read-only, harmless
- *   POST   /employees              formatEmployee() ✗    → 🔴 ROW CREATED, then 500
- *   PUT    /employees/{id}         formatEmployee() ✗    → 🔴 ROW UPDATED, then 500
- *   PATCH  /employees/{id}/toggle-active                 → 🔴 ROW FLIPPED, then 500
- *   PATCH  /employees/{id}/reset-password  resetPassword() ✗ → dies before the write
- *
- * The 500 is an unhandled `\Error` ("Call to undefined method"), which is not an
- * `\Exception`, so each action's own `catch (\Exception $e)` never fires.
- *
- * Three of those six **write and then report failure**. Shipping create / edit /
- * deactivate against that would tell a user their action failed while the row
- * changed underneath them, and the natural response — retry — creates a second
- * employee or double-toggles.
- *
- * ── The decision (option (a) of the two offered) ────────────────────────────
- * The page is **kept mounted and shipped with a real, labelled unavailable
- * state**, rather than hidden behind a build-time feature flag:
- *
- *   · the read path always attempts `GET /employees` and, on failure, renders an
- *     explicit "staff directory unavailable" panel carrying the real server
- *     error — never an empty table, which would read as "no staff";
- *   · **every write control is unreachable while the list request fails.**
- *
- * Availability is derived from the live response rather than a hardcoded flag on
- * purpose: `GET /employees` calls BOTH `list()` and `formatEmployee()`, so its
- * success proves both of the missing methods that the write paths depend on
- * have been restored. The page therefore un-gates itself the moment BUG-1 is
- * fixed, with no frontend change and no stale flag left behind.
- *
- * The fix is small — rename `list` → `getAll` and `resetPassword` →
- * `rotatePassword` at the call sites and add a `formatEmployee()`. The concrete
- * patch is in docs/api/backend-issues.md.
+ * `isBackendAvailable` gates every write control on whether the last
+ * `GET /employees` succeeded, rather than assuming it always will — if the
+ * list fails to load, the page shows a labelled unavailable state instead of
+ * an empty table (which would read as "no staff") and disables create/edit/
+ * deactivate/delete rather than let them fail against data that isn't there.
  */
 const mapEmployee = (e: EmployeeResponse, locale: string): Employee => ({
   id: String(e.id),
@@ -128,7 +92,7 @@ export const useStaff = (): UseStaffReturn => {
         return;
       }
       setError(extractApiError(err, t('staff.load_failed')));
-      // The list is the availability probe for the whole feature — see BUG-1.
+      // The list is the availability probe for the whole feature.
       setIsBackendAvailable(false);
       setStaff([]);
     } finally {
@@ -175,6 +139,14 @@ export const useStaff = (): UseStaffReturn => {
     await staffApi.resetStaffPassword(employee.id, newPassword);
   }, []);
 
+  const deleteEmployee = useCallback(
+    async (employee: Employee) => {
+      await staffApi.deleteEmployee(employee.id);
+      await refetch();
+    },
+    [refetch]
+  );
+
   const totalStaff = staff.length;
   const activeStaff = useMemo(() => staff.filter((e) => e.isActive).length, [staff]);
   const inactiveStaff = totalStaff - activeStaff;
@@ -192,5 +164,6 @@ export const useStaff = (): UseStaffReturn => {
     updateEmployee,
     toggleActive,
     resetPassword,
+    deleteEmployee,
   };
 };

@@ -98,11 +98,6 @@ export interface BookingsListParams {
   ride_id?: number;
 }
 
-/**
- * Note: unlike `/admin/trips`, this payload carries **no `counts` block** — the
- * only figure available is `meta.total` for the requested status. See REQ-2 in
- * docs/api/backend-issues.md.
- */
 export interface BookingsListResponse {
   status: string;
   data: BookingResponse[];
@@ -112,6 +107,14 @@ export interface BookingsListResponse {
     per_page: number;
     total: number;
     filter: string;
+  };
+  counts: {
+    all: number;
+    pending: number;
+    confirmed: number;
+    cancelled: number;
+    completed: number;
+    no_show: number;
   };
 }
 
