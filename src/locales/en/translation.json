@@ -57,7 +57,7 @@
     "no_account": "Don't have an admin account?",
     "contact_support": "Contact Technical Support",
     "invalid_credentials": "Invalid credentials.",
-    "copyright": "© 2024 All rights reserved",
+    "copyright": "© 2026 All rights reserved",
     "brand_name": "Atareeqak",
     "login_failed": "Login failed. Check your username and password.",
     "password_help": "Employee passwords are reset by your system administrator from the Staff page.",
@@ -760,7 +760,7 @@
     "delete_failed": "Could not delete employee"
   },
   "footer": {
-    "copyright": "© 2024 Atareeqak. All rights reserved."
+    "copyright": "© 2026 Atareeqak. All rights reserved."
   },
   "roles": {
     "system_admin": "System Admin",
