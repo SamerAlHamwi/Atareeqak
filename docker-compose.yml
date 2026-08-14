@@ -1,0 +1,12 @@
+services:
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: https://api.onwayride.me/api
+    image: onwayride_dashboard:latest
+    container_name: onwayride_dashboard
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8091:80"
