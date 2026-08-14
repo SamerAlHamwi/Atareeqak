@@ -1,17 +1,20 @@
-# Atareeqak Dashboard ↔ SyRide Backend — Full Integration Plan
+# Atareeqak Dashboard ↔ SyRide Backend — Full Integration Plan — ✅ **ALL 15 PHASES DONE 2026-08-14**
 
 **Goal:** every component of the dashboard is driven by a real backend endpoint, for a
-**`system_admin`** session, with no mock data left in the product paths.
+**`system_admin`** session, with no mock data left in the product paths. **Achieved** — see
+`docs/api/component-endpoint-map.md` for the checkable, component-by-component proof.
 
 **Repos**
 
 | Piece | Path | Current HEAD |
 |---|---|---|
-| Backend (Laravel) | `../4th_year_projects_refractored` | `3eb54ad` (2026‑08‑09), `main` = `origin/main` |
+| Backend (Laravel) | `Backend/` (this machine's checkout of `4th_year_projects_refractored`) | `cae097b` (2026-08-14), `main` |
 | Dashboard (React 19 + Vite + TS) | `Atareeqak` | working tree |
-| API contract | `../SyRide_—_Admin,_Staff_&_System_Admin_APIs_postman_collection.json` | 60 requests |
+| API contract | `docs/api/route-list.json` (145 routes, from `php artisan route:list --json`) | authoritative — see `docs/api/decisions.md` |
 
-**Live API:** `https://api.onwayride.me/api` (dev proxy in `vite.config.ts`, prod rewrite in `vercel.json`).
+**Live API (dev/local):** `http://127.0.0.1:8000/api` (proxy in `vite.config.ts`). **Production:** no
+known host — `vercel.json`'s rewrite targets `$API_PROXY_TARGET`, an unset Vercel env var, and
+`src/app/ApiConfigGuard.tsx` makes that absence loud instead of shipping another guess (Phase 15).
 
 **How to use this file:** phases are ordered by dependency. Do **Phase 0 and Phase 1 first** — every
 later phase assumes the contract is confirmed and auth is correct. Inside a phase the steps are
@@ -144,12 +147,14 @@ Legend: ✅ wired & endpoint exists · ⚠️ wired but mismatched/incomplete ·
 | `staff/pages/Staff` | `GET/POST /employees`, `PUT /employees/{id}`, `PATCH .../toggle-active`, `PATCH .../reset-password` | ⚠️ built, but **all six 500** ([BUG-1](docs/api/backend-issues.md)); ships a live-derived "unavailable" state with every write control gated |
 | staff delete | ~~`DELETE /employees/{id}`~~ | ✅ resolved in Phase 10: **405**, so `deleteEmployee` was deleted and replaced by *Deactivate* |
 | ~~`staff/BroadcastAlertModal`~~ | `POST /admin/broadcast-alert` | ✅ resolved in Phase 10: **404** confirmed live, so the modal, its api call, its endpoint constant and its locale namespace were all removed |
-| `settings/pages/Settings` (4 components) | `GET/POST /admin/settings` | ❌ no such route |
-| `home/pages/Home` | — | ❌ two mock buttons |
-| `MainLayout` header search | — | 🆕 non-functional input |
-| `MainLayout` admin avatar | `POST /admin/photo` | ❌ **stub that lies** — returns success with no file handling at all ([BUG-12](docs/api/backend-issues.md)); do NOT wire an upload to it |
+| ~~`settings/pages/Settings` (4 components)~~ | ~~`GET/POST /admin/settings`~~ | ✅ resolved in Phase 11: **no such route**, and two-thirds of the page's own controls weren't even wired to the one hook that existed — the whole feature deleted, not built behind a flag. See `decisions.md` Q1. |
+| ~~`home/pages/Home`~~ | — | ✅ resolved in Phase 12: page deleted, `/` now a role-based `<Navigate>` (`RoleHome` in `routes/index.tsx`) |
+| ~~`MainLayout` header search~~ | — | ✅ resolved in Phase 12: removed rather than wired — only 2 of the "3" entities the plan assumed actually share a `search` param |
+| `MainLayout` admin avatar | `POST /admin/photo` | ✅ resolved in Phase 12: confirmed **unbuildable** for three independent reasons (stub, no DB column, no field on `/staff/me` — [BUG-12](docs/api/backend-issues.md)), so the shared `<Avatar>` initials fallback is the permanent answer, not wired |
 | ~~— | `GET /staff/bookings`, `POST /staff/bookings/{id}/cancel`~~ | ✅ built in Phase 3 (Bookings tab) |
 | ~~—~~ | `GET /admin/wallet`, `GET /admin/wallet/{id}/transactions` | ✅ built in Phase 9 (admin wallet card + transactions drawer) |
+| ~~— (notification bell)~~ | 8 `/api/notifications/*` routes | ✅ resolved in Phase 12: confirmed **cross-realm auth defect** live (BUG-13) — a staff token authenticates as whatever `users` row shares its numeric id, since `JwtAuthMiddleware` never checks `sub_type`. No staff-reachable notifications endpoint exists; the bell was removed, not wired |
+| ~~— (logout)~~ | `POST /staff/logout` \| `/admin/logout` | ✅ resolved in Phase 12: `AuthContext.logout` now calls `authApi.logout(authKind, accessToken)`; proven live by a logout-then-replay assertion (`docs/api/verify-shell.mjs`) |
 
 ---
 
@@ -1232,7 +1237,7 @@ proven by replaying it (`401`, previously `200`).
 
 ---
 
-## Phase 13 — Cross-cutting hardening
+## Phase 13 — Cross-cutting hardening — ✅ **DONE 2026-08-14**
 
 Apply uniformly across every page touched above. Audited, not assumed — most of this list turned out
 to already be satisfied by Phases 2–10, confirmed by sweeping every page rather than trusting the
@@ -1256,18 +1261,25 @@ plan's own earlier claim:
       one in-flight refresh promise (`refreshAccessToken()`) across every queued 401; proven by
       `tests/services/api.test.ts`'s two new cases (exactly one `POST /refresh` under two concurrent
       401s, and a fresh refresh for a later non-concurrent one).
-- [ ] **403 handling** — in progress. `RoleRoute`'s panel extracted to
-      `features/shared/components/NoPermissionPanel.tsx`; `useTrips`/`useBookings`/`Trips.tsx` done
-      and tested as the reference implementation (an `isForbidden` flag tracked separately from
-      `error`, since a 403 is a permission fact, not a retryable failure). Rolling the same pattern
-      out to the remaining list hooks/pages now. `staff/pages/Staff.tsx` is the deliberate exception —
-      BUG-1's `isBackendAvailable` gating already covers it.
-- [x] ~~**i18n**~~ ✅ **two real gaps found and fixed, one already moot.** Of the four raw-key leaks
+- [x] ~~**403 handling**~~ ✅ **done this phase.** `RoleRoute`'s panel extracted to
+      `features/shared/components/NoPermissionPanel.tsx`. Every list hook now tracks an `isForbidden`
+      flag separately from `error` (a 403 is a permission fact, not a retryable failure — no Retry
+      button, no "request failed" message) and every page renders the same panel instead of
+      `ErrorBanner` when it's true: Trips/Bookings, Dashboard, Drivers/DriverDetails, Verifications,
+      Support, Users/UserDetails (only the page-gating `fetchProfile`, not the five independent
+      per-section refreshes — a 403 on one stat widget is a smaller, already-tolerable failure, not a
+      whole-page permission problem), Reports (two independent fetchers, `isReportForbidden` /
+      `isRequestsForbidden`, OR'd together), and `WalletTransactionsDrawer` (its own hook, own
+      forbidden state, scoped to the drawer's body rather than the whole Reports page — the drawer's
+      header/close button stay). `staff/pages/Staff.tsx` is the deliberate exception — BUG-1's
+      `isBackendAvailable` gating already covers it, a different concern. 12 new hook-level tests, one
+      per touched hook, proving a 403 sets `isForbidden` and leaves `error` null.
+- [x] ~~**i18n**~~ ✅ **three real gaps found and fixed, one already moot.** Of the four raw-key leaks
       flagged at the end of Phase 9/10 (`common.welcome`, `trips.view_details`, `trips.cancel_trip`,
       `auth.email`): `common.welcome` is moot — its only call site, `home/pages/Home.tsx`, was deleted
-      whole in Phase 12. `trips.view_details` and `trips.cancel_trip` (both `title=` tooltips in
-      `TripsTable.tsx`) were genuinely undefined in both locales — added to `ar`/`en`. `auth.email`
-      (`UserDetails.tsx`/`Users.tsx`) — see below.
+      whole in Phase 12. `trips.view_details`, `trips.cancel_trip` (both `title=` tooltips in
+      `TripsTable.tsx`) and `auth.email` (a field label in `UserDetails.tsx`/`Users.tsx`) were
+      genuinely undefined in both locales — all three added to `ar`/`en`.
 - [x] ~~**Dates**~~ ✅ confirmed no remaining hardcoded `'ar-SY'` — `useDriverDetails.ts`,
       `useUserDetails.ts` and `useReviews.ts` each carry only a comment noting the earlier fix
       (Phases 4/5/8); the header identity dropdown's `last_login` (Phase 12) and `BanStatusBanner`
@@ -1276,25 +1288,84 @@ plan's own earlier claim:
 
 ---
 
-## Phase 14 — Tests
+## Phase 14 — Tests — ✅ **DONE 2026-08-14**
 
 Existing: `tests/{auth,hooks,services}` (vitest + msw), `e2e/smoke.spec.ts` + `e2e/apiStubs.ts` (Playwright).
 
-- [ ] Update `tests/testServer.ts` msw handlers to the confirmed contract — including the removed endpoints, so a regression that re-introduces `/admin/settings` fails loudly.
-- [ ] `tests/services/api.test.ts` — the three refresh/403 cases from 1.4.
-- [ ] `tests/auth/AuthContext.test.tsx` — role comes from `/staff/me`, not from the login response; `sycash` renders correctly.
-- [x] ~~`useTrips` (paging)~~ ✅ done in Phase 3 (`tests/hooks/useTrips.test.ts`, `useBookings.test.ts`); ✅ `useDrivers` / `useDriverDetails` / `Avatar` in Phase 4; ✅ `useUsers` (date filter) / `useUserDetails` in Phase 5. ✅ `useSupport` (14 cases) and `useReviews` (9) in Phases 7–8, covering the type/date filters, the escalated-tab guard, the `counts`-driven badges, page-reset-on-filter-change and the `show()` side effect.
-- [ ] Extend `e2e/apiStubs.ts` for a full `system_admin` walkthrough: login → dashboard → trips (page 2) → ban a user → approve a verification → resolve a complaint → approve a wallet request → create an employee.
-- [ ] `npm run lint && npm run test && npm run build` clean before each phase is called done.
+- [x] `tests/testServer.ts` kept exactly as-is (Phase 7's no-baseline-handlers reasoning still holds).
+      Instead, a new `tests/services/removedEndpoints.test.ts` asserts the actual invariant: `ENDPOINTS`
+      resolves to none of `/admin/settings`, `/admin/broadcast-alert`, `/staff/complaints/metrics`,
+      `/admin/verifications`; no module under `src/` references one of those literals outside
+      `endpoints.ts`'s own explanatory comment; `staffApi.deleteEmployee` doesn't exist (BUG-4); and
+      `roles.ts` carries no leftover `settings` reference. 4 new tests.
+- [x] `tests/services/api.test.ts` — single-flight refresh: exactly one `POST /refresh` under two
+      concurrent 401s (both original requests still succeed off the one rotated token), and a genuinely
+      fresh refresh for a later, non-concurrent 401. 2 new tests. Also fixed a real test-isolation bug
+      while writing these: `api.defaults.headers.common['Authorization']`, set by the interceptor on
+      every successful refresh, was never reset between tests, so a token committed by one test's
+      refresh silently outlived it and won over the next test's `localStorage` setup. `tests/setup.ts`
+      now clears it in `afterEach`.
+- [x] `tests/auth/AuthContext.test.tsx` — role-from-`/staff/me` and `sycash` were already covered; added
+      3 new cases for Phase 12 Trap 3: `logout()` calls `POST /staff/logout` for a staff session with
+      the access token attached explicitly (not read from `localStorage`, which the same synchronous
+      call already cleared — a real race the test caught and `authApi.logout(kind, token?)` now avoids),
+      `POST /admin/logout` for an admin session, and the local session clears immediately even when the
+      request has no handler (dead network).
+- [x] ~~`useTrips` (paging)~~ ✅ done in Phase 3 (`tests/hooks/useTrips.test.ts`, `useBookings.test.ts`); ✅ `useDrivers` / `useDriverDetails` / `Avatar` in Phase 4; ✅ `useUsers` (date filter) / `useUserDetails` in Phase 5. ✅ `useSupport` (14 cases) and `useReviews` (9) in Phases 7–8, covering the type/date filters, the escalated-tab guard, the `counts`-driven badges, page-reset-on-filter-change and the `show()` side effect. ✅ Phase 13 added a stale-response-guard test to all 15 hooks and a 403/`isForbidden` test to the 12 that render `NoPermissionPanel`.
+- [x] **`e2e/apiStubs.ts` rebuilt.** Removed the `/admin/settings` success fixture (Phase 11 deleted the
+      route) and the `/staff/complaints/metrics` fixture (Phase 7 deleted the frontend call — BUG-8).
+      `reportFixture.financial_stats` corrected to the REAL live shape (confirmed 2026-08-14:
+      `sycash.{current_balance,total_escrow_in,total_escrow_out,total_refunds_paid}`,
+      `primary_admin.{current_balance,total_platform_fees}` — the old `total_collected`/
+      `total_disbursed` fields Phase 9 proved don't exist are gone). The `{status:'success',data:[]}`
+      catch-all replaced with a **negative rule**: any unstubbed path now returns a distinctive `599`
+      and is recorded in a returned `unstubbed[]` array every test asserts is empty — the exact failure
+      mode that let the settings/metrics stubs rot unnoticed.
+- [x] **`e2e/smoke.spec.ts`** extended with the full `system_admin` walkthrough: login → dashboard →
+      trips page 2 (asserts `page=2` on the wire) → ban a user (`POST /admin/users/501/ban`) → approve a
+      verification (`POST /staff/verifications/502/approve`) → resolve a complaint (`PATCH
+      /staff/complaints/503/respond`) → approve a wallet request (`POST
+      /admin/wallet/requests/504/approve`) → create an employee. The last step is stubbed as its **real
+      500** (BUG-1), not a fabricated success, and asserts the `staff-unavailable` panel renders with no
+      `create-submit` control reachable — exactly what the live backend does today. Every test also
+      asserts zero unstubbed requests and zero requests to a removed route
+      (`page.on('request')` against the same removed-route list `verify-shell.mjs` uses).
+      **8/8 e2e tests pass.**
+- [x] `npx tsc -b`, `npm run lint`, `npm test`, `npm run build` all clean. **227 passing** (baseline
+      198 → +29: 4 nav-consistency, 4 `useFetchEffect`, 2 single-flight, 4 removed-endpoints, 3
+      AuthContext, 12 `isForbidden`).
 
 ---
 
-## Phase 15 — Ship
+## Phase 15 — Ship — ✅ **DONE 2026-08-14**
 
-- [ ] Verify `vercel.json` rewrite still points at the right API host, and that the SPA fallback covers all routes.
-- [ ] Confirm production `VITE_API_BASE_URL` (`/api` + the rewrite) — no direct cross-origin call, so backend CORS is not on the critical path in prod.
-- [ ] Smoke the deployed build with a real `system_admin` account against §2's matrix, top to bottom.
-- [ ] Record the verified contract in `docs/api/decisions.md` and delete `collection.json` / `SyRide_All_APIs_merged.postman_collection.json` from the dashboard repo if they are now stale duplicates.
+1. [x] **`vercel.json`** — the dead `https://api.onwayride.me` rewrite target is gone (confirmed 404s
+       everything, `probe-results.md` §1). Asked the user directly rather than guess at a replacement
+       host: the answer was that no production host exists yet. The rewrite now targets
+       `$API_PROXY_TARGET`, a Vercel project env var left unset — see `.env.example`'s new deployment
+       section for how to set it once a real host exists. **The absence is loud, not silent**: new
+       `src/app/ApiConfigGuard.tsx` probes the public `GET /test` health route once on boot and renders
+       "No API configured for this deployment" instead of the dashboard when it gets a true
+       network-level failure (no HTTP response at all) — as opposed to every page quietly 404ing on its
+       own and reading as "the app is broken." `e2e/apiStubs.ts` stubs `/test` so the guard doesn't
+       trip the negative-rule check in tests. SPA fallback (`/((?!api/).*)` → `/index.html`) confirmed
+       to already cover every surviving route, including deep links (`/passengers/12`, `/drivers/3`) —
+       unchanged, was already correct.
+2. [x] `VITE_API_BASE_URL=/api` + the rewrite still means no cross-origin call in prod, so
+       `config/cors.php` (Q9) stays off the critical path — `.env.example` confirmed accurate and
+       extended with the `API_PROXY_TARGET` deployment note above.
+3. [x] **Production build smoked** — `npm run build` (clean) → `npm run preview` on :4173, driven by a
+       real Chromium session against the local backend as `system_admin`: login succeeds, all 8
+       role-visible pages render real content, `/settings` falls through to `/dashboard` rather than a
+       blank shell, and the only console entry is the expected BUG-1 500 from `/staff`. A `tsc -b` pass
+       is not a smoke test, so this ran the actual built bundle end-to-end.
+4. [x] **`docs/api/decisions.md` updated** — Q10's production half answered (no host, see `vercel.json`
+       above); section D gets a note recording the Postman file deletion (item 5 below) and why it
+       doesn't lose information.
+5. [x] **`collection.json` and `SyRide_All_APIs_merged.postman_collection.json` deleted**, confirmed
+       with the user first. Their only useful content — the D1–D6 divergences from the real backend —
+       was already captured in prose in `decisions.md`; the raw JSON added nothing beyond that and read
+       as a second, stale contract someone could mistake for authoritative.
 
 ---
 
@@ -1388,10 +1459,15 @@ All paths are relative to `VITE_API_BASE_URL`. Auth header: `Authorization: Bear
 | 8 — Reviews | 1 | ✅ done 2026-08-13 |
 | 9 — Reports & Wallet | 1 | ✅ done 2026-08-13 |
 | 10 — Staff | 0, 1 | ✅ done 2026-08-13 (blocked on BUG-1 server-side) |
-| 11 — Settings | 0 | 0.25–1 d (depends on the answer) |
-| 12 — Shell | 1 | 0.5 d |
-| 13 — Hardening | 2–12 | 1 d |
-| 14 — Tests | 2–13 | 1 d |
-| 15 — Ship | 14 | 0.5 d |
+| 11 — Settings | 0 | ✅ done 2026-08-14 (option (b): deleted) |
+| 12 — Shell | 1 | ✅ done 2026-08-14 |
+| 13 — Hardening | 2–12 | ✅ done 2026-08-14 |
+| 14 — Tests | 2–13 | ✅ done 2026-08-14 (227 passing, +29 from the 198 baseline) |
+| 15 — Ship | 14 | ✅ done 2026-08-14 (still no production API host — by the user's own choice, made loud rather than guessed) |
 
 Phases 2–12 are independent of each other and can be split across people once Phase 1 lands.
+
+All fifteen phases are now done. What's left is not frontend work: **Q6, Q8, Q9, Q11** in
+`decisions.md` table A are still open and need the backend developer, and a real production API host
+is still unknown (Q10's production half). Everything the dashboard itself controls is verified against
+a live backend, including the shell, the hardening pass and a production-build smoke test.
