@@ -75,20 +75,12 @@ export interface PassengerWalletCharge {
   status: string;
 }
 
-/**
- * What the confirmation banner reports after a charge.
- *
- * `newBalance` comes straight from the charge response. `previousBalance` and
- * `transactionId` are **not** in that response (REQ-3) — they are read back
- * from `GET /admin/passengers/{id}/wallet-charges`, whose newest row is the
- * transaction just written. Both stay null if that read-back does not line up,
- * rather than being computed client-side and presented as server truth.
- */
+/** What the confirmation banner reports after a charge — straight from the charge response (REQ-3). */
 export interface WalletChargeResult {
   amount: number;
   newBalance: number;
-  previousBalance: number | null;
-  transactionId: string | null;
+  previousBalance: number;
+  transactionId: string;
 }
 
 /** Sections that can be reloaded on their own, each with its own endpoint. */
@@ -389,44 +381,27 @@ export const useUserDetails = (userId: string | undefined): UseUserDetailsReturn
       if (!userId) {
         throw new Error('No user id');
       }
-      const knownTransactionIds = new Set(walletCharges.map((charge) => charge.transactionId));
       const response = await usersApi.chargePassengerWallet(userId, amount, notes);
 
-      // The charge busts the full-profile and stats caches server-side, so this
-      // reload shows the new balance rather than a five-minute-old one. Not part
-      // of the effect's sequence — always commit.
-      await refetch();
-
-      // Then the charge log is re-read from its own (uncached) endpoint: it is
-      // the only place the transaction id and previous balance exist, since the
-      // charge response carries neither (REQ-3).
-      let previousBalance: number | null = null;
-      let transactionId: string | null = null;
-      try {
-        const charges = await usersApi.getPassengerWalletCharges(userId);
-        const rows = mapWalletCharges(charges.data);
-        setWalletCharges(rows);
-        const created = rows.find(
-          (row) => !knownTransactionIds.has(row.transactionId) && row.amount === amount
-        );
-        if (created) {
-          previousBalance = created.previousBalance;
-          transactionId = created.transactionId;
-        }
-      } catch (err) {
-        // The charge itself succeeded; a failed read-back must not report it as
-        // a failure. The confirmation just omits the two fields.
-        console.error('Failed to read back the wallet transaction', err);
-      }
+      // The charge busts the full-profile, stats and wallet-charges caches
+      // server-side, so these reload fresh rather than showing stale data.
+      // Not part of the effect's sequence — always commit.
+      await Promise.all([
+        refetch(),
+        usersApi
+          .getPassengerWalletCharges(userId)
+          .then((charges) => setWalletCharges(mapWalletCharges(charges.data)))
+          .catch((err) => console.error('Failed to reload wallet charges', err)),
+      ]);
 
       return {
         amount,
         newBalance: response.new_balance,
-        previousBalance,
-        transactionId,
+        previousBalance: response.previous_balance,
+        transactionId: response.transaction_id,
       };
     },
-    [userId, walletCharges, refetch]
+    [userId, refetch]
   );
 
   /**

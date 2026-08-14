@@ -180,18 +180,17 @@ const Support: React.FC = () => {
   );
 
   /**
-   * The escalated view has its own vocabulary and its own counts block. The
-   * `resolved` / `closed` tabs are labelled "(all)" on purpose: passing those
-   * values makes `listEscalated()` drop its escalated constraint and return
-   * every complaint in that state, escalated or not, and `escalatedStatusCounts`
-   * agrees with it. Labelling them plain "Resolved" would claim these were
-   * escalated complaints, which is false — BUG-10.
+   * The escalated view has its own vocabulary and its own counts block.
+   * `listEscalated()` and `escalatedStatusCounts()` both scope to
+   * `whereNotNull('escalated_at')` regardless of which `status` is passed
+   * (BUG-10, fixed), so `resolved` / `closed` here genuinely mean "escalated,
+   * then resolved/closed" — plain labels, no "(all)" qualifier needed.
    */
   const escalatedTabs = useMemo<FilterTabItem<StatusFilter>[]>(
     () => [
       { value: 'escalated', label: t('common.status.escalated'), count: escalatedCounts?.escalated },
-      { value: 'resolved', label: t('support.tab_resolved_all'), count: escalatedCounts?.resolved },
-      { value: 'closed', label: t('support.tab_closed_all'), count: escalatedCounts?.closed },
+      { value: 'resolved', label: t('common.status.resolved'), count: escalatedCounts?.resolved },
+      { value: 'closed', label: t('common.status.closed'), count: escalatedCounts?.closed },
     ],
     [t, escalatedCounts]
   );

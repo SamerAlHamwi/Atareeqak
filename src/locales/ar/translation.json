@@ -519,6 +519,7 @@
       "withdraw": "سحب"
     },
     "request_status": {
+      "all": "الكل",
       "pending": "معلّق",
       "approved": "مقبول",
       "rejected": "مرفوض"
@@ -676,8 +677,6 @@
       "technical_issue": "عطل تقني",
       "other": "أخرى"
     },
-    "tab_resolved_all": "المحلولة (الكل)",
-    "tab_closed_all": "المغلقة (الكل)",
     "title_label": "الموضوع",
     "unassigned": "غير مسندة",
     "select_hint": "اختر شكوى لعرض تفاصيلها",

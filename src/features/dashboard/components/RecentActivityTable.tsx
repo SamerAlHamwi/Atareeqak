@@ -68,20 +68,39 @@ export const RecentActivityTable: React.FC<RecentActivityTableProps> = ({ rows, 
               rows.map((row) => (
                 <tr key={row.bookingId} className="group hover:bg-surface-container-low/40 transition-colors">
                   <td className="py-8 pe-6">
-                    <div className="flex items-center gap-4">
-                      {/* The payload carries no avatar URL, so initials stand in. */}
-                      <div className="w-12 h-12 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center text-sm font-black shrink-0">
-                        {row.userInitials}
+                    {row.userId !== null ? (
+                      <Link
+                        to={`/passengers/${row.userId}`}
+                        className="flex items-center gap-4 group/user w-fit"
+                      >
+                        {/* The payload carries no avatar URL, so initials stand in. */}
+                        <div className="w-12 h-12 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center text-sm font-black shrink-0">
+                          {row.userInitials}
+                        </div>
+                        <div>
+                          <p className="text-[15px] font-black text-on-surface leading-tight group-hover/user:underline">
+                            {row.userName}
+                          </p>
+                          <p className="text-[11px] font-bold text-on-surface-variant mt-1.5">
+                            {t('dashboard.phone_label')}: {row.userNumber}
+                          </p>
+                        </div>
+                      </Link>
+                    ) : (
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center text-sm font-black shrink-0">
+                          {row.userInitials}
+                        </div>
+                        <div>
+                          <p className="text-[15px] font-black text-on-surface leading-tight">
+                            {row.userName}
+                          </p>
+                          <p className="text-[11px] font-bold text-on-surface-variant mt-1.5">
+                            {t('dashboard.phone_label')}: {row.userNumber}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-[15px] font-black text-on-surface leading-tight">
-                          {row.userName}
-                        </p>
-                        <p className="text-[11px] font-bold text-on-surface-variant mt-1.5">
-                          {t('dashboard.phone_label')}: {row.userNumber}
-                        </p>
-                      </div>
-                    </div>
+                    )}
                   </td>
                   <td className="py-8 text-[15px] font-bold text-on-surface-variant text-center">
                     {row.driver}

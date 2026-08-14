@@ -86,7 +86,10 @@ export interface WalletRequestsListResponse {
     per_page: number;
     total: number;
   };
-  /** Whole-table counts, independent of the active filter. Drives the badges. */
+  /**
+   * Whole-table counts, independent of the active filter. Drives the badges.
+   * No `all` key — `useReports` derives it as the sum of the three.
+   */
   counts: {
     pending: number;
     approved: number;
@@ -166,12 +169,8 @@ export const walletApi = {
   },
 
   /**
-   * ⚠️ `status` has no "all" value. `AdminWalletRequestController::index()` does
-   * `$status = $request->get('status', 'pending')` and **always** filters, so
-   * omitting the param returns pending rows, not every row. The UI must not
-   * offer an "All" status tab — see `useReports`. `type`, by contrast, is
-   * applied only `if ($request->filled('type'))`, so omitting *it* genuinely
-   * means "both types".
+   * `AdminWalletRequestController::index()` applies `status` only when
+   * present, same as `type` — omit it for "every status" (see `useReports`).
    */
   getWalletRequests: async (
     params: {

@@ -31,19 +31,13 @@ export interface WalletRequestRow {
 }
 
 /**
- * There is deliberately **no `'all'`** member here.
- *
- * `AdminWalletRequestController::index()` runs
- * `$status = $request->get('status', 'pending'); $query->where('status', $status);`
- * — it always filters, and no value of `status` means "every status". The old
- * UI mapped an "All" tab onto *sending no `status` at all*, which returned
- * **pending rows labelled as all**. Faking it client-side would need three
- * requests and could not be paginated coherently across three paginators, so
- * the tab is gone and the three real statuses are each reachable instead. The
- * `counts` badges show the other two totals, so nothing is hidden. The missing
- * "no filter" option is filed as REQ-6 in docs/api/backend-issues.md.
+ * `AdminWalletRequestController::index()` now applies `status` only when it
+ * is present (`if ($request->filled('status'))`), matching `type` below, so
+ * omitting it genuinely means "every status" — fixed per REQ-6 in
+ * docs/api/backend-issues.md (previously it defaulted to `pending` and an
+ * "All" tab silently showed pending rows under an "all" label).
  */
-export type RequestStatusFilter = WalletRequestStatus;
+export type RequestStatusFilter = 'all' | WalletRequestStatus;
 
 /**
  * `'all'` **is** honest here: the controller applies `type` only
@@ -82,11 +76,12 @@ export const useReports = () => {
 
   const [requests, setRequests] = useState<WalletRequestRow[]>([]);
   const [requestCounts, setRequestCounts] = useState<{
+    all: number;
     pending: number;
     approved: number;
     rejected: number;
   } | null>(null);
-  const [statusFilter, setStatusFilterState] = useState<RequestStatusFilter>('pending');
+  const [statusFilter, setStatusFilterState] = useState<RequestStatusFilter>('all');
   const [typeFilter, setTypeFilterState] = useState<RequestTypeFilter>('all');
   const [requestsPage, setRequestsPage] = useState(1);
   const [requestsPerPage, setRequestsPerPageState] = useState<number>(10);
@@ -152,14 +147,23 @@ export const useReports = () => {
       const response = await walletApi.getWalletRequests({
         page: requestsPage,
         per_page: requestsPerPage,
-        status: statusFilter,
+        ...(statusFilter === 'all' ? {} : { status: statusFilter }),
         ...(typeFilter === 'all' ? {} : { type: typeFilter }),
       });
       if (isStale()) {
         return;
       }
       setRequests((response.data || []).map((r) => mapRequest(r, t, locale)));
-      setRequestCounts(response.counts ?? null);
+      // The server's `counts` block has no `all` key — derive it as the sum
+      // of the three real statuses, the same pattern BUG-9's inboxTotal uses.
+      setRequestCounts(
+        response.counts
+          ? {
+              ...response.counts,
+              all: response.counts.pending + response.counts.approved + response.counts.rejected,
+            }
+          : null
+      );
       setRequestsLastPage(response.meta?.last_page ?? 1);
       setRequestsTotal(response.meta?.total ?? 0);
     } catch (err) {

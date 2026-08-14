@@ -116,7 +116,7 @@ export interface UserStatusResponse {
     banned_at: string | null;
     expires_at: string | null;
     is_expired: boolean;
-    /** Always null today — see BUG-5 in docs/api/backend-issues.md. */
+    /** Null for bans issued before the BUG-5 fix; populated for new ones. */
     banned_by: { id: number; name: string } | null;
   } | null;
 }
@@ -253,19 +253,14 @@ export const CHARGE_AMOUNT_MAX = 10_000_000;
 export const CHARGE_NOTES_MAX = 500;
 
 /**
- * What the charge endpoint actually returns — **`{status, message, new_balance}`
- * only**, verified live.
- *
- * It does *not* return `previous_balance` or `transaction_id`; that richer shape
- * belongs to the unrelated `POST /admin/wallet/charge` (Phase 9). Filed as
- * REQ-3. Callers that need the full record read it back from
- * `GET /admin/passengers/{id}/wallet-charges`, whose top row is the transaction
- * just written (the charge busts the profile cache first).
+ * Matches `POST /admin/wallet/charge` (Phase 9) now — REQ-3 fixed.
  */
 export interface ChargeWalletResponse {
   status: string;
   message: string;
+  previous_balance: number;
   new_balance: number;
+  transaction_id: string;
 }
 
 export const usersApi = {

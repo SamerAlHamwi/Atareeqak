@@ -177,18 +177,12 @@ const UserDetails: React.FC = () => {
         }
       },
       successMessage: (result) =>
-        result.previousBalance !== null && result.transactionId
-          ? t('users.charge_success_detailed', {
-              previous: result.previousBalance.toLocaleString(locale),
-              next: result.newBalance.toLocaleString(locale),
-              currency: t('users.currency'),
-              transaction: result.transactionId,
-            })
-          : t('users.charge_success', {
-              amount: result.amount.toLocaleString(locale),
-              balance: result.newBalance.toLocaleString(locale),
-              currency: t('users.currency'),
-            }),
+        t('users.charge_success_detailed', {
+          previous: result.previousBalance.toLocaleString(locale),
+          next: result.newBalance.toLocaleString(locale),
+          currency: t('users.currency'),
+          transaction: result.transactionId,
+        }),
       errorMessage: t('users.charge_failed'),
       onSuccess: () => {
         setChargeAmount('');

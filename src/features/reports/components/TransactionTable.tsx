@@ -16,7 +16,7 @@ import type {
 
 interface TransactionTableProps {
   requests: WalletRequestRow[];
-  requestCounts: { pending: number; approved: number; rejected: number } | null;
+  requestCounts: { all: number; pending: number; approved: number; rejected: number } | null;
   statusFilter: RequestStatusFilter;
   setStatusFilter: (filter: RequestStatusFilter) => void;
   typeFilter: RequestTypeFilter;
@@ -35,19 +35,13 @@ interface TransactionTableProps {
   onRetry: () => void;
 }
 
-const STATUS_TABS: readonly RequestStatusFilter[] = ['pending', 'approved', 'rejected'];
+const STATUS_TABS: readonly RequestStatusFilter[] = ['all', 'pending', 'approved', 'rejected'];
 
 /**
- * Wallet requests inbox.
- *
- * ⚠️ There is **no "All" tab**, on purpose. The controller always filters by
- * status (defaulting to `pending`), so the previous All tab showed pending rows
- * under an "all" label. See `RequestStatusFilter` in useReports for the full
- * reasoning. The `counts` badges make the other statuses' totals visible from
- * whichever tab is active, so nothing is concealed by the removal.
- *
- * The **type** filter does have a legitimate "all" — that param is applied only
- * when present.
+ * Wallet requests inbox. `status` and `type` are both applied only when
+ * present (see `RequestStatusFilter`/`RequestTypeFilter` in useReports), so
+ * an "All" tab genuinely returns every status rather than defaulting to
+ * `pending` under an "all" label.
  */
 export const TransactionTable: React.FC<TransactionTableProps> = ({
   requests,
@@ -142,7 +136,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             ) : requests.length === 0 && !error ? (
               <tr>
                 <td colSpan={6} className="px-6 py-12 text-center text-on-surface-variant">
-                  {typeFilter === 'all'
+                  {typeFilter === 'all' && statusFilter !== 'all'
                     ? t('reports.requests_empty_status', {
                         status: t(`reports.request_status.${statusFilter}`),
                       })

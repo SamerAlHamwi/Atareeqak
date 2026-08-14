@@ -443,6 +443,7 @@
       "withdraw": "Withdraw"
     },
     "request_status": {
+      "all": "All",
       "pending": "Pending",
       "approved": "Approved",
       "rejected": "Rejected"
@@ -588,8 +589,6 @@
       "technical_issue": "Technical issue",
       "other": "Other"
     },
-    "tab_resolved_all": "Resolved (all)",
-    "tab_closed_all": "Closed (all)",
     "title_label": "Subject",
     "unassigned": "Unassigned",
     "select_hint": "Select a complaint to see its details",

@@ -75,9 +75,11 @@ const BanStatusBanner: React.FC<BanStatusBannerProps> = ({ status }) => {
             </span>
           )}
           {/*
-            `banned_by` is always null today: AdminBanController reads
-            `$request->user()?->id`, which is null under StaffJwtMiddleware.
-            Filed as BUG-5 — the row is omitted rather than showing "Unknown".
+            `banned_by` is null for bans issued before the BUG-5 fix (it was
+            always null: AdminBanController read `$request->user()?->id`,
+            which is never populated under StaffJwtMiddleware). New bans
+            resolve it via the acting Employee, so the row appears on its own
+            once one exists — omitted rather than showing "Unknown" until then.
           */}
           {ban.banned_by && (
             <span>

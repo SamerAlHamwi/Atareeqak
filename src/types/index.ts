@@ -79,6 +79,8 @@ export type CityDistribution = {
 export type RecentActivity = {
   booking_id: number;
   user: {
+    /** Added per REQ-1 so the row can link to the passenger's profile. */
+    id: number | null;
     name: string;
     number: string;
   };

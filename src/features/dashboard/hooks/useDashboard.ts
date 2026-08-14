@@ -94,6 +94,8 @@ const localiseMonth = (
 
 export interface DashboardActivityRow {
   bookingId: number;
+  /** Null when the booking's user relation is missing — row renders unlinked. */
+  userId: number | null;
   userName: string;
   userNumber: string;
   /** Up to two initials — the payload carries no avatar URL. */
@@ -235,6 +237,7 @@ export const useDashboard = () => {
 
         return {
           bookingId: activity.booking_id,
+          userId: activity.user?.id ?? null,
           userName: name,
           userNumber: activity.user?.number || '—',
           userInitials: initialsOf(name),
