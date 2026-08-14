@@ -146,6 +146,22 @@ describe('useUserDetails', () => {
     expect(result.current.error).toBe('User not found.');
   });
 
+  it('sets isForbidden (not error) on a 403 — a role change mid-session, not a network failure', async () => {
+    server.use(
+      http.get(`${API_BASE}/admin/passengers/${USER_ID}/full-profile`, () =>
+        HttpResponse.json({ status: 'error', code: 'FORBIDDEN' }, { status: 403 })
+      )
+    );
+
+    const { result } = renderHook(() => useUserDetails(String(USER_ID)));
+    await waitFor(() => expect(result.current.isForbidden).toBe(true));
+
+    // Not the generic error path — the page renders NoPermissionPanel off
+    // `isForbidden`, not ErrorBanner off `error`.
+    expect(result.current.error).toBeNull();
+    expect(result.current.isLoading).toBe(false);
+  });
+
   it('still renders the passenger when the status endpoint fails', async () => {
     server.use(
       http.get(`${API_BASE}/admin/users/${USER_ID}/status`, () =>

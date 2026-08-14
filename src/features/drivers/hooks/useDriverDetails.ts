@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
 import type { IsStale } from '../../shared/hooks/useFetchEffect';
-import { extractApiError } from '../../../services/apiError';
+import { extractApiError, isForbiddenError } from '../../../services/apiError';
 import { driversApi } from '../api/driversApi';
 import type { DriverDashboardDetailResponse, DriverStatus } from '../api/driversApi';
 import { usersApi } from '../../users/api/usersApi';
@@ -57,6 +57,8 @@ interface UseDriverDetailsReturn {
   status: UserStatusResponse | null;
   isLoading: boolean;
   error: string | null;
+  /** A role change mid-session can 403 a page `RoleRoute` already let through. */
+  isForbidden: boolean;
   banDriver: (ban: BanRequest) => Promise<void>;
   unbanDriver: () => Promise<void>;
 }
@@ -108,6 +110,8 @@ export const useDriverDetails = (driverId: string | undefined): UseDriverDetails
   const [status, setStatus] = useState<UserStatusResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** A role change mid-session can 403 a page `RoleRoute` already let through. */
+  const [isForbidden, setIsForbidden] = useState(false);
 
   /**
    * Ban state is not part of the driver dashboard payload, so it comes from the
@@ -132,6 +136,7 @@ export const useDriverDetails = (driverId: string | undefined): UseDriverDetails
     if (!driverId) return;
     setIsLoading(true);
     setError(null);
+    setIsForbidden(false);
     try {
       const response = await driversApi.getDriverDashboard(driverId);
       if (isStale()) {
@@ -140,6 +145,10 @@ export const useDriverDetails = (driverId: string | undefined): UseDriverDetails
       setDriver(mapDriver(response.data, t, i18n.language));
     } catch (err) {
       if (isStale()) {
+        return;
+      }
+      if (isForbiddenError(err)) {
+        setIsForbidden(true);
         return;
       }
       setError(extractApiError(err, t('common.load_failed')));
@@ -178,5 +187,5 @@ export const useDriverDetails = (driverId: string | undefined): UseDriverDetails
     await fetchStatus(() => false);
   }, [driverId, fetchStatus]);
 
-  return { driver, status, isLoading, error, banDriver, unbanDriver };
+  return { driver, status, isLoading, error, isForbidden, banDriver, unbanDriver };
 };

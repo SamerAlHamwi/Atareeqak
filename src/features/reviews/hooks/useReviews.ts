@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
 import type { IsStale } from '../../shared/hooks/useFetchEffect';
-import { extractApiError } from '../../../services/apiError';
+import { extractApiError, isForbiddenError } from '../../../services/apiError';
 import { reviewsApi } from '../api/reviewsApi';
 import type { ReviewResponse, ReviewDateFilter } from '../api/reviewsApi';
 
@@ -43,6 +43,8 @@ interface UseReviewsReturn {
   meta: ReviewsMeta | null;
   isLoading: boolean;
   error: string | null;
+  /** A role change mid-session can 403 a page `RoleRoute` already let through. */
+  isForbidden: boolean;
   search: string;
   setSearch: (value: string) => void;
   dateFilter: DateFilter;
@@ -76,6 +78,8 @@ export const useReviews = ({ userId = null }: UseReviewsOptions = {}): UseReview
   const [meta, setMeta] = useState<ReviewsMeta | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** A role change mid-session can 403 a page `RoleRoute` already let through. */
+  const [isForbidden, setIsForbidden] = useState(false);
   const [search, setSearchState] = useState('');
   const [dateFilter, setDateFilterState] = useState<DateFilter>('all');
   const [perPage, setPerPageState] = useState<number>(10);
@@ -110,6 +114,7 @@ export const useReviews = ({ userId = null }: UseReviewsOptions = {}): UseReview
   const fetchReviews = useCallback(async (isStale: IsStale) => {
     setIsLoading(true);
     setError(null);
+    setIsForbidden(false);
     try {
       const response = await reviewsApi.getReviews({
         page,
@@ -134,6 +139,10 @@ export const useReviews = ({ userId = null }: UseReviewsOptions = {}): UseReview
       );
     } catch (err) {
       if (isStale()) {
+        return;
+      }
+      if (isForbiddenError(err)) {
+        setIsForbidden(true);
         return;
       }
       // `user_id` is validated `exists:users,id`, so a deep link carrying a
@@ -170,6 +179,7 @@ export const useReviews = ({ userId = null }: UseReviewsOptions = {}): UseReview
     meta,
     isLoading,
     error,
+    isForbidden,
     search,
     setSearch,
     dateFilter,

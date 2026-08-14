@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
 import type { IsStale } from '../../shared/hooks/useFetchEffect';
 import { initialsOf } from '../../shared/initials';
-import { extractApiError } from '../../../services/apiError';
+import { extractApiError, isForbiddenError } from '../../../services/apiError';
 import { dashboardApi } from '../api/dashboardApi';
 import type {
   DashboardStats,
@@ -117,6 +117,8 @@ export const useDashboard = () => {
   const [isGrowthLoading, setIsGrowthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  /** A role change mid-session can 403 a page `RoleRoute` already let through. */
+  const [isForbidden, setIsForbidden] = useState(false);
 
   /**
    * One BFF call fills every widget on the page — GET /admin/dashboard returns
@@ -126,6 +128,7 @@ export const useDashboard = () => {
   const fetchDashboard = useCallback(async (isStale: IsStale) => {
     setIsLoading(true);
     setError(null);
+    setIsForbidden(false);
     try {
       const response = await dashboardApi.getFullDashboard();
       if (isStale()) {
@@ -139,6 +142,10 @@ export const useDashboard = () => {
       setLastUpdated(new Date());
     } catch (err) {
       if (isStale()) {
+        return;
+      }
+      if (isForbiddenError(err)) {
+        setIsForbidden(true);
         return;
       }
       setError(extractApiError(err, t('common.load_failed')));
@@ -255,6 +262,7 @@ export const useDashboard = () => {
     isLoading,
     isGrowthLoading,
     error,
+    isForbidden,
     lastUpdated,
     refetch,
   };

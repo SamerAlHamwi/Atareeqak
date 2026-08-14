@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
 import type { IsStale } from '../../shared/hooks/useFetchEffect';
-import { extractApiError } from '../../../services/apiError';
+import { extractApiError, isForbiddenError } from '../../../services/apiError';
 import { walletApi } from '../../wallet/api/walletApi';
 import type {
   WalletTransaction,
@@ -47,6 +47,8 @@ export const useWalletTransactions = (walletId: number | null) => {
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** A role change mid-session can 403 a page `RoleRoute` already let through. */
+  const [isForbidden, setIsForbidden] = useState(false);
 
   // Opening a different wallet restarts at page 1 rather than inheriting page 4
   // from the previous one. The owning wallet is stored *alongside* the page so
@@ -81,6 +83,7 @@ export const useWalletTransactions = (walletId: number | null) => {
     }
     setIsLoading(true);
     setError(null);
+    setIsForbidden(false);
     try {
       const response = await walletApi.getWalletTransactions(walletId, page);
       if (isStale()) {
@@ -94,6 +97,11 @@ export const useWalletTransactions = (walletId: number | null) => {
       setTotal(paginator?.total ?? 0);
     } catch (err) {
       if (isStale()) {
+        return;
+      }
+      if (isForbiddenError(err)) {
+        setIsForbidden(true);
+        setTransactions([]);
         return;
       }
       setError(extractApiError(err, t('reports.transactions_load_failed')));
@@ -118,6 +126,7 @@ export const useWalletTransactions = (walletId: number | null) => {
     total,
     isLoading,
     error,
+    isForbidden,
     refetch,
   };
 };

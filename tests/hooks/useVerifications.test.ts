@@ -109,6 +109,20 @@ describe('useVerifications', () => {
     expect(result.current.isLoading).toBe(false);
   });
 
+  it('sets isForbidden (not error) on a 403 — a role change mid-session, not a network failure', async () => {
+    server.use(
+      http.get(PENDING, () => HttpResponse.json({ status: 'error', code: 'FORBIDDEN' }, { status: 403 }))
+    );
+
+    const { result } = renderHook(() => useVerifications());
+    await waitFor(() => expect(result.current.isForbidden).toBe(true));
+
+    // Not the generic error path — the page renders NoPermissionPanel off
+    // `isForbidden`, not ErrorBanner off `error`.
+    expect(result.current.error).toBeNull();
+    expect(result.current.isLoading).toBe(false);
+  });
+
   it('sends the reject reason in the request body', async () => {
     const queue = recordingQueue([pendingRow(), pendingRow({ user_id: 33 })]);
     let body: Record<string, unknown> | null = null;

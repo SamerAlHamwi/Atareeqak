@@ -86,6 +86,63 @@ describe('AuthContext', () => {
     expect(localStorage.getItem('auth_kind')).toBeNull();
   });
 
+  it('logout() calls POST /staff/logout for a staff session, with the access token explicit', async () => {
+    // Phase 12 Trap 3: the sidebar button used to only clear localStorage —
+    // StaffJwtService::revokeAllTokens() never ran, so a copied token kept
+    // working after "logout" for up to its full 1h TTL. This asserts the
+    // fix actually reaches the server, on the endpoint `authKind` picks.
+    seedSession('staff');
+    let loggedOutCalls = 0;
+    let authHeader: string | null = null;
+    server.use(
+      http.post(`${API_BASE}/staff/logout`, ({ request }) => {
+        loggedOutCalls += 1;
+        authHeader = request.headers.get('Authorization');
+        return HttpResponse.json({ status: 'success' });
+      })
+    );
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    act(() => result.current.logout());
+
+    await waitFor(() => expect(loggedOutCalls).toBe(1));
+    // Not localStorage (already cleared by the same synchronous call) — the
+    // token has to be captured explicitly, or the request interceptor's
+    // microtask reads it after logout() has already removed it and the
+    // logout call itself goes out unauthenticated.
+    expect(authHeader).toBe('Bearer token-123');
+  });
+
+  it('logout() calls POST /admin/logout for an admin session', async () => {
+    seedSession('admin');
+    let loggedOutCalls = 0;
+    server.use(
+      http.post(`${API_BASE}/admin/logout`, () => {
+        loggedOutCalls += 1;
+        return HttpResponse.json({ status: 'success' });
+      })
+    );
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    act(() => result.current.logout());
+
+    await waitFor(() => expect(loggedOutCalls).toBe(1));
+  });
+
+  it('logout() clears the local session immediately even though the API call is not awaited', () => {
+    // A user on a dead network must still be able to log out of the browser.
+    // No handler is registered for /staff/logout here — testServer.ts has no
+    // baseline handlers (Phase 7) — so the request fails; local state must
+    // already be gone by the time `logout()` returns, not after that promise settles.
+    seedSession('staff');
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    act(() => result.current.logout());
+
+    expect(result.current.isAuthenticated).toBe(false);
+    expect(localStorage.getItem('access_token')).toBeNull();
+  });
+
   it('refreshes the profile for admin sessions too', async () => {
     // Regression: this used to be skipped unless auth_kind === 'staff'. Both
     // login flows issue StaffJwtService tokens, so /staff/me is valid for both

@@ -382,4 +382,20 @@ describe('useSupport', () => {
     expect(result.current.error).toBe('Complaint store unavailable');
     expect(result.current.isLoading).toBe(false);
   });
+
+  it('sets isForbidden (not error) on a 403 — a role change mid-session, not a network failure', async () => {
+    server.use(
+      http.get(`${API_BASE}/staff/complaints`, () =>
+        HttpResponse.json({ status: 'error', code: 'FORBIDDEN' }, { status: 403 })
+      )
+    );
+
+    const { result } = renderHook(() => useSupport());
+    await waitFor(() => expect(result.current.isForbidden).toBe(true));
+
+    // Not the generic error path — the page renders NoPermissionPanel off
+    // `isForbidden`, not ErrorBanner off `error`.
+    expect(result.current.error).toBeNull();
+    expect(result.current.isLoading).toBe(false);
+  });
 });

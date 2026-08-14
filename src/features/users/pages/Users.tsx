@@ -7,6 +7,7 @@ import Avatar from '../../shared/components/Avatar';
 import ConfirmActionModal from '../../shared/components/ConfirmActionModal';
 import type { ConfirmActionPayload } from '../../shared/components/ConfirmActionModal';
 import ErrorBanner from '../../shared/components/ErrorBanner';
+import NoPermissionPanel from '../../shared/components/NoPermissionPanel';
 import FilterTabs from '../../shared/components/FilterTabs';
 import type { FilterTabItem } from '../../shared/components/FilterTabs';
 import PerPageSelect from '../../shared/components/PerPageSelect';
@@ -69,6 +70,7 @@ const Users: React.FC = () => {
     total,
     isLoading,
     error,
+    isForbidden,
     refetch,
     banUser,
     unbanUser,
@@ -139,6 +141,14 @@ const Users: React.FC = () => {
   const panelUser = selectedUser
     ? users.find((entry) => entry.id === selectedUser.id) ?? selectedUser
     : null;
+
+  // `RoleRoute` already blocks navigation, but a role change mid-session can
+  // still 403 a page it already let through — `services/api.ts` deliberately
+  // passes 403 through untouched so this renders the same panel instead of a
+  // generic ErrorBanner that implies a Retry would help.
+  if (isForbidden) {
+    return <NoPermissionPanel />;
+  }
 
   return (
     <div className="space-y-8 relative">

@@ -204,6 +204,22 @@ describe('useTrips', () => {
     expect(result.current.trips).toHaveLength(0);
     expect(result.current.isLoading).toBe(false);
   });
+
+  it('sets isForbidden (not error) on a 403 — a role change mid-session, not a network failure', async () => {
+    server.use(
+      http.get(`${API_BASE}/admin/trips`, () =>
+        HttpResponse.json({ status: 'error', code: 'FORBIDDEN' }, { status: 403 })
+      )
+    );
+
+    const { result } = renderHook(() => useTrips());
+    await waitFor(() => expect(result.current.isForbidden).toBe(true));
+
+    // Not the generic error path — the page renders NoPermissionPanel off
+    // `isForbidden`, not ErrorBanner off `error`.
+    expect(result.current.error).toBeNull();
+    expect(result.current.isLoading).toBe(false);
+  });
 });
 
 describe('isCancellableTrip', () => {

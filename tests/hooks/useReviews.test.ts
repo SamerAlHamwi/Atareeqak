@@ -160,6 +160,22 @@ describe('useReviews', () => {
     expect(result.current.reviews).toHaveLength(0);
   });
 
+  it('sets isForbidden (not error) on a 403 — a role change mid-session, not a network failure', async () => {
+    server.use(
+      http.get(`${API_BASE}/staff/reviews`, () =>
+        HttpResponse.json({ status: 'error', code: 'FORBIDDEN' }, { status: 403 })
+      )
+    );
+
+    const { result } = renderHook(() => useReviews());
+    await waitFor(() => expect(result.current.isForbidden).toBe(true));
+
+    // Not the generic error path — the page renders NoPermissionPanel off
+    // `isForbidden`, not ErrorBanner off `error`.
+    expect(result.current.error).toBeNull();
+    expect(result.current.isLoading).toBe(false);
+  });
+
   it('formats dates in the active locale rather than a pinned one', async () => {
     server.use(
       http.get(`${API_BASE}/staff/reviews`, () => HttpResponse.json(listResponse([review()])))

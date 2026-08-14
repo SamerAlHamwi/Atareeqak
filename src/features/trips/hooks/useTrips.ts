@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
 import type { IsStale } from '../../shared/hooks/useFetchEffect';
+import { isForbiddenError } from '../../../services/apiError';
 import { tripsApi } from '../api/tripsApi';
 import type { TripResponse, TripsListResponse, TripFilterValue } from '../api/tripsApi';
 
@@ -51,6 +52,8 @@ interface UseTripsReturn {
   setPerPage: (perPage: number) => void;
   isLoading: boolean;
   error: Error | null;
+  /** A role change mid-session can 403 a page `RoleRoute` already let through. */
+  isForbidden: boolean;
   refetch: () => Promise<void>;
   cancelTrip: (trip: Trip, reason: string) => Promise<void>;
 }
@@ -67,6 +70,7 @@ export const useTrips = (): UseTripsReturn => {
   const [perPage, setPerPageState] = useState<number>(DEFAULT_TRIPS_PER_PAGE);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
+  const [isForbidden, setIsForbidden] = useState(false);
 
   // Filtering happens server-side, so a filter change invalidates the current
   // page — page 3 of "all" rarely exists within "cancelled".
@@ -83,6 +87,7 @@ export const useTrips = (): UseTripsReturn => {
   const fetchTrips = useCallback(async (isStale: IsStale) => {
     setIsLoading(true);
     setError(null);
+    setIsForbidden(false);
     try {
       const response = await tripsApi.getAllTrips({
         page,
@@ -122,6 +127,10 @@ export const useTrips = (): UseTripsReturn => {
       );
     } catch (err) {
       if (isStale()) {
+        return;
+      }
+      if (isForbiddenError(err)) {
+        setIsForbidden(true);
         return;
       }
       const fetchError = err instanceof Error ? err : new Error('Failed to fetch trips');
@@ -170,6 +179,7 @@ export const useTrips = (): UseTripsReturn => {
     setPerPage,
     isLoading,
     error,
+    isForbidden,
     refetch,
     cancelTrip,
   };

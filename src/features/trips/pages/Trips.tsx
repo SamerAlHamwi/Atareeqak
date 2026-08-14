@@ -5,6 +5,7 @@ import ActionBanner from '../../shared/components/ActionBanner';
 import ConfirmActionModal from '../../shared/components/ConfirmActionModal';
 import type { ConfirmActionPayload } from '../../shared/components/ConfirmActionModal';
 import ErrorBanner from '../../shared/components/ErrorBanner';
+import NoPermissionPanel from '../../shared/components/NoPermissionPanel';
 import TablePagination from '../../shared/components/TablePagination';
 import FilterTabs from '../../shared/components/FilterTabs';
 import type { FilterTabItem } from '../../shared/components/FilterTabs';
@@ -63,6 +64,7 @@ const Trips: React.FC = () => {
     cancelTrip,
     isLoading,
     error,
+    isForbidden,
     refetch,
   } = useTrips();
 
@@ -78,6 +80,7 @@ const Trips: React.FC = () => {
     setPerPage: setBookingPerPage,
     isLoading: isLoadingBookings,
     error: bookingsError,
+    isForbidden: isBookingsForbidden,
     refetch: refetchBookings,
     cancelBooking,
   } = useBookings();
@@ -159,6 +162,14 @@ const Trips: React.FC = () => {
     // `count` drives the Arabic plural category, so it must be the total.
     return t('common.showing_range', { from, to, count: totalRows });
   };
+
+  // `RoleRoute` already blocks navigation, but a role change mid-session can
+  // still 403 a page it already let through — `services/api.ts` deliberately
+  // passes 403 through untouched so this renders the same panel instead of a
+  // generic ErrorBanner that implies a Retry would help.
+  if (isForbidden || isBookingsForbidden) {
+    return <NoPermissionPanel />;
+  }
 
   return (
     <div className="grid grid-cols-12 gap-8">

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
 import type { IsStale } from '../../shared/hooks/useFetchEffect';
-import { extractApiError } from '../../../services/apiError';
+import { extractApiError, isForbiddenError } from '../../../services/apiError';
 import { usersApi } from '../api/usersApi';
 import type {
   BanRequest,
@@ -203,6 +203,8 @@ interface UseUserDetailsReturn {
   refreshSection: (section: PassengerSection) => Promise<void>;
   isLoading: boolean;
   error: string | null;
+  /** A role change mid-session can 403 a page `RoleRoute` already let through. */
+  isForbidden: boolean;
   refetch: () => Promise<void>;
   chargeWallet: (amount: number, notes?: string) => Promise<WalletChargeResult>;
   banUser: (ban: BanRequest) => Promise<void>;
@@ -225,6 +227,8 @@ export const useUserDetails = (userId: string | undefined): UseUserDetailsReturn
   const [refreshingSection, setRefreshingSection] = useState<PassengerSection | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** A role change mid-session can 403 a page `RoleRoute` already let through. */
+  const [isForbidden, setIsForbidden] = useState(false);
 
   /**
    * Ban state is not part of the full-profile payload in a usable form (it
@@ -251,6 +255,7 @@ export const useUserDetails = (userId: string | undefined): UseUserDetailsReturn
     if (!userId) return;
     setIsLoading(true);
     setError(null);
+    setIsForbidden(false);
     try {
       const response = await usersApi.getPassengerFullProfile(userId);
       if (isStale()) {
@@ -270,6 +275,10 @@ export const useUserDetails = (userId: string | undefined): UseUserDetailsReturn
       setComplaintCounts(null);
     } catch (err) {
       if (isStale()) {
+        return;
+      }
+      if (isForbiddenError(err)) {
+        setIsForbidden(true);
         return;
       }
       setError(extractApiError(err, t('common.load_failed')));
@@ -463,6 +472,7 @@ export const useUserDetails = (userId: string | undefined): UseUserDetailsReturn
     refreshSection,
     isLoading,
     error,
+    isForbidden,
     refetch,
     chargeWallet,
     banUser,

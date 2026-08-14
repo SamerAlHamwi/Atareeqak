@@ -334,9 +334,13 @@ describe('useReports', () => {
   });
 
   it('surfaces a failure as a string message, not an Error object', async () => {
+    // Status 500 here (not 403): 403 now has dedicated semantics — it must set
+    // `isReportForbidden`, never the generic `error` string — see the
+    // `isForbidden` tests below. This test is only about the string-vs-Error
+    // shape of a generic failure, so any non-403 status proves the point.
     server.use(
       http.get(`${API_BASE}/admin/reports`, () =>
-        HttpResponse.json({ status: 'error', message: 'Forbidden' }, { status: 403 })
+        HttpResponse.json({ status: 'error', message: 'Server error' }, { status: 500 })
       ),
       http.get(`${API_BASE}/admin/wallets`, () => HttpResponse.json(walletsResponse)),
       http.get(`${API_BASE}/admin/wallet`, () => HttpResponse.json(myWalletResponse)),
@@ -345,8 +349,44 @@ describe('useReports', () => {
 
     const { result } = renderHook(() => useReports());
     await waitFor(() => expect(result.current.error).not.toBeNull());
-    expect(result.current.error).toBe('Forbidden');
+    expect(result.current.error).toBe('Server error');
     expect(typeof result.current.error).toBe('string');
+  });
+
+  it('sets isReportForbidden (not error) on a 403 from the report fetcher', async () => {
+    server.use(
+      http.get(`${API_BASE}/admin/reports`, () =>
+        HttpResponse.json({ status: 'error', code: 'FORBIDDEN' }, { status: 403 })
+      ),
+      http.get(`${API_BASE}/admin/wallets`, () => HttpResponse.json(walletsResponse)),
+      http.get(`${API_BASE}/admin/wallet`, () => HttpResponse.json(myWalletResponse)),
+      http.get(`${API_BASE}/admin/wallet/requests`, () => HttpResponse.json(requestsResponse()))
+    );
+
+    const { result } = renderHook(() => useReports());
+    await waitFor(() => expect(result.current.isReportForbidden).toBe(true));
+
+    // Not the generic error path — the page renders NoPermissionPanel off
+    // `isReportForbidden`, not ErrorBanner off `error`.
+    expect(result.current.error).toBeNull();
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('sets isRequestsForbidden (not requestsError) on a 403 from the wallet-requests fetcher', async () => {
+    server.use(
+      http.get(`${API_BASE}/admin/reports`, () => HttpResponse.json(reportData())),
+      http.get(`${API_BASE}/admin/wallets`, () => HttpResponse.json(walletsResponse)),
+      http.get(`${API_BASE}/admin/wallet`, () => HttpResponse.json(myWalletResponse)),
+      http.get(`${API_BASE}/admin/wallet/requests`, () =>
+        HttpResponse.json({ status: 'error', code: 'FORBIDDEN' }, { status: 403 })
+      )
+    );
+
+    const { result } = renderHook(() => useReports());
+    await waitFor(() => expect(result.current.isRequestsForbidden).toBe(true));
+
+    expect(result.current.requestsError).toBeNull();
+    expect(result.current.isRequestsLoading).toBe(false);
   });
 
   it('parses a JSON error body returned under responseType blob', async () => {

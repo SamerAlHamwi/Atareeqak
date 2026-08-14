@@ -240,6 +240,22 @@ describe('useDashboard', () => {
     expect(result.current.chartPoints[1].monthLabel).toBe('Sep');
   });
 
+  it('sets isForbidden (not error) on a 403 — a role change mid-session, not a network failure', async () => {
+    server.use(
+      http.get(`${API_BASE}/admin/dashboard`, () =>
+        HttpResponse.json({ status: 'error', code: 'FORBIDDEN' }, { status: 403 })
+      )
+    );
+
+    const { result } = renderHook(() => useDashboard());
+    await waitFor(() => expect(result.current.isForbidden).toBe(true));
+
+    // Not the generic error path — the page renders NoPermissionPanel off
+    // `isForbidden`, not ErrorBanner off `error`.
+    expect(result.current.error).toBeNull();
+    expect(result.current.isLoading).toBe(false);
+  });
+
   it('tolerates missing collections in the payload', async () => {
     server.use(
       http.get(`${API_BASE}/admin/dashboard`, () =>

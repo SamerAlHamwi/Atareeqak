@@ -10,7 +10,7 @@ export const employeeFixture = (role: Role) => ({
   role,
   role_label: role,
   is_active: true,
-  last_login_at: null,
+  last_login_at: '2026-08-14T09:00:00+03:00',
 });
 
 const emptyMeta = { current_page: 1, last_page: 1, per_page: 10, total: 0 };
@@ -76,38 +76,131 @@ const driversDashboardFixture = {
   },
 };
 
+/** One real row so the "ban a user" walkthrough step has something to click. */
+const WALKTHROUGH_USER_ID = 501;
+
 const usersFixture = {
   status: 'success',
   data: {
     admin_photo: null,
-    stats: { total_registered: 0, active_drivers: 0, pending_drivers: 0, passengers: 0, suspended_users: 0 },
-    users: [],
-    meta: emptyMeta,
+    stats: { total_registered: 1, active_drivers: 0, pending_drivers: 0, passengers: 1, suspended_users: 0 },
+    users: [
+      {
+        id: WALKTHROUGH_USER_ID,
+        full_name: 'Walkthrough Passenger',
+        email: 'walkthrough@atareeqak.com',
+        profile_photo: null,
+        type: 'passenger',
+        status: 'verified',
+        joined_at: '2026-01-01T00:00:00+03:00',
+        joined_label: 'Jan 2026',
+      },
+    ],
+    meta: { ...emptyMeta, total: 1 },
   },
+};
+
+/** One real row so the "approve a verification" walkthrough step has something to click. */
+const WALKTHROUGH_VERIFICATION_USER_ID = 502;
+
+const verificationsFixture = {
+  status: 'success',
+  total: 1,
+  data: [
+    {
+      user_id: WALKTHROUGH_VERIFICATION_USER_ID,
+      name: 'Walkthrough Driver',
+      email: 'driver-walkthrough@atareeqak.com',
+      gender: 'M',
+      address: 'Damascus',
+      type: 'driver',
+      profile_photo: null,
+      documents: [],
+      submitted_at: '2026-08-01T00:00:00+03:00',
+    },
+  ],
+};
+
+/** One real row so the "resolve a complaint" walkthrough step has something to click. */
+const WALKTHROUGH_COMPLAINT_ID = 503;
+
+const complaintsFixture = {
+  status: 'success',
+  data: [
+    {
+      id: WALKTHROUGH_COMPLAINT_ID,
+      title: 'Walkthrough complaint',
+      description: 'Seeded for the e2e walkthrough.',
+      type: 'other',
+      type_label: null,
+      status: 'in_review',
+      status_label: 'In review',
+      status_color: 'blue',
+      is_escalated: false,
+      resolution_notes: null,
+      resolved_at: null,
+      assigned_to: { id: 1, name: 'Smoke Tester', role: 'system_admin' },
+      user: { id: WALKTHROUGH_USER_ID, name: 'Walkthrough Passenger', email: 'walkthrough@atareeqak.com' },
+      attachments: [],
+      created_at: '2026-08-10T00:00:00+03:00',
+    },
+  ],
+  meta: { ...emptyMeta, total: 1 },
+  counts: { all: 1, pending: 0, in_review: 1, resolved: 0, closed: 0 },
+};
+
+/** One real row so the "approve a wallet request" walkthrough step has something to click. */
+const WALKTHROUGH_WALLET_REQUEST_ID = 504;
+
+const walletRequestsFixture = {
+  status: 'success',
+  data: [
+    {
+      id: WALKTHROUGH_WALLET_REQUEST_ID,
+      type: 'charge',
+      amount: 25000,
+      status: 'pending',
+      user_notes: null,
+      admin_notes: null,
+      processed_at: null,
+      created_at: '2026-08-13T00:00:00+03:00',
+      user: { id: WALKTHROUGH_USER_ID, name: 'Walkthrough Passenger', email: 'walkthrough@atareeqak.com' },
+      wallet: {
+        id: 9,
+        wallet_number: 'WLT-0009',
+        phone_number: '+963900000009',
+        current_balance: 100000,
+        cash_ride_debt: 0,
+      },
+    },
+  ],
+  meta: { ...emptyMeta, total: 1 },
+  counts: { pending: 1, approved: 0, rejected: 0 },
 };
 
 /**
  * Ordered list of URL-substring → JSON fixture rules; first match wins.
  * Every list endpoint returns an empty collection so pages render their
- * empty states without console errors.
+ * empty states without console errors, except the four rows above that exist
+ * specifically so the destructive-action walkthrough in `smoke.spec.ts` has
+ * something real to act on.
  */
-const rules: [string, unknown][] = [
-  ['/staff/complaints/metrics', {
-    status: 'success',
-    data: {
-      avg_response_time_minutes: 42,
-      tickets_total: 10,
-      tickets_resolved: 6,
-      tickets_open: 3,
-      tickets_escalated: 1,
-      resolution_rate_pct: 60,
-    },
-  }],
+const rules: [string, unknown, number?][] = [
+  // Hit once on every boot by `ApiConfigGuard` (src/app/ApiConfigGuard.tsx) —
+  // the unauthenticated health route it uses to detect a totally unconfigured
+  // deployment (Phase 15).
+  ['/test', { message: 'API is working!' }],
   ['/admin/dashboard/recent', { status: 'success', data: [] }],
   ['/admin/dashboard/stats', { status: 'success', data: dashboardFixture.data.stats }],
   ['/admin/dashboard/growth', { status: 'success', data: { period: 'last_6_months', data: [] } }],
   ['/admin/dashboard/cities', { status: 'success', data: [] }],
   ['/admin/dashboard', dashboardFixture],
+  [`/admin/users/${WALKTHROUGH_USER_ID}/ban`, { status: 'success', message: 'User banned.' }],
+  [`/admin/users/${WALKTHROUGH_USER_ID}/unban`, { status: 'success', message: 'User unbanned.' }],
+  [`/admin/users/${WALKTHROUGH_USER_ID}/status`, {
+    status: 'success',
+    data: { status_code: -1, ban: { reason: 'Walkthrough ban', type: 'permanent', expires_at: null } },
+  }],
   ['/admin/users', usersFixture],
   ['/admin/drivers/dashboard', driversDashboardFixture],
   ['/admin/drivers/top', { status: 'success', data: [] }],
@@ -116,26 +209,58 @@ const rules: [string, unknown][] = [
   ['/admin/trips', {
     status: 'success',
     data: [],
-    meta: { ...emptyMeta, filter: 'all' },
-    counts: { all: 0, scheduled: 0, active: 0, completed: 0, cancelled: 0, awaiting: 0 },
+    meta: { current_page: 1, last_page: 2, per_page: 10, total: 11, filter: 'all' },
+    counts: { all: 11, scheduled: 0, active: 0, completed: 0, cancelled: 0, awaiting: 0 },
   }],
   ['/admin/routes/popular', { status: 'success', data: [] }],
   ['/admin/reports', reportFixture],
+  // Order matters: `/admin/wallets` and every `/admin/wallet/...` sub-path
+  // must be listed before the bare `/admin/wallet` (the admin's OWN wallet)
+  // below, since `path.startsWith('/admin/wallet')` would otherwise also
+  // match `/admin/wallets` and swallow it.
   ['/admin/wallets', { status: 'success', all_wallets: [] }],
-  ['/admin/wallet/requests', {
+  ['/admin/wallet/charge', { status: 'success', message: 'Wallet charged.', new_balance: 100000 }],
+  [`/admin/wallet/requests/${WALKTHROUGH_WALLET_REQUEST_ID}/approve`, {
     status: 'success',
-    data: [],
-    counts: { pending: 0, approved: 0, rejected: 0 },
-    meta: emptyMeta,
+    message: 'Request approved.',
+    new_balance: 125000,
+  }],
+  [`/admin/wallet/requests/${WALKTHROUGH_WALLET_REQUEST_ID}/reject`, { status: 'success', message: 'Request rejected.' }],
+  ['/admin/wallet/requests', walletRequestsFixture],
+  // The admin's OWN wallet (AdminWalletCard) — must stay after every other
+  // `/admin/wallet*` rule above; see the ordering note there.
+  ['/admin/wallet', {
+    status: 'success',
+    wallet: {
+      id: 1,
+      wallet_number: 'ADM-0001',
+      phone_number: '+963900000001',
+      balance: 100000,
+      name: 'Primary Escrow',
+    },
   }],
   ['/admin/verifications', { status: 'success', data: [] }],
-  ['/staff/verifications/pending', { status: 'success', data: [] }],
-  ['/staff/complaints', {
+  [`/staff/verifications/${WALKTHROUGH_VERIFICATION_USER_ID}/approve`, {
     status: 'success',
-    data: [],
-    meta: emptyMeta,
-    counts: { all: 0, pending: 0, in_review: 0, resolved: 0, closed: 0 },
+    message: 'Verification approved.',
+    data: {
+      user_id: WALKTHROUGH_VERIFICATION_USER_ID,
+      national_id: 'WT-0001',
+      verification_status: 'approved',
+      is_verified_driver: true,
+      is_verified_passenger: false,
+    },
   }],
+  [`/staff/verifications/${WALKTHROUGH_VERIFICATION_USER_ID}/reject`, { status: 'success', message: 'Verification rejected.' }],
+  ['/staff/verifications/pending', verificationsFixture],
+  [`/staff/complaints/${WALKTHROUGH_COMPLAINT_ID}/respond`, {
+    status: 'success',
+    message: 'Complaint responded.',
+    data: { ...complaintsFixture.data[0], status: 'resolved', status_label: 'Resolved', resolution_notes: 'Resolved via e2e walkthrough.' },
+  }],
+  [`/staff/complaints/${WALKTHROUGH_COMPLAINT_ID}/escalate`, { status: 'success', message: 'Complaint escalated.', data: complaintsFixture.data[0] }],
+  [`/staff/complaints/${WALKTHROUGH_COMPLAINT_ID}`, { status: 'success', data: complaintsFixture.data[0] }],
+  ['/staff/complaints', complaintsFixture],
   ['/staff/escalated-complaints', {
     status: 'success',
     data: [],
@@ -143,13 +268,23 @@ const rules: [string, unknown][] = [
     counts: { escalated: 0, resolved: 0, closed: 0 },
   }],
   ['/staff/reviews', { status: 'success', data: [], meta: emptyMeta }],
-  ['/employees', { status: 'success', data: [] }],
+  ['/staff/bookings', { status: 'success', data: [], meta: emptyMeta }],
+  // `POST /employees` returns a genuine 500 (BUG-1) — confirmed live, not a
+  // guess. Stubbing it as a success would let a regression that removes the
+  // page's "unavailable" gating pass this suite while lying to a real user.
+  ['/employees', {
+    status: 'error',
+    message: "Call to undefined method App\\Services\\Staff\\EmployeeManagementService::list()",
+  }, 500],
 ];
 
 /** Intercepts every /e2e-api request and answers it from fixtures. */
-export const stubApi = async (page: Page, role: Role): Promise<void> => {
+export const stubApi = async (page: Page, role: Role): Promise<{ unstubbed: string[] }> => {
+  const unstubbed: string[] = [];
+
   await page.route('**/e2e-api/**', async (route) => {
-    const url = new URL(route.request().url());
+    const request = route.request();
+    const url = new URL(request.url());
     const path = url.pathname.replace(/^.*\/e2e-api/, '');
 
     if (path === '/staff/me') {
@@ -166,10 +301,35 @@ export const stubApi = async (page: Page, role: Role): Promise<void> => {
       });
       return;
     }
+    if (path === '/staff/logout' || path === '/admin/logout') {
+      await route.fulfill({ json: { status: 'success' } });
+      return;
+    }
 
     const rule = rules.find(([needle]) => path.startsWith(needle));
-    await route.fulfill({ json: rule ? rule[1] : { status: 'success', data: [] } });
+    if (!rule) {
+      // The old catch-all here — `{ status: 'success', data: [] }` for
+      // anything unmatched — is exactly how a stub for a route the frontend
+      // no longer calls (or never should have) went unnoticed: an unstubbed
+      // request quietly looked like a normal empty list instead of failing
+      // the test. Every test that calls `stubApi` must assert `unstubbed` is
+      // empty once the walkthrough is done.
+      unstubbed.push(`${request.method()} ${path}`);
+      await route.fulfill({
+        status: 599,
+        json: {
+          status: 'error',
+          message: `e2e/apiStubs.ts has no rule for ${request.method()} ${path} — add one, don't rely on the catch-all`,
+        },
+      });
+      return;
+    }
+
+    const [, json, status] = rule;
+    await route.fulfill({ status: status ?? 200, json });
   });
+
+  return { unstubbed };
 };
 
 /** Seeds a logged-in staff session before the app boots. */

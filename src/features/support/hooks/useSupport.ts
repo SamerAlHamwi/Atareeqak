@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
 import type { IsStale } from '../../shared/hooks/useFetchEffect';
-import { extractApiError } from '../../../services/apiError';
+import { extractApiError, isForbiddenError } from '../../../services/apiError';
 import {
   supportApi,
   COMPLAINT_INDEX_STATUSES,
@@ -111,6 +111,8 @@ export const useSupport = ({ canSeeEscalated = false }: UseSupportOptions = {}) 
   const [escalatedCounts, setEscalatedCounts] = useState<EscalatedCounts | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** A role change mid-session can 403 a page `RoleRoute` already let through. */
+  const [isForbidden, setIsForbidden] = useState(false);
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
   const [view, setViewState] = useState<SupportView>('inbox');
   const [statusFilter, setStatusFilterState] = useState<StatusFilter>('all');
@@ -165,6 +167,7 @@ export const useSupport = ({ canSeeEscalated = false }: UseSupportOptions = {}) 
         setIsLoading(true);
       }
       setError(null);
+      setIsForbidden(false);
       try {
         const shared = {
           page,
@@ -222,6 +225,10 @@ export const useSupport = ({ canSeeEscalated = false }: UseSupportOptions = {}) 
         );
       } catch (err) {
         if (isStale()) {
+          return;
+        }
+        if (isForbiddenError(err)) {
+          setIsForbidden(true);
           return;
         }
         setError(extractApiError(err, t('support.load_failed')));
@@ -365,6 +372,7 @@ export const useSupport = ({ canSeeEscalated = false }: UseSupportOptions = {}) 
     inboxTotal,
     isLoading,
     error,
+    isForbidden,
     selectedComplaint,
     setSelectedComplaint,
     openComplaint,

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
 import ErrorBanner from '../../shared/components/ErrorBanner';
+import NoPermissionPanel from '../../shared/components/NoPermissionPanel';
 import ConfirmActionModal from '../../shared/components/ConfirmActionModal';
 import { useReports } from '../hooks/useReports';
 import type { WalletRequestRow } from '../hooks/useReports';
@@ -49,6 +50,8 @@ const Reports: React.FC = () => {
     isRequestsLoading,
     error,
     requestsError,
+    isReportForbidden,
+    isRequestsForbidden,
     refetch,
     refetchRequests,
     approveRequest,
@@ -114,6 +117,15 @@ const Reports: React.FC = () => {
     },
     [exportPdf, runAction, t]
   );
+
+  // `RoleRoute` already blocks navigation, but a role change mid-session can
+  // still 403 a page it already let through — `services/api.ts` deliberately
+  // passes 403 through untouched so this renders the same panel instead of a
+  // generic ErrorBanner that implies a Retry would help. Either independent
+  // fetcher failing this way makes the whole page inaccessible.
+  if (isReportForbidden || isRequestsForbidden) {
+    return <NoPermissionPanel />;
+  }
 
   return (
     <div className="space-y-10">

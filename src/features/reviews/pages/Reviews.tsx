@@ -5,6 +5,7 @@ import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
 import ConfirmActionModal from '../../shared/components/ConfirmActionModal';
 import ErrorBanner from '../../shared/components/ErrorBanner';
+import NoPermissionPanel from '../../shared/components/NoPermissionPanel';
 import TableSkeleton from '../../shared/components/TableSkeleton';
 import TablePagination from '../../shared/components/TablePagination';
 import PerPageSelect from '../../shared/components/PerPageSelect';
@@ -44,6 +45,7 @@ const Reviews: React.FC = () => {
     meta,
     isLoading,
     error,
+    isForbidden,
     search,
     setSearch,
     dateFilter,
@@ -72,6 +74,14 @@ const Reviews: React.FC = () => {
   const total = meta?.total ?? 0;
   const rangeFrom = total === 0 ? 0 : (page - 1) * perPage + 1;
   const rangeTo = total === 0 ? 0 : rangeFrom + reviews.length - 1;
+
+  // `RoleRoute` already blocks navigation, but a role change mid-session can
+  // still 403 a page it already let through — `services/api.ts` deliberately
+  // passes 403 through untouched so this renders the same panel instead of a
+  // generic ErrorBanner that implies a Retry would help.
+  if (isForbidden) {
+    return <NoPermissionPanel />;
+  }
 
   return (
     <div className="space-y-10">

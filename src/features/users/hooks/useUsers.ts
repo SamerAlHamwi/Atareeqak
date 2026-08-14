@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
 import type { IsStale } from '../../shared/hooks/useFetchEffect';
-import { extractApiError } from '../../../services/apiError';
+import { extractApiError, isForbiddenError } from '../../../services/apiError';
 import { usersApi } from '../api/usersApi';
 import type {
   BanRequest,
@@ -99,6 +99,8 @@ interface UseUsersReturn {
   total: number;
   isLoading: boolean;
   error: string | null;
+  /** A role change mid-session can 403 a page `RoleRoute` already let through. */
+  isForbidden: boolean;
   refetch: () => Promise<void>;
   banUser: (user: UserRow, ban: BanRequest) => Promise<void>;
   unbanUser: (user: UserRow) => Promise<void>;
@@ -135,6 +137,8 @@ export const useUsers = (): UseUsersReturn => {
   const [perPage, setPerPageState] = useState<number>(DEFAULT_USERS_PER_PAGE);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** A role change mid-session can 403 a page `RoleRoute` already let through. */
+  const [isForbidden, setIsForbidden] = useState(false);
   /** id → authoritative status, from whatever ban/unban calls this session made. */
   const [banStatuses, setBanStatuses] = useState<Record<string, UserStatusResponse>>({});
 
@@ -147,6 +151,7 @@ export const useUsers = (): UseUsersReturn => {
   const fetchUsers = useCallback(async (isStale: IsStale) => {
     setIsLoading(true);
     setError(null);
+    setIsForbidden(false);
     try {
       const response = await usersApi.getAllUsers({
         type: typeFilter,
@@ -166,6 +171,10 @@ export const useUsers = (): UseUsersReturn => {
       setTotal(response.data.meta?.total ?? 0);
     } catch (err) {
       if (isStale()) {
+        return;
+      }
+      if (isForbiddenError(err)) {
+        setIsForbidden(true);
         return;
       }
       setError(extractApiError(err, t('common.load_failed')));
@@ -271,6 +280,7 @@ export const useUsers = (): UseUsersReturn => {
     total,
     isLoading,
     error,
+    isForbidden,
     refetch,
     banUser,
     unbanUser,

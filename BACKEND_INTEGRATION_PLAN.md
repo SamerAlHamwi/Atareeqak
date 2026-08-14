@@ -1234,31 +1234,45 @@ proven by replaying it (`401`, previously `200`).
 
 ## Phase 13 — Cross-cutting hardening
 
-Apply uniformly across every page touched above:
+Apply uniformly across every page touched above. Audited, not assumed — most of this list turned out
+to already be satisfied by Phases 2–10, confirmed by sweeping every page rather than trusting the
+plan's own earlier claim:
 
-- [ ] **Loading** — `TableSkeleton` for tables, spinners for cards. No layout shift on load.
-- [ ] **Errors** — `ErrorBanner` with a Retry that calls the hook's `refetch`. Use the shared `extractApiError` from 1.4 so 422 field errors read as field errors, not "Request failed with status code 422".
-- [ ] **Empty states** — every table needs one; several currently render an empty `<tbody>`.
-- [ ] **Pagination** — `TablePagination` on every list backed by `meta` (✅ trips + bookings in Phase 3, ✅ drivers in Phase 4, ✅ users in Phase 5, ✅ complaints + escalated in Phase 7, ✅ reviews in Phase 8; audit wallet requests).
-- [ ] **Concurrency** — an in-flight request must be cancelled/ignored when filters change (a stale response currently overwrites fresh state in the `useFetchEffect` hooks). Use an `AbortController` or a request-sequence guard.
-- [ ] **Single-flight token refresh** — refresh tokens are single-use and rotate (verified live). If two requests 401 at the same time, both call `/refresh`; the second replays a consumed token and the user is logged out. The interceptor needs to share one in-flight refresh promise across all queued requests. Pages that fire several parallel fetches on mount (Dashboard, Reports, Trips) make this easy to hit.
-- [ ] **403 handling** — `RoleRoute` blocks navigation, but a role change mid-session can still produce a 403. Show the "no permission" panel instead of an error banner.
-- [ ] **i18n** — every new string goes in both `src/locales/en/translation.json` and `src/locales/ar/translation.json`. Check RTL for new tables/modals.
-- [ ] 🆕 **Four keys are referenced but defined in neither locale**, so they render as the raw key
-      string to the user. Found by a full `t('…')`-vs-JSON audit run at the end of Phase 9/10; all
-      four are **pre-existing** and sit outside those phases' files, so they were filed rather than
-      fixed in place (Trips and Users are verified by passing scripts, and Home is slated for deletion
-      in Phase 12):
-      | Key | Site |
-      |---|---|
-      | `common.welcome` | `home/pages/Home.tsx:11` — Phase 12 deletes this page |
-      | `trips.view_details` | `trips/components/TripsTable.tsx:132` (a `title=` tooltip) |
-      | `trips.cancel_trip` | `trips/components/TripsTable.tsx:141` (a `title=` tooltip) |
-      | `auth.email` | `users/pages/UserDetails.tsx:775` and `users/pages/Users.tsx:452` |
-      The rest of the audit is clean: **597 keys used, en/ar at exact parity, zero orphans.** Re-run it
-      as part of this phase so the count stays honest.
-- [ ] **Dates** — several hooks call `toLocaleDateString('ar-SY')` unconditionally. Format by active locale.
-- [x] ~~**Avatars** — one shared `<Avatar name photo />` with initials fallback; remove all `i.pravatar.cc` and Unsplash URLs.~~ ✅ done in Phase 4.
+- [x] ~~**Loading**~~ ✅ already comprehensive. `TableSkeleton` is used by every table page (Trips,
+      Bookings, Drivers, Reviews, Staff, Support, Users, UserDetails, Dashboard's recent-activity
+      table, Reports' transaction table and wallet-transactions drawer); Verifications has its own
+      `RequestListSkeleton`, DriverDetails an early `isLoading` spinner branch. No layout-shift gaps
+      found.
+- [x] ~~**Errors**~~ ✅ every list page already uses `ErrorBanner` + `extractApiError`, wired since
+      Phases 2–9.
+- [x] ~~**Empty states**~~ ✅ audited — every table-bearing page/component has an explicit
+      `length === 0` branch (20 files checked); none render a bare empty `<tbody>`.
+- [x] ~~**Pagination**~~ ✅ `TablePagination` confirmed on every `meta`-backed list, including wallet
+      requests (`TransactionTable.tsx`, wired in Phase 9 — the one item this list flagged as
+      unaudited; it was already done).
+- [x] ~~**Concurrency**~~ ✅ **done this phase** — see the stale-response guard in `useFetchEffect`
+      below; applied to all 15 consuming hooks.
+- [x] ~~**Single-flight token refresh**~~ ✅ **done this phase** — `src/services/api.ts` now shares
+      one in-flight refresh promise (`refreshAccessToken()`) across every queued 401; proven by
+      `tests/services/api.test.ts`'s two new cases (exactly one `POST /refresh` under two concurrent
+      401s, and a fresh refresh for a later non-concurrent one).
+- [ ] **403 handling** — in progress. `RoleRoute`'s panel extracted to
+      `features/shared/components/NoPermissionPanel.tsx`; `useTrips`/`useBookings`/`Trips.tsx` done
+      and tested as the reference implementation (an `isForbidden` flag tracked separately from
+      `error`, since a 403 is a permission fact, not a retryable failure). Rolling the same pattern
+      out to the remaining list hooks/pages now. `staff/pages/Staff.tsx` is the deliberate exception —
+      BUG-1's `isBackendAvailable` gating already covers it.
+- [x] ~~**i18n**~~ ✅ **two real gaps found and fixed, one already moot.** Of the four raw-key leaks
+      flagged at the end of Phase 9/10 (`common.welcome`, `trips.view_details`, `trips.cancel_trip`,
+      `auth.email`): `common.welcome` is moot — its only call site, `home/pages/Home.tsx`, was deleted
+      whole in Phase 12. `trips.view_details` and `trips.cancel_trip` (both `title=` tooltips in
+      `TripsTable.tsx`) were genuinely undefined in both locales — added to `ar`/`en`. `auth.email`
+      (`UserDetails.tsx`/`Users.tsx`) — see below.
+- [x] ~~**Dates**~~ ✅ confirmed no remaining hardcoded `'ar-SY'` — `useDriverDetails.ts`,
+      `useUserDetails.ts` and `useReviews.ts` each carry only a comment noting the earlier fix
+      (Phases 4/5/8); the header identity dropdown's `last_login` (Phase 12) and `BanStatusBanner`
+      already format off `i18n.language`.
+- [x] ~~**Avatars**~~ ✅ done in Phase 4.
 
 ---
 

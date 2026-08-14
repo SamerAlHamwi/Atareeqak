@@ -241,4 +241,21 @@ describe('useDriverDetails', () => {
     await waitFor(() => expect(result.current.error).toBeTruthy());
     expect(result.current.error).toContain('Driver not found');
   });
+
+  it('sets isForbidden (not error) on a 403 — a role change mid-session, not a network failure', async () => {
+    statusEndpoint(activeStatus());
+    server.use(
+      http.get(`${API_BASE}/admin/drivers/10/dashboard`, () =>
+        HttpResponse.json({ status: 'error', code: 'FORBIDDEN' }, { status: 403 })
+      )
+    );
+
+    const { result } = renderHook(() => useDriverDetails('10'));
+    await waitFor(() => expect(result.current.isForbidden).toBe(true));
+
+    // Not the generic error path — the page renders NoPermissionPanel off
+    // `isForbidden`, not ErrorBanner off `error`.
+    expect(result.current.error).toBeNull();
+    expect(result.current.isLoading).toBe(false);
+  });
 });

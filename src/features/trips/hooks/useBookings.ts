@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
 import type { IsStale } from '../../shared/hooks/useFetchEffect';
+import { isForbiddenError } from '../../../services/apiError';
 import { tripsApi } from '../api/tripsApi';
 import type { BookingResponse, BookingFilterValue, BookingStatusValue } from '../api/tripsApi';
 
@@ -74,6 +75,7 @@ interface UseBookingsReturn {
   setPerPage: (perPage: number) => void;
   isLoading: boolean;
   error: Error | null;
+  isForbidden: boolean;
   refetch: () => Promise<void>;
   cancelBooking: (booking: Booking, reason: string) => Promise<void>;
 }
@@ -88,6 +90,7 @@ export const useBookings = (): UseBookingsReturn => {
   const [perPage, setPerPageState] = useState<number>(DEFAULT_BOOKINGS_PER_PAGE);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [isForbidden, setIsForbidden] = useState(false);
 
   // Same rule as trips: filtering is server-side, so the current page is stale.
   const setStatusFilter = useCallback((next: BookingFilter) => {
@@ -103,6 +106,7 @@ export const useBookings = (): UseBookingsReturn => {
   const fetchBookings = useCallback(async (isStale: IsStale) => {
     setIsLoading(true);
     setError(null);
+    setIsForbidden(false);
     try {
       const response = await tripsApi.getBookings({
         page,
@@ -118,6 +122,10 @@ export const useBookings = (): UseBookingsReturn => {
       setTotal(response.meta?.total ?? mapped.length);
     } catch (err) {
       if (isStale()) {
+        return;
+      }
+      if (isForbiddenError(err)) {
+        setIsForbidden(true);
         return;
       }
       const fetchError = err instanceof Error ? err : new Error('Failed to load bookings');
@@ -161,6 +169,7 @@ export const useBookings = (): UseBookingsReturn => {
     setPerPage,
     isLoading,
     error,
+    isForbidden,
     refetch,
     cancelBooking,
   };

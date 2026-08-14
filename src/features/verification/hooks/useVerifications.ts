@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
 import type { IsStale } from '../../shared/hooks/useFetchEffect';
-import { extractApiError } from '../../../services/apiError';
+import { extractApiError, isForbiddenError } from '../../../services/apiError';
 import { verificationsApi } from '../api/verificationsApi';
 import type {
   ApproveVerificationResponse,
@@ -34,6 +34,8 @@ interface UseVerificationsReturn {
   total: number | null;
   isLoading: boolean;
   error: string | null;
+  /** A role change mid-session can 403 a page `RoleRoute` already let through. */
+  isForbidden: boolean;
   updatedAt: Date | null;
   selectedRequest: VerificationRequest | null;
   setSelectedRequest: (request: VerificationRequest | null) => void;
@@ -78,6 +80,8 @@ export const useVerifications = (): UseVerificationsReturn => {
   const [total, setTotal] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** A role change mid-session can 403 a page `RoleRoute` already let through. */
+  const [isForbidden, setIsForbidden] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<VerificationRequest | null>(null);
   const [typeFilter, setTypeFilter] = useState<VerificationTypeFilter>('all');
@@ -92,6 +96,7 @@ export const useVerifications = (): UseVerificationsReturn => {
         setIsLoading(true);
       }
       setError(null);
+      setIsForbidden(false);
       try {
         const response = await verificationsApi.listPendingVerifications();
         if (isStale()) {
@@ -111,6 +116,10 @@ export const useVerifications = (): UseVerificationsReturn => {
         });
       } catch (err) {
         if (isStale()) {
+          return;
+        }
+        if (isForbiddenError(err)) {
+          setIsForbidden(true);
           return;
         }
         setError(extractApiError(err, t('verifications.load_failed')));
@@ -201,6 +210,7 @@ export const useVerifications = (): UseVerificationsReturn => {
     total,
     isLoading,
     error,
+    isForbidden,
     updatedAt,
     selectedRequest,
     setSelectedRequest,

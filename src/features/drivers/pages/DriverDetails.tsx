@@ -7,6 +7,7 @@ import Avatar from '../../shared/components/Avatar';
 import ConfirmActionModal from '../../shared/components/ConfirmActionModal';
 import type { ConfirmActionPayload } from '../../shared/components/ConfirmActionModal';
 import ErrorBanner from '../../shared/components/ErrorBanner';
+import NoPermissionPanel from '../../shared/components/NoPermissionPanel';
 import { useApiAction } from '../../shared/useApiAction';
 import { useDriverDetails } from '../hooks/useDriverDetails';
 import BanStatusBanner from '../../shared/components/BanStatusBanner';
@@ -36,7 +37,8 @@ const DriverDetails: React.FC = () => {
   const { driverId } = useParams();
   const navigate = useNavigate();
   const { runAction, isBusy, feedback, clearFeedback } = useApiAction();
-  const { driver, status, isLoading, error, banDriver, unbanDriver } = useDriverDetails(driverId);
+  const { driver, status, isLoading, error, isForbidden, banDriver, unbanDriver } =
+    useDriverDetails(driverId);
   const [isBanModalOpen, setIsBanModalOpen] = useState(false);
 
   const isRtl = i18n.language.startsWith('ar');
@@ -78,6 +80,14 @@ const DriverDetails: React.FC = () => {
     return (
       <div className="py-24 text-center text-on-surface-variant">{t('common.loading')}</div>
     );
+  }
+
+  // `RoleRoute` already blocks navigation, but a role change mid-session can
+  // still 403 a page it already let through — `services/api.ts` deliberately
+  // passes 403 through untouched so this renders the same panel instead of a
+  // generic ErrorBanner that implies a Retry would help.
+  if (isForbidden) {
+    return <NoPermissionPanel />;
   }
 
   if (error || !driver) {

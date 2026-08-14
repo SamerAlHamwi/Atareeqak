@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import TablePagination from '../../shared/components/TablePagination';
 import TableSkeleton from '../../shared/components/TableSkeleton';
 import ErrorBanner from '../../shared/components/ErrorBanner';
+import NoPermissionPanel from '../../shared/components/NoPermissionPanel';
 import { useWalletTransactions } from '../hooks/useWalletTransactions';
 
 interface WalletTransactionsDrawerProps {
@@ -26,8 +27,18 @@ export const WalletTransactionsDrawer: React.FC<WalletTransactionsDrawerProps> =
   onClose,
 }) => {
   const { t } = useTranslation();
-  const { wallet, transactions, page, setPage, lastPage, total, isLoading, error, refetch } =
-    useWalletTransactions(walletId);
+  const {
+    wallet,
+    transactions,
+    page,
+    setPage,
+    lastPage,
+    total,
+    isLoading,
+    error,
+    isForbidden,
+    refetch,
+  } = useWalletTransactions(walletId);
 
   if (walletId === null) {
     return null;
@@ -69,73 +80,86 @@ export const WalletTransactionsDrawer: React.FC<WalletTransactionsDrawerProps> =
           </button>
         </header>
 
-        <div className="flex-1 overflow-y-auto">
-          {error && (
-            <div className="p-6">
-              <ErrorBanner message={error} onRetry={() => void refetch()} />
-            </div>
-          )}
-
-          <table className="w-full text-start">
-            <thead className="bg-surface-container-low text-on-surface-variant text-xs font-bold uppercase tracking-wider sticky top-0">
-              <tr>
-                <th className="px-4 py-3 text-start">{t('reports.table_type')}</th>
-                <th className="px-4 py-3 text-start">{t('reports.table_amount')}</th>
-                <th className="px-4 py-3 text-start">{t('reports.table_balance_after')}</th>
-                <th className="px-4 py-3 text-start">{t('reports.table_date')}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-surface-container">
-              {isLoading ? (
-                <TableSkeleton rows={5} cols={4} />
-              ) : transactions.length === 0 && !error ? (
-                <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-on-surface-variant">
-                    {t('reports.transactions_empty')}
-                  </td>
-                </tr>
-              ) : (
-                transactions.map((tx) => (
-                  <tr key={tx.id} data-testid="wallet-transaction-row">
-                    <td className="px-4 py-4 text-start">
-                      <p className="text-xs font-bold text-primary">
-                        {t(`reports.transaction_types.${tx.type}`, tx.type)}
-                      </p>
-                      <p className="text-[10px] text-on-surface-variant line-clamp-2">
-                        {tx.description}
-                      </p>
-                    </td>
-                    <td
-                      className={`px-4 py-4 text-sm font-bold text-start ltr:font-mono ${
-                        tx.amount < 0 ? 'text-error' : 'text-secondary'
-                      }`}
-                      dir="ltr"
-                    >
-                      {tx.amount.toLocaleString()}
-                    </td>
-                    <td
-                      className="px-4 py-4 text-xs text-on-surface-variant text-start ltr:font-mono"
-                      dir="ltr"
-                    >
-                      {tx.previousBalance.toLocaleString()} → {tx.newBalance.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-4 text-[11px] text-on-surface-variant text-start">
-                      {tx.date}
-                    </td>
-                  </tr>
-                ))
+        {isForbidden ? (
+          // Scoped to the drawer, not the whole page: this wallet's
+          // transaction history is inaccessible, but the rest of the Reports
+          // page (report totals, other wallets) may still be fine. `RoleRoute`
+          // already blocks navigation up front, but a role change mid-session
+          // can still 403 a drawer that was already open.
+          <div className="flex-1 overflow-y-auto">
+            <NoPermissionPanel />
+          </div>
+        ) : (
+          <>
+            <div className="flex-1 overflow-y-auto">
+              {error && (
+                <div className="p-6">
+                  <ErrorBanner message={error} onRetry={() => void refetch()} />
+                </div>
               )}
-            </tbody>
-          </table>
-        </div>
 
-        <TablePagination
-          page={page}
-          lastPage={lastPage}
-          onPageChange={setPage}
-          isLoading={isLoading}
-          info={t('common.showing_range', { from, to, count: total })}
-        />
+              <table className="w-full text-start">
+                <thead className="bg-surface-container-low text-on-surface-variant text-xs font-bold uppercase tracking-wider sticky top-0">
+                  <tr>
+                    <th className="px-4 py-3 text-start">{t('reports.table_type')}</th>
+                    <th className="px-4 py-3 text-start">{t('reports.table_amount')}</th>
+                    <th className="px-4 py-3 text-start">{t('reports.table_balance_after')}</th>
+                    <th className="px-4 py-3 text-start">{t('reports.table_date')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-surface-container">
+                  {isLoading ? (
+                    <TableSkeleton rows={5} cols={4} />
+                  ) : transactions.length === 0 && !error ? (
+                    <tr>
+                      <td colSpan={4} className="px-6 py-12 text-center text-on-surface-variant">
+                        {t('reports.transactions_empty')}
+                      </td>
+                    </tr>
+                  ) : (
+                    transactions.map((tx) => (
+                      <tr key={tx.id} data-testid="wallet-transaction-row">
+                        <td className="px-4 py-4 text-start">
+                          <p className="text-xs font-bold text-primary">
+                            {t(`reports.transaction_types.${tx.type}`, tx.type)}
+                          </p>
+                          <p className="text-[10px] text-on-surface-variant line-clamp-2">
+                            {tx.description}
+                          </p>
+                        </td>
+                        <td
+                          className={`px-4 py-4 text-sm font-bold text-start ltr:font-mono ${
+                            tx.amount < 0 ? 'text-error' : 'text-secondary'
+                          }`}
+                          dir="ltr"
+                        >
+                          {tx.amount.toLocaleString()}
+                        </td>
+                        <td
+                          className="px-4 py-4 text-xs text-on-surface-variant text-start ltr:font-mono"
+                          dir="ltr"
+                        >
+                          {tx.previousBalance.toLocaleString()} → {tx.newBalance.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-4 text-[11px] text-on-surface-variant text-start">
+                          {tx.date}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <TablePagination
+              page={page}
+              lastPage={lastPage}
+              onPageChange={setPage}
+              isLoading={isLoading}
+              info={t('common.showing_range', { from, to, count: total })}
+            />
+          </>
+        )}
       </aside>
     </>
   );

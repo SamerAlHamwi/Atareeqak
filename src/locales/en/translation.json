@@ -38,7 +38,9 @@
     "ban_banner_expires": "Expires",
     "ban_banner_by": "Banned by",
     "ban_banner_expired": "The ban period has elapsed",
-    "status_banner_logged_out": "This account is signed out and must log in again before it can be used."
+    "status_banner_logged_out": "This account is signed out and must log in again before it can be used.",
+    "api_unconfigured_title": "No API configured for this deployment",
+    "api_unconfigured_hint": "This build cannot reach a backend at all. If you are the operator, set the API target for this environment and redeploy."
   },
   "auth": {
     "login_title": "Administrative Dashboard",
@@ -354,6 +356,8 @@
     "filter_scheduled": "Scheduled",
     "filter_completed": "Completed",
     "filter_cancelled": "Cancelled",
+    "view_details": "View details",
+    "cancel_trip": "Cancel trip",
     "table_trip_id": "Trip ID",
     "table_driver": "Driver",
     "table_route": "Route (From - To)",

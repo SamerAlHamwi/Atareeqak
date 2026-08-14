@@ -42,7 +42,9 @@
     "ban_banner_expires": "ينتهي في",
     "ban_banner_by": "حظر بواسطة",
     "ban_banner_expired": "انتهت مدة الحظر",
-    "status_banner_logged_out": "تم تسجيل خروج هذا الحساب، وعليه تسجيل الدخول مجددًا قبل استخدامه."
+    "status_banner_logged_out": "تم تسجيل خروج هذا الحساب، وعليه تسجيل الدخول مجددًا قبل استخدامه.",
+    "api_unconfigured_title": "لا يوجد واجهة برمجية مهيأة لهذا الإصدار",
+    "api_unconfigured_hint": "لا يمكن لهذا الإصدار الوصول إلى أي خادم خلفي إطلاقًا. إذا كنت المسؤول، حدّد عنوان الواجهة البرمجية لهذه البيئة وأعد النشر."
   },
   "auth": {
     "login_title": "لوحة التحكم الإدارية",
@@ -410,6 +412,8 @@
     "filter_scheduled": "مجدولة",
     "filter_completed": "مكتملة",
     "filter_cancelled": "ملغاة",
+    "view_details": "عرض التفاصيل",
+    "cancel_trip": "إلغاء الرحلة",
     "table_trip_id": "رقم الرحلة",
     "table_driver": "السائق",
     "table_route": "المسار (من - إلى)",

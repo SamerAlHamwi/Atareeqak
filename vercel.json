@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://api.onwayride.me/api/:path*"
+      "destination": "$API_PROXY_TARGET/api/:path*"
     },
     {
       "source": "/((?!api/).*)",

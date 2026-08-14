@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
 import ErrorBanner from '../../shared/components/ErrorBanner';
+import NoPermissionPanel from '../../shared/components/NoPermissionPanel';
 import { reportsApi } from '../../reports/api/reportsApi';
 import { useDashboard } from '../hooks/useDashboard';
 import { StatCards, SideStats } from '../components/StatCards';
@@ -29,6 +30,7 @@ const Dashboard: React.FC = () => {
     isLoading,
     isGrowthLoading,
     error,
+    isForbidden,
     lastUpdated,
     refetch,
   } = useDashboard();
@@ -50,6 +52,14 @@ const Dashboard: React.FC = () => {
       successMessage: t('dashboard.export_success'),
       errorMessage: t('dashboard.export_failed'),
     });
+
+  // `RoleRoute` already blocks navigation, but a role change mid-session can
+  // still 403 a page it already let through — `services/api.ts` deliberately
+  // passes 403 through untouched so this renders the same panel instead of a
+  // generic ErrorBanner that implies a Retry would help.
+  if (isForbidden) {
+    return <NoPermissionPanel />;
+  }
 
   return (
     <div className="space-y-10 pb-10">

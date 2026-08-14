@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useFetchEffect } from '../../shared/hooks/useFetchEffect';
 import type { IsStale } from '../../shared/hooks/useFetchEffect';
-import { extractApiError } from '../../../services/apiError';
+import { extractApiError, isForbiddenError } from '../../../services/apiError';
 import { reportsApi } from '../api/reportsApi';
 import type { ReportData, ReportDateRange, PdfSection } from '../api/reportsApi';
 import { walletApi } from '../../wallet/api/walletApi';
@@ -97,11 +97,19 @@ export const useReports = () => {
   const [isRequestsLoading, setIsRequestsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [requestsError, setRequestsError] = useState<string | null>(null);
+  /**
+   * A role change mid-session can 403 a page `RoleRoute` already let through.
+   * Report and requests are independent fetchers against (potentially)
+   * different permission scopes, so each gets its own flag.
+   */
+  const [isReportForbidden, setIsReportForbidden] = useState(false);
+  const [isRequestsForbidden, setIsRequestsForbidden] = useState(false);
 
   // ── Report + wallets (their own request; the request filters must not refetch them)
   const fetchReport = useCallback(async (isStale: IsStale) => {
     setIsLoading(true);
     setError(null);
+    setIsReportForbidden(false);
     try {
       const [reportResponse, walletsResponse, myWalletResponse] = await Promise.all([
         reportsApi.generateFinancialReport(range),
@@ -117,6 +125,10 @@ export const useReports = () => {
       setMyWallet(myWalletResponse.wallet ?? null);
     } catch (err) {
       if (isStale()) {
+        return;
+      }
+      if (isForbiddenError(err)) {
+        setIsReportForbidden(true);
         return;
       }
       setError(extractApiError(err, t('reports.load_failed_hint')));
@@ -135,6 +147,7 @@ export const useReports = () => {
   const fetchRequests = useCallback(async (isStale: IsStale) => {
     setIsRequestsLoading(true);
     setRequestsError(null);
+    setIsRequestsForbidden(false);
     try {
       const response = await walletApi.getWalletRequests({
         page: requestsPage,
@@ -151,6 +164,10 @@ export const useReports = () => {
       setRequestsTotal(response.meta?.total ?? 0);
     } catch (err) {
       if (isStale()) {
+        return;
+      }
+      if (isForbiddenError(err)) {
+        setIsRequestsForbidden(true);
         return;
       }
       setRequestsError(extractApiError(err, t('reports.requests_load_failed')));
@@ -287,6 +304,8 @@ export const useReports = () => {
     isRequestsLoading,
     error,
     requestsError,
+    isReportForbidden,
+    isRequestsForbidden,
     refetch,
     refetchRequests,
     approveRequest,

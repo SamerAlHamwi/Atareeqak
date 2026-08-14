@@ -33,7 +33,7 @@ Phases 7, 10 and 11 now have a confirmed fact base; what they still need is a ye
 | Q7 | Does verification approve require `national_id` now that the column exists? Postman sends it; the route list doesn't say | **RESOLVED (Phase 6, live)** | — | 2026-08-12 | **Yes — `required\|string\|max:50`**, plus a uniqueness check that 422s with `conflicting_user_id`. Verified live: `POST …/approve` with an empty body returns 422 `errors.national_id`. The approve dialog collects it as a required field. It cannot be pre-filled — the pending payload carries no such value ([REQ-4](./backend-issues.md)) |
 | Q8 | Should `sycash` reach dashboard/trips/drivers? `isAdminRole()` is true for it, but those groups are `staff:admin,system_admin`, which excludes it | **PENDING** | backend dev | — | Treat `sycash` as finance-only; grant it no sections beyond what the middleware allows |
 | Q9 | Will `http://localhost:5173` be added to `config/cors.php`? | **PENDING** | backend dev | — | Keep using the Vite proxy — no CORS needed |
-| Q10 | `vite.config.ts`/`vercel.json` target `https://api.onwayride.me/api`, which is **not the Laravel app** (see probe-results §1). Where should the dashboard point? | **RESOLVED** | user | — | Confirmed by the user: no live server exists and that host serves a different backend. Local dev now runs at **`http://127.0.0.1:8000/api`** ([`local-backend.md`](./local-backend.md)). `vercel.json` still needs a production answer |
+| Q10 | `vite.config.ts`/`vercel.json` target `https://api.onwayride.me/api`, which is **not the Laravel app** (see probe-results §1). Where should the dashboard point? | **RESOLVED** | user | — | Confirmed by the user: no live server exists and that host serves a different backend. Local dev now runs at **`http://127.0.0.1:8000/api`** ([`local-backend.md`](./local-backend.md)). **Production answered 2026-08-14: still no real host** — asked the user directly in Phase 15; the answer was to not guess at one. `vercel.json`'s rewrite now targets `$API_PROXY_TARGET`, a Vercel project env var left unset until a real host exists, and `src/app/ApiConfigGuard.tsx` makes that absence loud (a boot-time health check that shows "No API configured" instead of the dashboard silently 404ing every request) rather than shipping another guessed hostname. |
 | Q11 | Six `/employees` endpoints, two migrations, and `admin_photo` are broken server-side ([`backend-issues.md`](./backend-issues.md)) | **OPEN — new** | backend dev | — | Phase 10 (Staff page) cannot be verified until BUG-1 is fixed; the frontend work can still be written |
 
 > **Q10 is answered — a backend now runs locally**, so phases can be verified end-to-end.
@@ -97,6 +97,12 @@ not inference. Only the *intent* column is still open.
 complaint handling. Treat `route-list.json` as the contract and the collection as a request-body
 reference only.
 
+**2026-08-14 — the two raw collection files deleted from the dashboard repo root** (`collection.json`,
+`SyRide_All_APIs_merged.postman_collection.json`), per the Phase 15 plan item and confirmed with the
+user first. Their only useful content — the specific D1–D6 divergences above — was already captured
+here in prose; the raw JSON files added nothing beyond that and read as duplicated, stale API docs
+that could be mistaken for a second contract.
+
 ---
 
 ## E. Change log
@@ -107,3 +113,4 @@ reference only.
 | 2026-08-10 | PHP 8.2 + Composer installed locally and `php artisan route:list --json` run against the checkout. `route-list.json` replaced with Laravel's own route table (145 `api/*` routes). **Q1–Q5 resolved on fact: none of the disputed endpoints exist.** Sections C and D upgraded from inference to confirmation. |
 | 2026-08-10 | **Backend now runs locally** (MySQL 8 portable + `artisan serve` on `:8000`), seeded with `system_admin` and `sycash`. Q10 resolved. `verify-auth.sh` run against it: **20/21 pass**. Section B confirmed live — including B1 (tokens interchangeable) and Q8 (sycash really is 403'd by `/admin/*`). Five backend defects found and filed as [`backend-issues.md`](./backend-issues.md); Q11 raised. |
 | 2026-08-14 | Backend re-stood-up on a new machine (macOS, MySQL 9/PHP 8.5/Laravel `.env` for local dev, `4th_year_project_db` migrated + reseeded via `AdminUserSeeder`+`SystemWalletSeeder`+`Atarikaktestseeder`: 36 users, 71 rides, 58 bookings, 32 wallets, 194 wallet transactions, 2 pending verifications, 3 employees). `verify-dashboard.mjs`, `verify-reports.mjs` (155/155) and `verify-staff.mjs` (50/50) re-run clean against it — `verify-staff.mjs`'s hardcoded Windows `mysql.exe` path replaced with a portable `MYSQL_BIN` env override. **Phase 11 shipped: Q1 resolved as built-(b)-deleted**, see row above. |
+| 2026-08-14 | **Phase 15.** Q10's production half asked of the user directly rather than guessed again: no real host, so `vercel.json` now rewrites to `$API_PROXY_TARGET` (unset placeholder) and `ApiConfigGuard` makes that loud instead of a wall of 404s. `collection.json` and `SyRide_All_APIs_merged.postman_collection.json` deleted with the user's confirmation — see section D. |
