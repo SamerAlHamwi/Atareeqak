@@ -46,6 +46,7 @@
     "login_title": "Administrative Dashboard",
     "login_subtitle": "Welcome back to Atareeqak Smart System",
     "username_label": "Username or Email",
+    "email": "Email",
     "username_placeholder": "example@atareeqak.com",
     "password_label": "Password",
     "password_placeholder": "••••••••",

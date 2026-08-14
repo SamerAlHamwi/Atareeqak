@@ -26,8 +26,10 @@ post() { curl -s -X POST -H 'Content-Type: application/json' -d "$2" "$BASE$1"; 
 getc() { curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $2" "$BASE$1"; }
 getb() { curl -s -H "Authorization: Bearer $2" "$BASE$1"; }
 
+PYTHON="${PYTHON:-$(command -v python3 || command -v python)}"
+
 jget() { # jget <json> <python-expression on `d`>
-  python -c "import json,sys
+  "$PYTHON" -c "import json,sys
 try:
     d=json.loads(sys.stdin.read())
     print($2)

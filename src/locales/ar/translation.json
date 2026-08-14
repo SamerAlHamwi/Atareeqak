@@ -50,6 +50,7 @@
     "login_title": "لوحة التحكم الإدارية",
     "login_subtitle": "مرحباً بك مجدداً في نظام عطريقك الذكي",
     "username_label": "اسم المستخدم أو البريد الإلكتروني",
+    "email": "البريد الإلكتروني",
     "username_placeholder": "example@atareeqak.com",
     "password_label": "كلمة المرور",
     "password_placeholder": "••••••••",
