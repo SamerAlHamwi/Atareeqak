@@ -79,7 +79,7 @@ const mapDriver = (
   status: d.status,
   isVerified: d.is_verified,
   photo: d.profile_photo,
-  ratingAverage: d.rating?.average ?? 0,
+  ratingAverage: Number(d.rating?.average ?? 0) || 0,
   ratingCount: d.rating?.total_ratings ?? 0,
   totalRides: d.stats?.total_rides ?? 0,
   completedRides: d.stats?.completed_rides ?? 0,

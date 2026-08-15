@@ -1,4 +1,5 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
@@ -33,8 +34,10 @@ const Verifications: React.FC = () => {
   const { runAction, isBusy, feedback, clearFeedback } = useApiAction();
   const [approveTarget, setApproveTarget] = useState<number | null>(null);
   const [rejectTarget, setRejectTarget] = useState<number | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const {
+    requests,
     visibleRequests,
     total,
     isLoading,
@@ -51,6 +54,25 @@ const Verifications: React.FC = () => {
     rejectRequest,
     refresh,
   } = useVerifications();
+
+  // Deep link from a passenger/driver's profile — `/verifications?userId=123`
+  // jumps straight to and highlights that person's pending request.
+  const deepLinkUserId = searchParams.get('userId');
+  useEffect(() => {
+    if (!deepLinkUserId || isLoading) {
+      return;
+    }
+    const match = requests.find((request) => String(request.userId) === deepLinkUserId);
+    if (match) {
+      setSelectedRequest(match);
+      setTypeFilter('all');
+    }
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('userId');
+      return next;
+    }, { replace: true });
+  }, [deepLinkUserId, requests, isLoading, setSelectedRequest, setTypeFilter, setSearchParams]);
 
   const handleApprove = useCallback(
     async (nationalId: string) => {

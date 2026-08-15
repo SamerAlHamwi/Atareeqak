@@ -14,7 +14,7 @@ export const CityDistributionCard: React.FC<CityDistributionCardProps> = ({ citi
   const { t } = useTranslation();
 
   return (
-    <section className="bg-surface-container-lowest p-10 rounded-[2.5rem] shadow-sm border border-outline-variant/30 h-full">
+    <section className="bg-surface-container-lowest p-6 xl:p-10 rounded-[2.5rem] shadow-sm border border-outline-variant/30 h-full">
       <h3 className="text-xl font-black text-primary mb-10">{t('dashboard.city_distribution')}</h3>
 
       {cities.length === 0 ? (
@@ -26,11 +26,9 @@ export const CityDistributionCard: React.FC<CityDistributionCardProps> = ({ citi
         <div className="space-y-10">
           {cities.map((city, index) => (
             <div key={city.name} className="space-y-4">
-              <div className="flex justify-between items-baseline gap-3 text-sm font-black">
-                <span className="text-on-surface truncate">{city.name}</span>
-                <span className="text-on-surface-variant shrink-0">
-                  {t('dashboard.city_count', { count: city.count })} · {city.percentage}%
-                </span>
+              <div className="flex justify-between items-start gap-3 text-sm font-black">
+                <span className="text-on-surface break-words">{city.name}</span>
+                <span className="text-on-surface-variant shrink-0">{city.percentage}%</span>
               </div>
               <div className="h-2.5 w-full bg-surface-container-low rounded-full overflow-hidden">
                 <div
@@ -39,6 +37,9 @@ export const CityDistributionCard: React.FC<CityDistributionCardProps> = ({ citi
                   }`}
                   style={{ width: `${Math.min(100, city.percentage)}%` }}
                 />
+              </div>
+              <div className="text-xs text-on-surface-variant font-bold">
+                {t('dashboard.city_count', { count: city.count })}
               </div>
             </div>
           ))}

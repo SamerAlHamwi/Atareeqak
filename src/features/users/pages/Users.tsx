@@ -339,6 +339,18 @@ const Users: React.FC = () => {
                         >
                           <span className="material-symbols-outlined">visibility</span>
                         </button>
+                        {user.status === 'pending' && (
+                          <button
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              navigate(`/verifications?userId=${user.id}`);
+                            }}
+                            className="p-2 hover:bg-secondary/10 rounded-lg text-secondary"
+                            title={t('users.verify_action')}
+                          >
+                            <span className="material-symbols-outlined">verified</span>
+                          </button>
+                        )}
                         <button
                           data-testid={`user-ban-toggle-${user.id}`}
                           onClick={async (event) => {
@@ -444,6 +456,15 @@ const Users: React.FC = () => {
                 >
                   {t('users.open_profile')}
                 </button>
+                {panelUser.status === 'pending' && (
+                  <button
+                    onClick={() => navigate(`/verifications?userId=${panelUser.id}`)}
+                    className="px-4 py-3 border border-secondary text-secondary rounded-xl hover:bg-secondary/10 transition-all"
+                    title={t('users.verify_action')}
+                  >
+                    <span className="material-symbols-outlined">verified</span>
+                  </button>
+                )}
                 <button
                   onClick={() => void handleToggleStatus(panelUser)}
                   disabled={isBusy(`status-${panelUser.id}`)}

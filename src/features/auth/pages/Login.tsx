@@ -163,18 +163,6 @@ const Login: React.FC = () => {
           </div>
         </form>
       </div>
-
-      <p className="mt-10 text-on-surface-variant">
-        {t('auth.no_account')}{' '}
-        {/* Employee accounts are created only by a system admin (POST /employees). */}
-        <button
-          type="button"
-          onClick={() => setFeedback({ tone: 'info', message: t('auth.support_help') })}
-          className="text-secondary font-bold hover:underline"
-        >
-          {t('auth.contact_support')}
-        </button>
-      </p>
     </div>
   );
 };

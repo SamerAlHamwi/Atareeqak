@@ -59,6 +59,8 @@ const Staff: React.FC = () => {
   const [editTarget, setEditTarget] = useState<Employee | null>(null);
   const [toggleTarget, setToggleTarget] = useState<Employee | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
+  const [passwordResetTarget, setPasswordResetTarget] = useState<Employee | null>(null);
+  const [rowNewPassword, setRowNewPassword] = useState('');
   const [createErrors, setCreateErrors] = useState<Record<string, string>>({});
   const [editErrors, setEditErrors] = useState<Record<string, string>>({});
 
@@ -190,6 +192,21 @@ const Staff: React.FC = () => {
       successMessage: t('staff.reset_password_success', { name: selectedEmployee.name }),
       errorMessage: t('staff.reset_password_failed'),
       onSuccess: () => setNewPassword(''),
+    });
+  };
+
+  const handleRowResetPassword = async () => {
+    if (!passwordResetTarget || rowNewPassword.length < PASSWORD_MIN_LENGTH || !canManage) return;
+    const target = passwordResetTarget;
+    await runAction({
+      key: `staff-reset-password-row-${target.id}`,
+      action: () => resetPassword(target, rowNewPassword),
+      successMessage: t('staff.reset_password_success', { name: target.name }),
+      errorMessage: t('staff.reset_password_failed'),
+      onSuccess: () => {
+        setPasswordResetTarget(null);
+        setRowNewPassword('');
+      },
     });
   };
 
@@ -342,7 +359,7 @@ const Staff: React.FC = () => {
                           </td>
                           <td className="px-6 py-5 text-start">
                             <span
-                              className={`text-xs font-semibold py-1 px-3 rounded-full ${
+                              className={`text-xs font-semibold py-1 px-3 rounded-full whitespace-nowrap ${
                                 roleBadgeClasses[emp.role] ?? 'bg-surface-container-high text-on-surface-variant'
                               }`}
                             >
@@ -389,6 +406,27 @@ const Staff: React.FC = () => {
                               >
                                 <span className="material-symbols-outlined text-sm">edit</span>
                               </button>
+                              {/*
+                                system_admin / sycash passwords are restricted —
+                                EmployeeManagementService::rotatePassword() 403s
+                                and points to `php artisan admin:rotate-password`.
+                                Only offered for admin/support_agent rows.
+                              */}
+                              {(emp.role === 'admin' || emp.role === 'support_agent') && (
+                                <button
+                                  data-testid={`staff-reset-password-${emp.id}`}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    setRowNewPassword('');
+                                    setPasswordResetTarget(emp);
+                                  }}
+                                  disabled={isBusy(`staff-reset-password-row-${emp.id}`)}
+                                  className="p-1.5 rounded-lg text-secondary hover:bg-secondary/10 disabled:opacity-40"
+                                  title={t('staff.reset_password_title')}
+                                >
+                                  <span className="material-symbols-outlined text-sm">lock_reset</span>
+                                </button>
+                              )}
                               <button
                                 data-testid={`staff-toggle-${emp.id}`}
                                 onClick={(event) => {
@@ -658,6 +696,46 @@ const Staff: React.FC = () => {
             }}
             onClose={() => setDeleteTarget(null)}
           />
+
+          <ConfirmActionModal
+            open={passwordResetTarget !== null}
+            title={t('staff.reset_password_modal_title', { name: passwordResetTarget?.name ?? '' })}
+            description={t('staff.reset_password_modal_desc', { name: passwordResetTarget?.name ?? '' })}
+            confirmLabel={t('staff.reset_password_action')}
+            // POST /employees/{id}/reset-password takes `new_password`, not a
+            // free-text reason — the password field below is the real payload.
+            hideReason
+            isBusy={passwordResetTarget ? isBusy(`staff-reset-password-row-${passwordResetTarget.id}`) : false}
+            onConfirm={() => handleRowResetPassword()}
+            onClose={() => {
+              setPasswordResetTarget(null);
+              setRowNewPassword('');
+            }}
+          >
+            <div>
+              <label
+                htmlFor="row-reset-password-input"
+                className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2 block"
+              >
+                {t('staff.form_new_password')}
+              </label>
+              <input
+                id="row-reset-password-input"
+                data-testid="row-reset-password-input"
+                type="password"
+                value={rowNewPassword}
+                onChange={(e) => setRowNewPassword(e.target.value)}
+                placeholder={t('staff.form_new_password')}
+                className="w-full bg-surface-container-low border-none rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                dir="ltr"
+              />
+              {rowNewPassword !== '' && rowNewPassword.length < PASSWORD_MIN_LENGTH && (
+                <p className="text-[11px] text-error mt-1">
+                  {t('staff.password_too_short', { count: PASSWORD_MIN_LENGTH })}
+                </p>
+              )}
+            </div>
+          </ConfirmActionModal>
         </>
       )}
     </div>

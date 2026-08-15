@@ -63,7 +63,7 @@ export const VerificationDocuments: React.FC<VerificationDocumentsProps> = ({
   const previewFailed = previewUrl !== null && failedUrls.includes(previewUrl);
 
   return (
-    <div className="lg:col-span-7 space-y-6 sticky top-24">
+    <div className="lg:col-span-7 space-y-6 sticky top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pe-1">
       <div
         data-testid="verification-detail"
         className="bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/10 overflow-hidden"

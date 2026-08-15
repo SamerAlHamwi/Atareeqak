@@ -10,6 +10,7 @@ export interface Trip {
   id: string;
   rawId: number | string;
   driver: string;
+  driverId: number | null;
   driverInitial: string;
   from: string;
   to: string;
@@ -102,6 +103,7 @@ export const useTrips = (): UseTripsReturn => {
         id: trip.trip_ref,
         rawId: trip.id,
         driver: trip.driver?.name || t('common.unknown'),
+        driverId: trip.driver?.id ?? null,
         driverInitial: trip.driver?.name
           ? trip.driver.name.split(' ').map((n) => n[0]).join('.')
           : '?',

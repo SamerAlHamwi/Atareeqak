@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import TableSkeleton from '../../shared/components/TableSkeleton';
 import type { Trip } from '../hooks/useTrips';
@@ -68,20 +69,44 @@ export const TripsTable: React.FC<TripsTableProps> = ({
               >
                 <td className="py-6 px-4 font-bold text-primary text-start">{trip.id}</td>
                 <td className="py-6 px-4 text-start">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-8 h-8 rounded-full ${
-                        trip.status === 'active'
-                          ? 'bg-secondary/10 text-secondary'
-                          : trip.status === 'scheduled'
-                          ? 'bg-primary/10 text-primary'
-                          : 'bg-surface-container-high text-on-surface-variant'
-                      } flex items-center justify-center font-bold text-xs`}
+                  {trip.driverId ? (
+                    <Link
+                      to={`/drivers/${trip.driverId}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex items-center gap-3 group/driver w-fit"
+                      title={t('trips.show_driver')}
                     >
-                      {trip.driverInitial}
+                      <div
+                        className={`w-8 h-8 rounded-full ${
+                          trip.status === 'active'
+                            ? 'bg-secondary/10 text-secondary'
+                            : trip.status === 'scheduled'
+                            ? 'bg-primary/10 text-primary'
+                            : 'bg-surface-container-high text-on-surface-variant'
+                        } flex items-center justify-center font-bold text-xs`}
+                      >
+                        {trip.driverInitial}
+                      </div>
+                      <span className="text-sm font-medium group-hover/driver:text-primary group-hover/driver:underline transition-colors">
+                        {trip.driver}
+                      </span>
+                    </Link>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-8 h-8 rounded-full ${
+                          trip.status === 'active'
+                            ? 'bg-secondary/10 text-secondary'
+                            : trip.status === 'scheduled'
+                            ? 'bg-primary/10 text-primary'
+                            : 'bg-surface-container-high text-on-surface-variant'
+                        } flex items-center justify-center font-bold text-xs`}
+                      >
+                        {trip.driverInitial}
+                      </div>
+                      <span className="text-sm font-medium">{trip.driver}</span>
                     </div>
-                    <span className="text-sm font-medium">{trip.driver}</span>
-                  </div>
+                  )}
                 </td>
                 <td className="py-6 px-4 text-start">
                   <div className="flex items-center gap-2 text-sm">
