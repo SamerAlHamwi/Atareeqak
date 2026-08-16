@@ -75,12 +75,16 @@ export interface PassengerWalletCharge {
   status: string;
 }
 
-/** What the confirmation banner reports after a charge — straight from the charge response (REQ-3). */
+/**
+ * What the confirmation banner reports after a charge — straight from the charge response (REQ-3).
+ * `previousBalance`/`transactionId` are `null` when the backend hasn't rolled out the REQ-3 fix yet
+ * and still returns only `new_balance` — see docs/api/backend-issues.md.
+ */
 export interface WalletChargeResult {
   amount: number;
   newBalance: number;
-  previousBalance: number;
-  transactionId: string;
+  previousBalance: number | null;
+  transactionId: string | null;
 }
 
 /** Sections that can be reloaded on their own, each with its own endpoint. */
@@ -386,19 +390,46 @@ export const useUserDetails = (userId: string | undefined): UseUserDetailsReturn
       // The charge busts the full-profile, stats and wallet-charges caches
       // server-side, so these reload fresh rather than showing stale data.
       // Not part of the effect's sequence — always commit.
-      await Promise.all([
+      const [, freshCharges] = await Promise.all([
         refetch(),
         usersApi
           .getPassengerWalletCharges(userId)
-          .then((charges) => setWalletCharges(mapWalletCharges(charges.data)))
-          .catch((err) => console.error('Failed to reload wallet charges', err)),
+          .then((charges) => charges.data)
+          .catch((err) => {
+            console.error('Failed to reload wallet charges', err);
+            return null;
+          }),
       ]);
+
+      // `refetch()` re-reads the full-profile BFF, which embeds its own
+      // (possibly stale, pre-cache-bust) wallet_charges snapshot and sets
+      // this same state. Since both run in parallel, apply the list this
+      // call knows to be fresh last, so it always wins the race.
+      if (freshCharges) {
+        setWalletCharges(mapWalletCharges(freshCharges));
+      }
+
+      // REQ-3 (docs/api/backend-issues.md): the charge endpoint doesn't
+      // reliably return `previous_balance`/`transaction_id`, only
+      // `new_balance`. Read the missing fields back from the transaction the
+      // freshly reloaded charges list reports for this same `new_balance`,
+      // rather than inventing a "previous balance" client-side and presenting
+      // it as server truth — if nothing lines up, they stay null.
+      let previousBalance = response.previous_balance ?? null;
+      let transactionId = response.transaction_id ?? null;
+      if ((previousBalance == null || transactionId == null) && freshCharges) {
+        const match = freshCharges.find((c) => c.new_balance === response.new_balance);
+        if (match) {
+          previousBalance = match.previous_balance;
+          transactionId = match.transaction_id;
+        }
+      }
 
       return {
         amount,
         newBalance: response.new_balance,
-        previousBalance: response.previous_balance,
-        transactionId: response.transaction_id,
+        previousBalance,
+        transactionId,
       };
     },
     [userId, refetch]

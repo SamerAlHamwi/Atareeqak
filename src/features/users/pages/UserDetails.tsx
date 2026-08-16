@@ -176,13 +176,22 @@ const UserDetails: React.FC = () => {
           throw err;
         }
       },
+      // The backend doesn't always return `previous_balance`/`transaction_id`
+      // (REQ-3, docs/api/backend-issues.md) — fall back to the simpler message
+      // rather than crashing on a `toLocaleString()` of `undefined`.
       successMessage: (result) =>
-        t('users.charge_success_detailed', {
-          previous: result.previousBalance.toLocaleString(locale),
-          next: result.newBalance.toLocaleString(locale),
-          currency: t('users.currency'),
-          transaction: result.transactionId,
-        }),
+        result.previousBalance != null && result.transactionId != null
+          ? t('users.charge_success_detailed', {
+              previous: result.previousBalance.toLocaleString(locale),
+              next: result.newBalance.toLocaleString(locale),
+              currency: t('users.currency'),
+              transaction: result.transactionId,
+            })
+          : t('users.charge_success', {
+              amount: result.amount.toLocaleString(locale),
+              balance: result.newBalance.toLocaleString(locale),
+              currency: t('users.currency'),
+            }),
       errorMessage: t('users.charge_failed'),
       onSuccess: () => {
         setChargeAmount('');
