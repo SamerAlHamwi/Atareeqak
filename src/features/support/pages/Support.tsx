@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../app/context/useAuth';
+import { hasPermission } from '../../../app/permissions';
 import { extractApiError } from '../../../services/apiError';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
@@ -50,7 +51,8 @@ const Support: React.FC = () => {
 
   // `/staff/escalated-complaints` is `staff:admin,system_admin` — a support_agent
   // would get a hard 403, so the whole view is withheld rather than shown broken.
-  const canSeeEscalated = role === 'admin' || role === 'system_admin';
+  // Matches permissions.json's 'View Escalate' (admin ownPermissions) exactly.
+  const canSeeEscalated = hasPermission(role, 'View Escalate');
 
   const {
     counts,
