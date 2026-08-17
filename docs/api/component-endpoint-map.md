@@ -120,6 +120,22 @@ backend fix)
 | SupportStats KPI cards | `pages/Support.tsx` | ✅ derived from the two `counts` blocks — the unsupportable avg-response-time card was removed, not dashed ([REQ-5](./backend-issues.md), [BUG-8](./backend-issues.md)) |
 | Broadcast Alert button + modal | — | ⛔ removed Phase 10 — `POST /admin/broadcast-alert` confirmed 404 live |
 
+## Chat — `src/features/chat/`
+
+| Component | File | Endpoint / status |
+|---|---|---|
+| Conversation rows | `components/ConversationList.tsx` | ✅ `GET /staff/chat/conversations` — unpaged, returns the whole list ([NOTE-4](./backend-issues.md)) |
+| Search input | `components/ConversationList.tsx` | 🖥️ client-side over the already-loaded list; the endpoint accepts no query params at all, and matching on the last message's text is only possible *because* it is client-side |
+| Per-page `<select>` + pagination | `components/ConversationList.tsx` | 🖥️ client-side for the same reason — there is no `page`/`per_page` to send |
+| Conversation row select | `pages/Chat.tsx` | ✅ `GET /staff/chat/conversations/{id}/messages` — a pure read, unlike the complaints inbox's `show()` |
+| "Load older messages" | `components/ChatThread.tsx` | ✅ same route with `?page=N&limit=50`; paged backwards from the newest end with no total, so the button hides on the first short page ([NOTE-4](./backend-issues.md)) |
+| Message bubbles (text) | `components/MessageBubble.tsx` | ✅ from the messages payload |
+| Image message thumbnail + full-size viewer | `components/MessageBubble.tsx`, `components/ImageLightbox.tsx` | 🚧 URLs are real (`content` is the `/storage/...` URL for an `image` message) but 404 in this environment — `FILESYSTEM_DISK=local`, no `storage:link` ([BUG-7](./backend-issues.md)). Degrades to a labelled "unavailable" panel that still offers the raw link |
+| Reply composer + send button | `components/MessageComposer.tsx` | ✅ `POST /staff/chat/conversations/{id}/messages`, body `{ message }` (**not** `content` — the controller remaps it), `max:5000` mirrored as the field's `maxLength` |
+| Image/attachment upload in the composer | — | 🚫 not built — the send route validates `message => required\|string`, so there is no staff-side upload contract to build against. Users can send images; staff can only receive them |
+| Customer name / photo / account-status badge | `components/ChatThread.tsx`, `components/ConversationList.tsx` | 🚧 `user` is null on every support conversation ([BUG-14](./backend-issues.md)); reconstructed in `hooks/useChat.ts` from message senders and `sent_by_agent`, and preferred straight from the payload the moment it arrives populated |
+| Live updates | `hooks/useChat.ts` | 🖥️ polling (30s list / 15s open thread). The backend broadcasts `MessageSent` over a WebSocket, but this dashboard ships no socket client — swap the poll for Echo and `useChat` is the only file that changes |
+
 ## Reviews — `src/features/reviews/`
 
 | Component | File | Endpoint / status |

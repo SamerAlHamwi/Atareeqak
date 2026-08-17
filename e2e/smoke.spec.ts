@@ -17,14 +17,25 @@ const ROUTES_BY_ROLE: Record<Role, string[]> = {
     '/verifications',
     '/reviews',
     '/support',
+    '/chat',
     '/reports',
     '/staff',
   ],
-  admin: ['/dashboard', '/trips', '/drivers', '/passengers', '/verifications', '/reviews', '/support'],
+  admin: [
+    '/dashboard',
+    '/trips',
+    '/drivers',
+    '/passengers',
+    '/verifications',
+    '/reviews',
+    '/support',
+    '/chat',
+  ],
   // sycash passes the bare `staff` middleware but not `staff:admin,system_admin`,
   // so it sees the same sections as a support agent (docs/api/decisions.md Q8).
-  sycash: ['/reviews', '/support'],
-  support_agent: ['/reviews', '/support'],
+  // The chat routes sit in the bare `staff` group, so both reach them.
+  sycash: ['/reviews', '/support', '/chat'],
+  support_agent: ['/reviews', '/support', '/chat'],
 };
 
 /** Every route ever deleted from the app. A request to any of these during a

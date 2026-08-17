@@ -16,6 +16,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/verifications', icon: 'verified_user', labelKey: 'nav.verifications', section: 'verifications' },
   { to: '/reviews', icon: 'rate_review', labelKey: 'nav.reviews', section: 'reviews' },
   { to: '/support', icon: 'support_agent', labelKey: 'nav.support', section: 'support' },
+  { to: '/chat', icon: 'forum', labelKey: 'nav.chat', section: 'chat' },
   { to: '/reports', icon: 'assessment', labelKey: 'nav.reports', section: 'reports' },
   { to: '/staff', icon: 'badge', labelKey: 'nav.staff', section: 'staff' },
 ];

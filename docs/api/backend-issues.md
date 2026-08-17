@@ -1118,6 +1118,88 @@ adds a genuinely staff-scoped notifications endpoint.
 
 ---
 
+## 🟠 BUG-14 — The staff chat inbox never learns who the customer is: `user` is null on every support conversation (found Phase 16)
+
+`StaffChatController::formatConversation()` builds a `user` block whose own docblock says *"the OTHER
+participant — the customer, not the agent"*, and the staff chat screen exists to show exactly that.
+It calls:
+
+```php
+$otherUser = $conversation->getOtherParticipant($agentUser);
+```
+
+and `Conversation::getOtherParticipant()` opens with:
+
+```php
+if ($this->type !== 'private') {
+    return null;
+}
+```
+
+Every conversation the staff inbox serves is created by `ContactController` with **`type: 'support'`**
+(and `ChatRepository::findSupportConversation()` looks it up by that same type, so it is not an
+accident). The one type this screen never sees is `private`. So the guard returns `null` for every row
+the endpoint returns, on both routes that use the formatter.
+
+### Verified live (2026-08-17)
+
+14 conversations seeded ([`seed-phase-chat.sql`](./seed-phase-chat.sql)) — 13 `support` and one
+`private` kept deliberately as a control. `GET /staff/chat/conversations` as `system_admin`:
+
+```
+{"id":9101,"type":"support","user":null,"last_message":{…,"sender_name":"Passenger1","sent_by_agent":false},…}
+{"id":9113,"type":"support","user":null,…}
+{"id":9114,"type":"private","user":{"id":24,"name":"Passenger14 Test","email":"passenger14@test.com",
+                                    "profile_photo":"…","account_status":"active"},…}
+```
+
+The single `private` row is the **only** one carrying an identity. `GET /staff/chat/conversations/9101/messages`
+repeats the same null block in its `conversation` key.
+
+### Consequence
+
+The customer's name, email, profile photo and `account_status` — the four things that make an inbox
+row identifiable and the only place `account_status` (banned / inactive / active) surfaces on this
+screen at all — are withheld from every conversation an agent will ever open. A support queue where
+no row says who it is from is not usable as a queue.
+
+### Suggested fix
+
+One line. The early return is guarding against group conversations, where "the other participant" is
+not well defined; `support` is a two-party conversation exactly like `private`:
+
+```php
+if (!in_array($this->type, ['private', 'support'], true)) {
+    return null;
+}
+```
+
+Nothing else needs to change — `formatConversation()` already handles a populated `$otherUser`, and
+the `participants` rows carry the `customer` / `agent` pivot roles `ContactController` wrote.
+
+### What the dashboard does about it
+
+The chat page does **not** render "Unknown user" fourteen times. `useChat` reconstructs the identity
+from data the API does return, in descending order of certainty:
+
+1. `conversation.user`, whenever it is populated — so the day this bug is fixed the reconstruction
+   silently stops being load-bearing, with no frontend change.
+2. `last_message.sent_by_agent` paired with the newest message on page 1 (they are the same message).
+   That pins one of the two ids on every non-empty thread: `true` names the **agent's** shadow user,
+   `false` names **this conversation's customer**. The pairing is only trusted when the two payloads
+   agree on the newest message's content and timestamp, because they are separate queries ordered by
+   `created_at` alone and could break a tie differently.
+3. The 201 from `POST …/messages`, whose `data.sender.id` is the agent by definition. The agent's
+   shadow user is the same for the whole session, so once known it classifies every message in every
+   thread — and any sender that is *not* the agent is the customer, which recovers their full name
+   and photo from the `sender` block.
+
+Where nothing is knowable (an empty conversation, never opened), the row is labelled
+`chat.unidentified_customer` rather than guessed at, and message alignment falls back to "incoming" —
+claiming a user's message was written by support is the worse error in a moderation tool.
+
+---
+
 ## ℹ️ NOTE-3 — Verified: the rejection reason really does reach the user (Phase 6)
 
 `POST /staff/verifications/{userId}/reject` takes `reason => nullable|string|max:500` (**no minimum
@@ -1159,6 +1241,36 @@ returned a complete stack trace over HTTP.
 
 Also present: `APP_URL=https://api.onwayride.me`, which is a different service (see
 [`probe-results.md`](./probe-results.md)).
+
+## ℹ️ NOTE-4 — The staff chat routes page inconsistently. Documenting, not filing.
+
+Two endpoints, two different (and both unusual) paging models. Neither is a defect, but a consumer
+that assumes the house `meta {current_page, last_page, per_page, total}` envelope will get it wrong
+both times.
+
+**`GET /staff/chat/conversations` is not paginated at all.** It accepts no `page` or `per_page`,
+runs `getUserConversations()` (a bare `orderBy('updated_at','desc')->get()`) and returns every row
+plus a `total` that counts the whole list rather than a page. Verified live: `total: 14`, 14 rows.
+Fine at inbox scale; it is O(all conversations ever) per poll, so it will need real pagination before
+a busy queue. The dashboard pages, searches and sizes the list client-side, which is also why its
+search box can match on the last message's text.
+
+**`GET …/{id}/messages` pages backwards from the newest end, with no total.** `page=1` is the newest
+`limit` messages (ascending *within* the page), `page=2` the `limit` before those; `meta` echoes only
+`{page, limit}`. Verified live on a 62-message thread: page 1 → 50 rows ending at the newest, page 2
+→ 12 rows starting at the oldest. There is therefore no `last_page` to trust and no total to count
+against — "are there older messages?" can only be inferred from whether a page came back full, and
+the offset shifts by one for every message that arrives while an agent is reading. The dashboard
+merges pages by message id rather than concatenating them; because the shift always moves the window
+towards *newer* messages, a re-fetch can only ever re-serve rows already held, never skip one.
+
+Two smaller shape inconsistencies on the same routes, both handled client-side:
+
+- `last_message.created_at` is `diffForHumans()` — **English only**, whatever the UI language. Only
+  `created_at_iso` is safe to render. Same trap as `ComplaintType::label()`'s Arabic-only output.
+- `metadata` on a message has three runtime shapes: `null` (stored text), `{…}` (image), and `[]` —
+  an empty PHP array serialised as a JSON **array** — on the message a `POST` hands straight back.
+  That same 201 also returns `is_edited: null` where the read routes return `false`.
 
 ---
 
@@ -1205,6 +1317,19 @@ Also present: `APP_URL=https://api.onwayride.me`, which is a different service (
   revert matches it by `transaction_id` prefix). Verified afterwards, read-only:
   `wallet_requests` **0 rows**, `wallet_transactions` back to **194**, wallet 4 back to
   `2063600.00` and wallet 32 to `4986000.00`.
+- **Phase 16 (chat)** found `conversations` and `messages` **both completely empty** (0 rows), so the
+  whole chat feature — inbox, thread, media, paging, empty states — rendered against nothing. A
+  deliberate temporary seed of **14 conversations (ids 9101–9114) and 87 messages (ids 9001–9087)**
+  was applied from [`seed-phase-chat.sql`](./seed-phase-chat.sql). Unlike the Phase 7/8 and 9 seeds,
+  **this one has deliberately been LEFT IN PLACE** so the new page can be opened and read without
+  re-seeding first; remove it whenever you like with
+  [`revert-phase-chat.sql`](./revert-phase-chat.sql), which deletes by `conversation_id` and so also
+  removes any message sent through the dashboard while verifying (a real `POST` gets an ordinary
+  auto-increment id, well below the seeded range).
+  One thing the revert deliberately does **not** touch: the shadow `users` row for employee
+  `system_admin` (user 36, primary@admin.com). That was not created by the seed — the first
+  `GET /staff/chat/conversations` created it via `ensureShadowUser()`, it is permanent by design, and
+  deleting it would cascade into real user data.
 - Phase 10 ran `verify-staff.mjs --mutate`, which deliberately triggers the three write-then-500
   endpoints against **employee 3 (`agent01`, non-restricted)** and asserts the write landed by
   reading the database after each 500. All three were rolled back inside the script

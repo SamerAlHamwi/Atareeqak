@@ -11,6 +11,7 @@ const DriverDetails = lazy(() => import('../features/drivers/pages/DriverDetails
 const Trips = lazy(() => import('../features/trips/pages/Trips'));
 const Reports = lazy(() => import('../features/reports/pages/Reports'));
 const Support = lazy(() => import('../features/support/pages/Support'));
+const Chat = lazy(() => import('../features/chat/pages/Chat'));
 const Staff = lazy(() => import('../features/staff/pages/Staff'));
 const Verifications = lazy(() => import('../features/verification/pages/Verifications'));
 const Reviews = lazy(() => import('../features/reviews/pages/Reviews'));
@@ -52,6 +53,7 @@ export const SECTION_ROUTES: SectionRouteConfig[] = [
   { section: 'verifications', path: '/verifications', Component: Verifications },
   { section: 'reviews', path: '/reviews', Component: Reviews },
   { section: 'support', path: '/support', Component: Support },
+  { section: 'chat', path: '/chat', Component: Chat },
   { section: 'reports', path: '/reports', Component: Reports },
   { section: 'staff', path: '/staff', Component: Staff },
 ];

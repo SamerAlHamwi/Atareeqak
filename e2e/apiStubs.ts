@@ -179,6 +179,72 @@ const walletRequestsFixture = {
 };
 
 /**
+ * Chat. `user: null` is not an oversight in this fixture — it is what the live
+ * API returns for every `support` conversation ([BUG-14](../docs/api/backend-issues.md)),
+ * so a fixture with a populated `user` block would let a regression that only
+ * works against identified customers pass this suite.
+ *
+ * The list endpoint takes no paging params and answers with `total` + every
+ * row, which is why there is no `meta` here.
+ */
+const chatConversationFixture = {
+  id: 9101,
+  type: 'support',
+  user: null,
+  last_message: {
+    content: 'Thanks, that answers it.',
+    sender_name: 'Passenger1',
+    sent_by_agent: false,
+    created_at: '2 hours ago',
+    created_at_iso: '2026-08-17T09:03:00+03:00',
+  },
+  updated_at: '2026-08-17T09:40:00+03:00',
+};
+
+const chatConversationsFixture = {
+  status: 'success',
+  total: 2,
+  data: [
+    chatConversationFixture,
+    {
+      id: 9104,
+      type: 'support',
+      user: null,
+      // A conversation with no messages at all — the `last_message: null` branch.
+      last_message: null,
+      updated_at: '2026-08-16T17:30:00+03:00',
+    },
+  ],
+};
+
+const chatMessagesFixture = {
+  status: 'success',
+  conversation: chatConversationFixture,
+  data: [
+    {
+      id: 9001,
+      sender: { id: 11, name: 'Passenger1 Test', profile_photo: null },
+      type: 'text',
+      content: 'Hello, I was charged twice.',
+      metadata: null,
+      created_at: '2026-08-17T06:00:00+03:00',
+      is_edited: false,
+    },
+    {
+      id: 9002,
+      sender: { id: 36, name: 'Smoke Tester', profile_photo: null },
+      type: 'text',
+      content: 'Looking into it now.',
+      metadata: null,
+      created_at: '2026-08-17T06:10:00+03:00',
+      is_edited: false,
+    },
+  ],
+  // No `last_page`, no `total` — the real endpoint echoes only these two.
+  meta: { page: 1, limit: 50 },
+};
+
+/**
  * Ordered list of URL-substring → JSON fixture rules; first match wins.
  * Every list endpoint returns an empty collection so pages render their
  * empty states without console errors, except the four rows above that exist
@@ -267,6 +333,10 @@ const rules: [string, unknown, number?][] = [
     meta: emptyMeta,
     counts: { escalated: 0, resolved: 0, closed: 0 },
   }],
+  // Chat. The messages rule MUST come first — `path.startsWith` would
+  // otherwise let the conversations rule swallow `/conversations/{id}/messages`.
+  ['/staff/chat/conversations/9101/messages', chatMessagesFixture],
+  ['/staff/chat/conversations', chatConversationsFixture],
   ['/staff/reviews', { status: 'success', data: [], meta: emptyMeta }],
   ['/staff/bookings', { status: 'success', data: [], meta: emptyMeta }],
   // `POST /employees` returns a genuine 500 (BUG-1) — confirmed live, not a

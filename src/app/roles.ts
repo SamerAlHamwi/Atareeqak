@@ -30,6 +30,7 @@ export type AppSection =
   | 'verifications'
   | 'reviews'
   | 'support'
+  | 'chat'
   | 'reports'
   | 'staff';
 
@@ -47,6 +48,10 @@ export const SECTION_ROLES: Record<AppSection, StaffRole[]> = {
   verifications: ADMIN_AND_UP,
   reviews: ALL_ROLES,
   support: ALL_ROLES,
+  // `Route::prefix('chat')` sits inside the bare `staff` group in routes/api.php
+  // — no `staff:...` argument — so every active employee reaches all three
+  // chat routes, sycash included.
+  chat: ALL_ROLES,
   reports: ['system_admin'],
   staff: ['system_admin'],
 };

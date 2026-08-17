@@ -81,6 +81,12 @@ export const ENDPOINTS = {
     REJECT_VERIFICATION: (id: string | number) => `/staff/verifications/${id}/reject`,
     ESCALATED_COMPLAINTS: '/staff/escalated-complaints',
     RESOLVE_ESCALATED: (id: string | number) => `/staff/escalated-complaints/${id}/resolve`,
+    // Support chat. All three are behind the bare `staff` middleware, so every
+    // active role reaches them. `CHAT_MESSAGES` is BOTH the read (GET, paged)
+    // and the write (POST, `{ message }`) — one path, two verbs, exactly as
+    // `routes/api.php` declares them.
+    CHAT_CONVERSATIONS: '/staff/chat/conversations',
+    CHAT_MESSAGES: (id: string | number) => `/staff/chat/conversations/${id}/messages`,
   },
   EMPLOYEES: {
     ALL: '/employees',
