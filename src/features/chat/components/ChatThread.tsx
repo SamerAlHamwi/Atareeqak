@@ -179,6 +179,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
             </h3>
             {customer.accountStatus && (
               <span
+                data-testid="chat-thread-status"
                 className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
                   statusBadgeClasses[customer.accountStatus] ??
                   'bg-surface-container-high text-on-surface-variant'
@@ -194,7 +195,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
             the title is already the conversation number in that case; the
             conversation number otherwise.
           */}
-          <p className="text-[11px] text-on-surface-variant truncate">
+          <p data-testid="chat-thread-subtitle" className="text-[11px] text-on-surface-variant truncate">
             {customer.email ??
               (customer.source === 'unknown'
                 ? t('chat.unidentified_customer')
