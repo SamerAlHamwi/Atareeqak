@@ -1118,7 +1118,12 @@ adds a genuinely staff-scoped notifications endpoint.
 
 ---
 
-## 🟠 BUG-14 — The staff chat inbox never learns who the customer is: `user` is null on every support conversation (found Phase 16)
+## ✅ BUG-14 — The staff chat inbox never learns who the customer is: `user` is null on every support conversation (found Phase 16, **FIXED 2026-08-17**)
+
+> **Fixed in the backend.** `app/Models/Conversation.php::getOtherParticipant()` now admits `support`
+> alongside `private`. Verification is in the "Fixed" section at the end of this entry. The rest of
+> the entry is kept as the record of what was wrong and how it was proven.
+
 
 `StaffChatController::formatConversation()` builds a `user` block whose own docblock says *"the OTHER
 participant — the customer, not the agent"*, and the staff chat screen exists to show exactly that.
@@ -1194,9 +1199,48 @@ from data the API does return, in descending order of certainty:
    thread — and any sender that is *not* the agent is the customer, which recovers their full name
    and photo from the `sender` block.
 
-Where nothing is knowable (an empty conversation, never opened), the row is labelled
-`chat.unidentified_customer` rather than guessed at, and message alignment falls back to "incoming" —
-claiming a user's message was written by support is the worse error in a moderation tool.
+Where nothing is knowable (an empty conversation, never opened), the row is labelled with its
+conversation number rather than guessed at, and message alignment falls back to "incoming" — claiming
+a user's message was written by support is the worse error in a moderation tool.
+
+**This fallback was kept after the fix.** It costs nothing when `user` arrives populated (it is
+checked first), and it is what keeps the page readable against a backend that has not picked up the
+fix, or a conversation type the guard does not answer for. Its branches stay covered by
+`tests/hooks/useChat.test.ts`.
+
+### ✅ Fixed (2026-08-17)
+
+`app/Models/Conversation.php` — the guard now names the types it excludes rather than the one it
+allows, since `support` is a two-party conversation exactly like `private`:
+
+```php
+if (!in_array($this->type, ['private', 'support'], true)) {
+    return null;
+}
+```
+
+Verified live against the same 14 seeded conversations, as `system_admin`:
+
+```
+GET /staff/chat/conversations
+  total: 14 | populated user: 14 | still null: 0
+  9101 support {"id":11,"name":"Passenger1 Test","email":"passenger1@test.com","profile_photo":"…","account_status":"active"}
+  9104 support {"id":14,"name":"Passenger4 Test", …}          ← the empty conversation, now identified too
+
+GET /staff/chat/conversations/9101/messages
+  conversation.user = {"id":11,"name":"Passenger1 Test", …}   ← the second route agrees
+```
+
+`account_status` — unreachable before the fix, since it lives on the block that was null — was
+exercised in both non-default directions by temporarily setting `users.status` to `-1` and `0` for
+users 12 and 13, confirming `banned` and `inactive` respectively, in the payload and as the badge in
+the thread header. **Both rows were restored to `status = 1` immediately after**; nothing else in
+`users` was touched.
+
+No frontend change was required: `resolveCustomer()` checks `conversation.user` first, so the
+dashboard picked the real identities up on the next poll. The browser walkthrough went from 21 to
+23 checks (the two new ones assert every row carries a real name, and that the banned badge and the
+real email render in the thread header) and passes 23/23.
 
 ---
 

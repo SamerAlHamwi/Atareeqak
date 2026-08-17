@@ -58,10 +58,12 @@
 --     `last_message.sent_by_agent` is exercised in both directions.
 --   · 9113 is image-only, so a list row whose `last_message.content` is a URL
 --     rather than prose is rendered for real.
---   · 9114 is the CONTROL: the only `private` conversation. Conversation::
---     getOtherParticipant() early-returns null unless type === 'private', so
---     this is the only row in the set whose `user` block comes back populated.
---     Compare it against any 9101-9113 row to see the defect first-hand.
+--   · 9114 is the CONTROL: the only `private` conversation. It is what proved
+--     BUG-14 — getOtherParticipant() early-returned null unless
+--     type === 'private', so before the fix this was the ONLY row in the set
+--     whose `user` block came back populated. Since the fix (2026-08-17) all 14
+--     rows carry an identity, and 9114 is now the regression anchor: if it is
+--     ever the only identified row again, that guard has been reverted.
 --
 -- `updated_at` is distinct per conversation (the list is orderBy updated_at
 -- desc), so row order and page 2 are deterministic.
@@ -90,7 +92,7 @@ VALUES
   (9112, 'support', NULL, NULL, '2026-08-12 21:25:00', '2026-08-12 21:25:00'),
   -- image-only thread
   (9113, 'support', NULL, NULL, '2026-08-12 11:00:00', '2026-08-12 11:00:00'),
-  -- CONTROL — type=private, the only type getOtherParticipant() answers for
+  -- CONTROL — type=private (see the BUG-14 note in the header)
   (9114, 'private', NULL, NULL, '2026-08-11 15:00:00', '2026-08-11 15:00:00');
 
 -- ── 2. Participants (agent + customer on each) ──────────────────────────────

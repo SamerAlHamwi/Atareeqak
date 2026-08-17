@@ -145,12 +145,15 @@ interface LearnedCustomer {
  * never skip one — and deduping by id absorbs that completely. (Deleting a
  * message would shift the other way and could skip, but no staff route deletes.)
  *
- * **3. Who is who — the `user: null` problem.**
- * `Conversation::getOtherParticipant()` returns null unless `type === 'private'`,
- * and every conversation this screen exists for is `type: 'support'`. So the
- * customer block is null on every row (BUG-14). Rendering "Unknown user" against
- * all of them would be honest and useless, so the identity is reconstructed from
- * data the API *does* return:
+ * **3. Who is who — the `user: null` fallback.**
+ * `conversation.user` is the authority and is normally populated. It was not
+ * always: `Conversation::getOtherParticipant()` returned null unless
+ * `type === 'private'`, while every conversation this screen exists for is
+ * `type: 'support'`, so the block was null on every row (BUG-14, fixed
+ * 2026-08-17). Rendering "Unknown user" against all of them would have been
+ * honest and useless, so the identity is also reconstructed from data the API
+ * returns regardless — which still covers a backend without the fix, and any
+ * future conversation type the guard does not answer for:
  *
  *   · `conversation.last_message.sent_by_agent` says which side sent the newest
  *     message, and page 1's last element IS that message. One of the two ids is
@@ -162,9 +165,8 @@ interface LearnedCustomer {
  *   · Sending a message settles it outright: the 201 response's `data.sender.id`
  *     is the agent, by definition.
  *
- * `conversation.user` is still preferred whenever it is populated, so the day
- * BUG-14 is fixed this inference quietly stops being load-bearing, with no
- * change here.
+ * `conversation.user` is checked first, which is why the fix landed without a
+ * line changing here: the inference simply stopped being load-bearing.
  */
 export const useChat = () => {
   const { t, i18n } = useTranslation();
@@ -526,8 +528,8 @@ export const useChat = () => {
 
   const resolveCustomer = useCallback(
     (raw: ConversationResponse): ChatCustomer => {
-      // 1. The payload's own block — populated only for `private` today, but it
-      //    is the authority whenever it is there.
+      // 1. The payload's own block — the authority whenever it is there, which
+      //    since the BUG-14 fix is every two-party conversation.
       if (raw.user) {
         return {
           id: raw.user.id,

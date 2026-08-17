@@ -179,18 +179,25 @@ const walletRequestsFixture = {
 };
 
 /**
- * Chat. `user: null` is not an oversight in this fixture — it is what the live
- * API returns for every `support` conversation ([BUG-14](../docs/api/backend-issues.md)),
- * so a fixture with a populated `user` block would let a regression that only
- * works against identified customers pass this suite.
+ * Chat. The list endpoint takes no paging params and answers with `total` +
+ * every row, which is why there is no `meta` here.
  *
- * The list endpoint takes no paging params and answers with `total` + every
- * row, which is why there is no `meta` here.
+ * The two rows deliberately differ in what they identify. The first carries the
+ * populated `user` block the API returns since [BUG-14](../docs/api/backend-issues.md)
+ * was fixed. The second keeps `user: null` — the pre-fix shape — so
+ * `useChat`'s reconstruction fallback stays exercised by this suite rather than
+ * only by unit tests; it is the path a backend without the fix would take.
  */
 const chatConversationFixture = {
   id: 9101,
   type: 'support',
-  user: null,
+  user: {
+    id: 11,
+    name: 'Passenger1 Test',
+    email: 'passenger1@test.com',
+    profile_photo: null,
+    account_status: 'active',
+  },
   last_message: {
     content: 'Thanks, that answers it.',
     sender_name: 'Passenger1',
@@ -209,6 +216,7 @@ const chatConversationsFixture = {
     {
       id: 9104,
       type: 'support',
+      // Pre-fix shape, kept on purpose — see the note above.
       user: null,
       // A conversation with no messages at all — the `last_message: null` branch.
       last_message: null,

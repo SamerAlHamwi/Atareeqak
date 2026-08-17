@@ -13,15 +13,16 @@ import { ENDPOINTS } from '../../../services/endpoints';
 /**
  * The OTHER participant in the conversation — the customer, not the agent.
  *
- * ⚠️ **Null for every support conversation.** `Conversation::getOtherParticipant()`
- * early-returns `null` unless `type === 'private'`, but every conversation the
- * staff inbox exists to serve is created by `ContactController` with
- * `type: 'support'`. So the customer's name, email, photo and account status are
- * all withheld from the one screen that needs them. Filed as BUG-14 in
- * `docs/api/backend-issues.md` with the one-line fix.
+ * Null-safe by contract, and `useChat` still reconstructs the identity from
+ * message senders when it IS null. That fallback used to be the only path that
+ * ever ran: `Conversation::getOtherParticipant()` early-returned unless
+ * `type === 'private'`, while every conversation this screen serves is
+ * `type: 'support'`, so the block was null on every row (BUG-14, fixed
+ * 2026-08-17 — see `docs/api/backend-issues.md`).
  *
- * `useChat` reconstructs the identity from the message senders instead, and
- * prefers this block the moment it starts arriving populated.
+ * The fallback is kept deliberately. It costs nothing when this block arrives
+ * populated, and it is what keeps the page readable against a backend that has
+ * not picked up the fix, or a conversation type nobody has thought about yet.
  */
 export interface ChatUserResponse {
   id: number;

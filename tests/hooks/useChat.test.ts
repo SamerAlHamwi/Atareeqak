@@ -24,9 +24,11 @@ const message = (overrides: Partial<ChatMessageResponse> = {}): ChatMessageRespo
 });
 
 /**
- * The live payload's defining feature: `user` is null on every support
- * conversation, because `Conversation::getOtherParticipant()` answers only for
- * `type: 'private'` (BUG-14).
+ * The default fixture keeps `user: null` — the shape the API returned before
+ * BUG-14 was fixed, when `Conversation::getOtherParticipant()` answered only
+ * for `type: 'private'`. That is deliberate: it makes the reconstruction
+ * fallback the default path under test, so it cannot rot now that the happy
+ * path no longer needs it. The populated-block case has its own test below.
  */
 const conversation = (overrides: Partial<ConversationResponse> = {}): ConversationResponse => ({
   id: 9101,
