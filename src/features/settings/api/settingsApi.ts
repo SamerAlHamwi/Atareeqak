@@ -24,15 +24,36 @@ export interface PolicySettingsResponse {
   consent_label: string | null;
 }
 
+export interface FaqEntryResponse {
+  question: string;
+  answer: string;
+}
+
+export interface FaqGroupResponse {
+  title: string;
+  icon: string;
+  entries: FaqEntryResponse[];
+}
+
+export interface FaqResponse {
+  groups: FaqGroupResponse[];
+  updated_at: string | null;
+}
+
 export interface PolicyPayload {
   settings: PolicySettingsResponse;
   privacy: PolicyResponse | null;
   cancellation: PolicyResponse | null;
+  faq: FaqResponse;
 }
 
 export interface UpdatePolicyRequest {
   last_updated_label: string | null;
   sections: PolicySectionResponse[];
+}
+
+export interface UpdateFaqRequest {
+  groups: FaqGroupResponse[];
 }
 
 export const settingsApi = {
@@ -53,6 +74,13 @@ export const settingsApi = {
     payload: PolicySettingsResponse
   ): Promise<{ status: string; message: string; data: PolicySettingsResponse }> => {
     const response = await api.put(ENDPOINTS.POLICIES.SETTINGS, payload);
+    return response.data;
+  },
+
+  updateFaq: async (
+    payload: UpdateFaqRequest
+  ): Promise<{ status: string; message: string; data: { groups: FaqGroupResponse[] } }> => {
+    const response = await api.put(ENDPOINTS.POLICIES.FAQ, payload);
     return response.data;
   },
 };

@@ -5,6 +5,8 @@ import type { IsStale } from '../../shared/hooks/useFetchEffect';
 import { extractApiError } from '../../../services/apiError';
 import { settingsApi } from '../api/settingsApi';
 import type {
+  FaqGroupResponse,
+  FaqResponse,
   PolicyPayload,
   PolicyResponse,
   PolicySectionResponse,
@@ -21,6 +23,22 @@ export interface PolicySection {
 export interface PolicyDocument {
   lastUpdatedLabel: string;
   sections: PolicySection[];
+  updatedAt: string | null;
+}
+
+export interface FaqEntry {
+  question: string;
+  answer: string;
+}
+
+export interface FaqGroup {
+  title: string;
+  icon: string;
+  entries: FaqEntry[];
+}
+
+export interface FaqDocument {
+  groups: FaqGroup[];
   updatedAt: string | null;
 }
 
@@ -57,6 +75,22 @@ const mapPolicy = (policy: PolicyResponse | null): PolicyDocument | null => {
   };
 };
 
+const mapFaq = (faq: FaqResponse): FaqDocument => ({
+  groups: faq.groups.map((g) => ({
+    title: g.title,
+    icon: g.icon,
+    entries: g.entries.map((e) => ({ question: e.question, answer: e.answer })),
+  })),
+  updatedAt: faq.updated_at,
+});
+
+const toFaqPayload = (groups: FaqGroup[]): FaqGroupResponse[] =>
+  groups.map((g) => ({
+    title: g.title,
+    icon: g.icon,
+    entries: g.entries.map((e) => ({ question: e.question, answer: e.answer })),
+  }));
+
 const mapSettings = (settings: PolicySettingsResponse): ContactSettings => ({
   company: settings.company ?? '',
   appName: settings.app_name ?? '',
@@ -76,12 +110,14 @@ const toSectionPayload = (sections: PolicySection[]): PolicySectionResponse[] =>
 interface UseSettingsReturn {
   privacy: PolicyDocument | null;
   cancellation: PolicyDocument | null;
+  faq: FaqDocument | null;
   contactSettings: ContactSettings;
   isLoading: boolean;
   error: string | null;
   isBackendAvailable: boolean | null;
   refetch: () => Promise<void>;
   updatePolicy: (type: PolicyType, lastUpdatedLabel: string, sections: PolicySection[]) => Promise<void>;
+  updateFaqGroups: (groups: FaqGroup[]) => Promise<void>;
   updateContactSettings: (settings: ContactSettings) => Promise<void>;
 }
 
@@ -90,6 +126,7 @@ export const useSettings = (): UseSettingsReturn => {
 
   const [privacy, setPrivacy] = useState<PolicyDocument | null>(null);
   const [cancellation, setCancellation] = useState<PolicyDocument | null>(null);
+  const [faq, setFaq] = useState<FaqDocument | null>(null);
   const [contactSettings, setContactSettings] = useState<ContactSettings>(emptyContactSettings);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -98,6 +135,7 @@ export const useSettings = (): UseSettingsReturn => {
   const applyPayload = useCallback((data: PolicyPayload) => {
     setPrivacy(mapPolicy(data.privacy));
     setCancellation(mapPolicy(data.cancellation));
+    setFaq(mapFaq(data.faq));
     setContactSettings(mapSettings(data.settings));
   }, []);
 
@@ -146,6 +184,11 @@ export const useSettings = (): UseSettingsReturn => {
     []
   );
 
+  const updateFaqGroups = useCallback(async (groups: FaqGroup[]) => {
+    const response = await settingsApi.updateFaq({ groups: toFaqPayload(groups) });
+    setFaq(mapFaq({ groups: response.data.groups, updated_at: null }));
+  }, []);
+
   const updateContactSettings = useCallback(async (settings: ContactSettings) => {
     const response = await settingsApi.updateSettings({
       company: settings.company,
@@ -161,12 +204,14 @@ export const useSettings = (): UseSettingsReturn => {
   return {
     privacy,
     cancellation,
+    faq,
     contactSettings,
     isLoading,
     error,
     isBackendAvailable,
     refetch,
     updatePolicy,
+    updateFaqGroups,
     updateContactSettings,
   };
 };

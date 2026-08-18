@@ -3,42 +3,57 @@ import { useTranslation } from 'react-i18next';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
 import { useSettings } from '../hooks/useSettings';
-import type { ContactSettings, PolicySection } from '../hooks/useSettings';
+import type { ContactSettings, FaqGroup, PolicySection } from '../hooks/useSettings';
 import type { PolicyType } from '../api/settingsApi';
 import { PolicyEditor } from '../components/PolicyEditor';
+import { FaqEditor } from '../components/FaqEditor';
 
-const TABS: PolicyType[] = ['privacy', 'cancellation'];
+type SettingsTab = PolicyType | 'faq';
+
+const TABS: SettingsTab[] = ['privacy', 'cancellation', 'faq'];
 
 const Settings: React.FC = () => {
   const { t } = useTranslation();
   const { runAction, isBusy, feedback, clearFeedback } = useApiAction();
-  const [activeTab, setActiveTab] = useState<PolicyType>('privacy');
+  const [activeTab, setActiveTab] = useState<SettingsTab>('privacy');
   const [contactForm, setContactForm] = useState<ContactSettings | null>(null);
 
   const {
     privacy,
     cancellation,
+    faq,
     contactSettings,
     isLoading,
     error,
     isBackendAvailable,
     refetch,
     updatePolicy,
+    updateFaqGroups,
     updateContactSettings,
   } = useSettings();
 
   const canManage = isBackendAvailable === true;
-  const activePolicy = activeTab === 'privacy' ? privacy : cancellation;
+  const activePolicy = activeTab === 'privacy' ? privacy : activeTab === 'cancellation' ? cancellation : null;
   const form = contactForm ?? contactSettings;
 
   const handleSavePolicy = async (lastUpdatedLabel: string, sections: PolicySection[]) => {
-    if (!canManage) return;
+    if (!canManage || activeTab === 'faq') return;
     await runAction({
       key: `settings-save-${activeTab}`,
       action: () => updatePolicy(activeTab, lastUpdatedLabel, sections),
       successMessage: t(
         activeTab === 'privacy' ? 'settings.privacy_save_success' : 'settings.cancellation_save_success'
       ),
+      errorMessage: t('settings.save_failed'),
+    });
+  };
+
+  const handleSaveFaq = async (groups: FaqGroup[]) => {
+    if (!canManage) return;
+    await runAction({
+      key: 'settings-save-faq',
+      action: () => updateFaqGroups(groups),
+      successMessage: t('settings.faq_save_success'),
       errorMessage: t('settings.save_failed'),
     });
   };
@@ -91,7 +106,7 @@ const Settings: React.FC = () => {
             {t('common.retry')}
           </button>
         </div>
-      ) : isLoading && !privacy && !cancellation ? (
+      ) : isLoading && !privacy && !cancellation && !faq ? (
         <div className="bg-surface-container-lowest rounded-3xl p-12 text-center text-on-surface-variant">
           {t('common.loading')}
         </div>
@@ -110,19 +125,34 @@ const Settings: React.FC = () => {
                       : 'text-on-surface-variant hover:bg-surface-container-high'
                   }`}
                 >
-                  {t(tab === 'privacy' ? 'settings.tab_privacy' : 'settings.tab_cancellation')}
+                  {t(
+                    tab === 'privacy'
+                      ? 'settings.tab_privacy'
+                      : tab === 'cancellation'
+                        ? 'settings.tab_cancellation'
+                        : 'settings.tab_faq'
+                  )}
                 </button>
               ))}
             </div>
 
-            {activePolicy && (
-              <PolicyEditor
-                key={activeTab}
-                policy={activePolicy}
-                isSaving={isBusy(`settings-save-${activeTab}`)}
-                onSave={(label, sections) => void handleSavePolicy(label, sections)}
-              />
-            )}
+            {activeTab === 'faq'
+              ? faq && (
+                  <FaqEditor
+                    key="faq"
+                    faq={faq}
+                    isSaving={isBusy('settings-save-faq')}
+                    onSave={(groups) => void handleSaveFaq(groups)}
+                  />
+                )
+              : activePolicy && (
+                  <PolicyEditor
+                    key={activeTab}
+                    policy={activePolicy}
+                    isSaving={isBusy(`settings-save-${activeTab}`)}
+                    onSave={(label, sections) => void handleSavePolicy(label, sections)}
+                  />
+                )}
           </div>
 
           <div className="lg:col-span-4 sticky top-24">

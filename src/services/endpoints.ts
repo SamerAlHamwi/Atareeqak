@@ -127,6 +127,7 @@ export const ENDPOINTS = {
   POLICIES: {
     ALL: '/admin/policies',
     SETTINGS: '/admin/policies/settings',
+    FAQ: '/admin/policies/faq',
     UPDATE: (type: 'privacy' | 'cancellation') => `/admin/policies/${type}`,
   },
 };
