@@ -5,9 +5,10 @@ import { ENDPOINTS } from '../../../services/endpoints';
  * The six values `AdminUserService::resolveUserStatus()` can return.
  *
  * `rejected` and `unverified` are **not** valid `status=` filter values
- * (`in:all,verified,pending,suspended`), so those rows are reachable in the
- * "all" tab but cannot be filtered for — same gap the drivers list has.
- * `banned` and `logged_out` are the two states behind the `suspended` filter.
+ * (`in:all,verified,pending,suspended,banned`), so those rows are reachable in
+ * the "all" tab but cannot be filtered for — same gap the drivers list has.
+ * `banned` and `logged_out` are the two states behind the `suspended` filter;
+ * the `banned` filter narrows that to `banned` alone.
  */
 export type UserRowStatus =
   | 'verified'
@@ -39,7 +40,12 @@ export interface UsersStatsResponse {
 }
 
 export type UserTypeFilterValue = 'all' | 'driver' | 'passenger';
-export type UserStatusFilterValue = 'all' | 'verified' | 'pending' | 'suspended';
+/**
+ * `banned` is a strict subset of `suspended`: the former is `status = -1`, the
+ * latter `status IN (-1, 0)`. The two tabs deliberately overlap — `suspended`
+ * still answers "who can't sign in", `banned` "who did we actually ban".
+ */
+export type UserStatusFilterValue = 'all' | 'verified' | 'pending' | 'suspended' | 'banned';
 export type UserDateFilterValue =
   | 'all'
   | 'last_30_days'
@@ -63,6 +69,7 @@ export interface UsersListResponse {
       verified: number;
       pending: number;
       suspended: number;
+      banned: number;
     };
     meta: {
       current_page: number;

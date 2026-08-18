@@ -36,15 +36,20 @@ export type UserDateFilter = UserDateFilterValue;
 export const USER_TYPE_FILTERS: readonly UserTypeFilter[] = ['all', 'driver', 'passenger'] as const;
 
 /**
- * The four values `?status=` validates against. Rows can additionally come back
+ * The five values `?status=` validates against. Rows can additionally come back
  * as `rejected` or `unverified`, which are not filterable — they only appear
  * under "all".
+ *
+ * `banned` is intentionally last and overlaps `suspended` (which is
+ * `status IN (-1, 0)`): it isolates the accounts an admin actually banned from
+ * the merely logged-out ones.
  */
 export const USER_STATUS_FILTERS: readonly UserStatusFilter[] = [
   'all',
   'verified',
   'pending',
   'suspended',
+  'banned',
 ] as const;
 
 /** The five values `?date=` validates against; anything else 422s. */

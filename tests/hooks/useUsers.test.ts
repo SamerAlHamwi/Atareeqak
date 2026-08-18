@@ -34,7 +34,7 @@ const usersResponse = (
       suspended_users: 0,
     },
     users,
-    counts: { all: users.length, verified: users.length, pending: 0, suspended: 0 },
+    counts: { all: users.length, verified: users.length, pending: 0, suspended: 0, banned: 0 },
     meta: {
       current_page: 1,
       last_page: 1,
@@ -256,6 +256,29 @@ describe('useUsers', () => {
     act(() => result.current.setStatusFilter('suspended'));
     await waitFor(() => expect(result.current.statusFilter).toBe('suspended'));
     expect(result.current.users).toHaveLength(3);
+  });
+
+  it('sends `status=banned` and resets to page 1 for the Banned tab', async () => {
+    const requests = recordingList([userRow({ id: 1, status: 'banned', is_banned: true })], {
+      last_page: 3,
+    });
+
+    const { result } = renderHook(() => useUsers());
+    await waitFor(() => expect(result.current.users).toHaveLength(1));
+
+    act(() => result.current.setPage(2));
+    await waitFor(() => expect(requests.some((u) => u.searchParams.get('page') === '2')).toBe(true));
+
+    act(() => result.current.setStatusFilter('banned'));
+    await waitFor(() =>
+      expect(requests.some((u) => u.searchParams.get('status') === 'banned')).toBe(true)
+    );
+
+    // `banned` is a narrower cut than `suspended`, so it must not inherit the
+    // page offset the previous tab was sitting on.
+    const bannedRequest = requests.find((u) => u.searchParams.get('status') === 'banned');
+    expect(bannedRequest?.searchParams.get('page')).toBe('1');
+    expect(result.current.page).toBe(1);
   });
 
   it('sends the ban body and refetches the list', async () => {

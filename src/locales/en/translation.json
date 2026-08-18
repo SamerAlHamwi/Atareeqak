@@ -218,6 +218,7 @@
     "filter_status_verified": "Verified",
     "filter_status_pending": "Pending",
     "filter_status_suspended": "Suspended",
+    "filter_status_banned": "Banned",
     "filter_date_all": "Any time",
     "filter_date_last_30_days": "Last 30 days",
     "filter_date_last_3_months": "Last 3 months",
