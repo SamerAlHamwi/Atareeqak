@@ -49,6 +49,7 @@ export interface ContactSettings {
   contactPhone: string;
   contactAddress: string;
   consentLabel: string;
+  platformProfitPercentage: number;
 }
 
 const emptyContactSettings: ContactSettings = {
@@ -58,6 +59,7 @@ const emptyContactSettings: ContactSettings = {
   contactPhone: '',
   contactAddress: '',
   consentLabel: '',
+  platformProfitPercentage: 0,
 };
 
 const mapPolicy = (policy: PolicyResponse | null): PolicyDocument | null => {
@@ -98,6 +100,7 @@ const mapSettings = (settings: PolicySettingsResponse): ContactSettings => ({
   contactPhone: settings.contact_phone ?? '',
   contactAddress: settings.contact_address ?? '',
   consentLabel: settings.consent_label ?? '',
+  platformProfitPercentage: settings.platform_profit_percentage ?? 0,
 });
 
 const toSectionPayload = (sections: PolicySection[]): PolicySectionResponse[] =>
@@ -197,6 +200,7 @@ export const useSettings = (): UseSettingsReturn => {
       contact_phone: settings.contactPhone,
       contact_address: settings.contactAddress,
       consent_label: settings.consentLabel,
+      platform_profit_percentage: settings.platformProfitPercentage,
     });
     setContactSettings(mapSettings(response.data));
   }, []);

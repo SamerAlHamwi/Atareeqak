@@ -22,6 +22,7 @@ export interface PolicySettingsResponse {
   contact_phone: string | null;
   contact_address: string | null;
   consent_label: string | null;
+  platform_profit_percentage: number;
 }
 
 export interface FaqEntryResponse {

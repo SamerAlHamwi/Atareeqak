@@ -913,6 +913,7 @@
     "tab_privacy": "سياسة الخصوصية",
     "tab_cancellation": "سياسة الإلغاء",
     "tab_faq": "الأسئلة الشائعة",
+    "tab_platform": "إعدادات التطبيق",
     "last_updated_label": "تاريخ آخر تحديث",
     "last_updated_placeholder": "مثال: 14 آب 2026",
     "section_title_placeholder": "عنوان القسم",
@@ -949,6 +950,10 @@
     "save_contact": "حفظ بيانات التواصل",
     "contact_save_success": "تم حفظ بيانات التواصل بنجاح",
     "contact_save_failed": "تعذر حفظ بيانات التواصل",
+    "platform_profit_percentage_label": "نسبة أرباح المنصة من الرحلات",
+    "platform_profit_percentage_hint": "النسبة المئوية من قيمة كل رحلة التي تحتفظ بها المنصة؛ والباقي يذهب للسائق.",
+    "save_platform_settings": "حفظ إعدادات التطبيق",
+    "platform_save_success": "تم حفظ إعدادات التطبيق بنجاح",
     "load_failed": "تعذر تحميل الإعدادات",
     "unavailable_title": "الإعدادات غير متاحة",
     "unavailable_body": "تعذّر على الخادم إرجاع بيانات سياسة الخصوصية والإلغاء."

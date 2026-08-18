@@ -7,10 +7,11 @@ import type { ContactSettings, FaqGroup, PolicySection } from '../hooks/useSetti
 import type { PolicyType } from '../api/settingsApi';
 import { PolicyEditor } from '../components/PolicyEditor';
 import { FaqEditor } from '../components/FaqEditor';
+import { PlatformSettingsEditor } from '../components/PlatformSettingsEditor';
 
-type SettingsTab = PolicyType | 'faq';
+type SettingsTab = PolicyType | 'faq' | 'platform';
 
-const TABS: SettingsTab[] = ['privacy', 'cancellation', 'faq'];
+const TABS: SettingsTab[] = ['privacy', 'cancellation', 'faq', 'platform'];
 
 const Settings: React.FC = () => {
   const { t } = useTranslation();
@@ -37,7 +38,7 @@ const Settings: React.FC = () => {
   const form = contactForm ?? contactSettings;
 
   const handleSavePolicy = async (lastUpdatedLabel: string, sections: PolicySection[]) => {
-    if (!canManage || activeTab === 'faq') return;
+    if (!canManage || activeTab === 'faq' || activeTab === 'platform') return;
     await runAction({
       key: `settings-save-${activeTab}`,
       action: () => updatePolicy(activeTab, lastUpdatedLabel, sections),
@@ -54,6 +55,16 @@ const Settings: React.FC = () => {
       key: 'settings-save-faq',
       action: () => updateFaqGroups(groups),
       successMessage: t('settings.faq_save_success'),
+      errorMessage: t('settings.save_failed'),
+    });
+  };
+
+  const handleSavePlatform = async (percentage: number) => {
+    if (!canManage) return;
+    await runAction({
+      key: 'settings-save-platform',
+      action: () => updateContactSettings({ ...contactSettings, platformProfitPercentage: percentage }),
+      successMessage: t('settings.platform_save_success'),
       errorMessage: t('settings.save_failed'),
     });
   };
@@ -130,29 +141,40 @@ const Settings: React.FC = () => {
                       ? 'settings.tab_privacy'
                       : tab === 'cancellation'
                         ? 'settings.tab_cancellation'
-                        : 'settings.tab_faq'
+                        : tab === 'faq'
+                          ? 'settings.tab_faq'
+                          : 'settings.tab_platform'
                   )}
                 </button>
               ))}
             </div>
 
-            {activeTab === 'faq'
-              ? faq && (
-                  <FaqEditor
-                    key="faq"
-                    faq={faq}
-                    isSaving={isBusy('settings-save-faq')}
-                    onSave={(groups) => void handleSaveFaq(groups)}
-                  />
-                )
-              : activePolicy && (
-                  <PolicyEditor
-                    key={activeTab}
-                    policy={activePolicy}
-                    isSaving={isBusy(`settings-save-${activeTab}`)}
-                    onSave={(label, sections) => void handleSavePolicy(label, sections)}
-                  />
-                )}
+            {activeTab === 'faq' ? (
+              faq && (
+                <FaqEditor
+                  key="faq"
+                  faq={faq}
+                  isSaving={isBusy('settings-save-faq')}
+                  onSave={(groups) => void handleSaveFaq(groups)}
+                />
+              )
+            ) : activeTab === 'platform' ? (
+              <PlatformSettingsEditor
+                key="platform"
+                value={contactSettings.platformProfitPercentage}
+                isSaving={isBusy('settings-save-platform')}
+                onSave={(percentage) => void handleSavePlatform(percentage)}
+              />
+            ) : (
+              activePolicy && (
+                <PolicyEditor
+                  key={activeTab}
+                  policy={activePolicy}
+                  isSaving={isBusy(`settings-save-${activeTab}`)}
+                  onSave={(label, sections) => void handleSavePolicy(label, sections)}
+                />
+              )
+            )}
           </div>
 
           <div className="lg:col-span-4 sticky top-24">

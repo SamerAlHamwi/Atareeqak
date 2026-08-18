@@ -801,6 +801,7 @@
     "tab_privacy": "Privacy Policy",
     "tab_cancellation": "Cancellation Policy",
     "tab_faq": "FAQ",
+    "tab_platform": "App Settings",
     "last_updated_label": "Last updated",
     "last_updated_placeholder": "e.g. August 14, 2026",
     "section_title_placeholder": "Section title",
@@ -837,6 +838,10 @@
     "save_contact": "Save contact details",
     "contact_save_success": "Contact details saved successfully",
     "contact_save_failed": "Could not save contact details",
+    "platform_profit_percentage_label": "Platform profit percentage from trips",
+    "platform_profit_percentage_hint": "Percentage of each trip's value the platform keeps; the rest goes to the driver.",
+    "save_platform_settings": "Save app settings",
+    "platform_save_success": "App settings saved successfully",
     "load_failed": "Could not load settings",
     "unavailable_title": "Settings unavailable",
     "unavailable_body": "The server could not return the privacy and cancellation policy data."
