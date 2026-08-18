@@ -15,6 +15,7 @@ const Chat = lazy(() => import('../features/chat/pages/Chat'));
 const Staff = lazy(() => import('../features/staff/pages/Staff'));
 const Verifications = lazy(() => import('../features/verification/pages/Verifications'));
 const Reviews = lazy(() => import('../features/reviews/pages/Reviews'));
+const Settings = lazy(() => import('../features/settings/pages/Settings'));
 
 type LazyPage = React.LazyExoticComponent<React.ComponentType>;
 
@@ -56,4 +57,5 @@ export const SECTION_ROUTES: SectionRouteConfig[] = [
   { section: 'chat', path: '/chat', Component: Chat },
   { section: 'reports', path: '/reports', Component: Reports },
   { section: 'staff', path: '/staff', Component: Staff },
+  { section: 'settings', path: '/settings', Component: Settings },
 ];

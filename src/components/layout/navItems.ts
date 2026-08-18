@@ -19,4 +19,5 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/chat', icon: 'forum', labelKey: 'nav.chat', section: 'chat' },
   { to: '/reports', icon: 'assessment', labelKey: 'nav.reports', section: 'reports' },
   { to: '/staff', icon: 'badge', labelKey: 'nav.staff', section: 'staff' },
+  { to: '/settings', icon: 'settings', labelKey: 'nav.settings', section: 'settings' },
 ];

@@ -124,4 +124,9 @@ export const ENDPOINTS = {
   // return; see SupportStats. Do not re-add this constant without a real route.
   REPORTS: '/admin/reports',
   EXPORT_PDF: '/admin/export/pdf',
+  POLICIES: {
+    ALL: '/admin/policies',
+    SETTINGS: '/admin/policies/settings',
+    UPDATE: (type: 'privacy' | 'cancellation') => `/admin/policies/${type}`,
+  },
 };

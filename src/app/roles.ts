@@ -32,7 +32,8 @@ export type AppSection =
   | 'support'
   | 'chat'
   | 'reports'
-  | 'staff';
+  | 'staff'
+  | 'settings';
 
 /** Matches the `staff:admin,system_admin` middleware argument exactly. */
 const ADMIN_AND_UP: StaffRole[] = ['admin', 'system_admin'];
@@ -54,6 +55,9 @@ export const SECTION_ROLES: Record<AppSection, StaffRole[]> = {
   chat: ALL_ROLES,
   reports: ['system_admin'],
   staff: ['system_admin'],
+  // `/admin/policies/*` (GET + PUT) is nested under the same
+  // `staff:system_admin` block as the other system-admin-only admin routes.
+  settings: ['system_admin'],
 };
 
 export const canAccess = (role: StaffRole | null | undefined, section: AppSection): boolean =>

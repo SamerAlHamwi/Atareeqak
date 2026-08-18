@@ -74,8 +74,11 @@ describe('removed routes never come back', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('roles.ts has no settings section left over from the deleted feature', () => {
-    const rolesSource = readFileSync(join(SRC_DIR, 'app/roles.ts'), 'utf8');
-    expect(rolesSource).not.toMatch(/\bsettings\b/i);
-  });
+  // The `settings` AppSection check that used to live here ("roles.ts has no
+  // settings section left over from the deleted feature") is gone on purpose:
+  // Settings is back as a real, fully-wired feature — `GET/PUT /admin/policies`
+  // exist server-side (verified via `php artisan route:list`) and every one of
+  // its controls is connected to them, unlike the old stub this guard was
+  // written against. `/admin/settings` itself (the removed literal) is still
+  // asserted absent above.
 });
