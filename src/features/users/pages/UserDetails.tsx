@@ -23,6 +23,9 @@ import {
   CHARGE_AMOUNT_MAX,
   CHARGE_AMOUNT_MIN,
   CHARGE_NOTES_MAX,
+  SCORE_POINTS_MAX,
+  SCORE_POINTS_MIN,
+  SCORE_REASON_MAX,
 } from '../api/usersApi';
 import type { PassengerComplaintFilter } from '../api/usersApi';
 
@@ -52,6 +55,20 @@ const complaintStatusBadge = (status: string, t: TFunction): { label: string; cl
       return { label: t('common.status.escalated'), classes: 'bg-error-container text-on-error-container' };
     default:
       return { label: t('common.status.pending'), classes: 'bg-surface-container-high text-on-surface-variant' };
+  }
+};
+
+/** `UserScore::tier` is one of these four English labels — map to a translation key. */
+const scoreTierLabel = (tier: string, t: TFunction): string => {
+  switch (tier) {
+    case 'Gold':
+      return t('users.score_tier_gold');
+    case 'Bronze':
+      return t('users.score_tier_bronze');
+    case 'Restricted':
+      return t('users.score_tier_restricted');
+    default:
+      return t('users.score_tier_silver');
   }
 };
 
@@ -104,6 +121,8 @@ const UserDetails: React.FC = () => {
     isForbidden,
     refetch,
     chargeWallet,
+    increaseScore,
+    decreaseScore,
     banUser,
     unbanUser,
   } = useUserDetails(userId);
@@ -113,6 +132,12 @@ const UserDetails: React.FC = () => {
   const [showChargeForm, setShowChargeForm] = useState(false);
   const [chargeFieldErrors, setChargeFieldErrors] = useState<Record<string, string>>({});
   const [showBanModal, setShowBanModal] = useState(false);
+
+  /** Which inline score form is open, if any — null closes both. */
+  const [scoreDirection, setScoreDirection] = useState<'increase' | 'decrease' | null>(null);
+  const [scorePoints, setScorePoints] = useState('');
+  const [scoreReason, setScoreReason] = useState('');
+  const [scoreFieldErrors, setScoreFieldErrors] = useState<Record<string, string>>({});
 
   const isRtl = i18n.language.startsWith('ar');
   const locale = i18n.language;
@@ -146,6 +171,34 @@ const UserDetails: React.FC = () => {
       : null;
   const canSubmitCharge =
     chargeAmount.trim() !== '' && !amountError && !notesError && !isBusy('wallet-topup');
+
+  const scorePointsValue = Number(scorePoints);
+  /**
+   * Mirrors `PassengerProfileController::adjustScore()`
+   * (`required|integer|min:1|max:100`) so an invalid amount disables the
+   * button instead of being sent and 422'd.
+   */
+  const scorePointsError =
+    scorePoints.trim() === ''
+      ? null
+      : !Number.isInteger(scorePointsValue)
+      ? t('users.adjust_score_points_invalid')
+      : scorePointsValue < SCORE_POINTS_MIN
+      ? t('users.adjust_score_points_min', { count: SCORE_POINTS_MIN })
+      : scorePointsValue > SCORE_POINTS_MAX
+      ? t('users.adjust_score_points_max', { count: SCORE_POINTS_MAX })
+      : null;
+  const scoreReasonError =
+    scoreReason.length > SCORE_REASON_MAX
+      ? t('users.adjust_score_reason_max', { count: SCORE_REASON_MAX })
+      : null;
+  const scoreActionKey = scoreDirection === 'decrease' ? 'score-decrease' : 'score-increase';
+  const canSubmitScore =
+    scoreDirection !== null &&
+    scorePoints.trim() !== '' &&
+    !scorePointsError &&
+    !scoreReasonError &&
+    !isBusy(scoreActionKey);
 
   const formatMoney = (value: number): string =>
     `${value.toLocaleString(locale)} ${t('users.currency')}`;
@@ -197,6 +250,38 @@ const UserDetails: React.FC = () => {
         setChargeAmount('');
         setChargeNotes('');
         setShowChargeForm(false);
+      },
+    });
+  };
+
+  /** Shared by the increase/decrease buttons — `scoreDirection` picks the endpoint. */
+  const handleAdjustScore = async () => {
+    if (!canSubmitScore || scoreDirection === null) return;
+    const direction = scoreDirection;
+    setScoreFieldErrors({});
+    await runAction({
+      key: scoreActionKey,
+      action: async () => {
+        try {
+          const adjust = direction === 'increase' ? increaseScore : decreaseScore;
+          return await adjust(scorePointsValue, scoreReason.trim() || undefined);
+        } catch (err) {
+          const fields = getFieldErrors(err);
+          if (fields) {
+            setScoreFieldErrors(fields);
+          }
+          throw err;
+        }
+      },
+      successMessage: (result) =>
+        direction === 'increase'
+          ? t('users.increase_score_success', { points: result.points, score: result.newScore })
+          : t('users.decrease_score_success', { points: result.points, score: result.newScore }),
+      errorMessage: t('users.adjust_score_failed'),
+      onSuccess: () => {
+        setScorePoints('');
+        setScoreReason('');
+        setScoreDirection(null);
       },
     });
   };
@@ -437,6 +522,121 @@ const UserDetails: React.FC = () => {
             <span className="material-symbols-outlined text-lg">{isBanned ? 'undo' : 'block'}</span>
             {isBanned ? t('users.unban_action') : t('users.ban_action')}
           </button>
+
+          {scoreDirection ? (
+            <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-2xl p-4 space-y-3 w-full md:w-80">
+              <div className="space-y-1">
+                <label
+                  htmlFor="score-points"
+                  className="text-xs font-bold text-on-surface-variant uppercase tracking-wider"
+                >
+                  {t('users.adjust_score_points_label')}
+                </label>
+                <input
+                  id="score-points"
+                  data-testid="score-points"
+                  type="number"
+                  min={SCORE_POINTS_MIN}
+                  max={SCORE_POINTS_MAX}
+                  step={1}
+                  value={scorePoints}
+                  onChange={(e) => setScorePoints(e.target.value)}
+                  placeholder={t('users.adjust_score_points_placeholder')}
+                  className="w-full bg-surface-container-low border-none rounded-xl px-4 py-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20"
+                />
+                <p className="text-[11px] text-on-surface-variant">
+                  {t('users.charge_amount_hint', {
+                    min: SCORE_POINTS_MIN,
+                    max: SCORE_POINTS_MAX,
+                  })}
+                </p>
+                {(scorePointsError || scoreFieldErrors.points) && (
+                  <p data-testid="score-points-error" className="text-xs text-error font-medium">
+                    {scorePointsError ?? scoreFieldErrors.points}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-1">
+                <label
+                  htmlFor="score-reason"
+                  className="text-xs font-bold text-on-surface-variant uppercase tracking-wider"
+                >
+                  {t('users.adjust_score_reason_label')}
+                </label>
+                <textarea
+                  id="score-reason"
+                  data-testid="score-reason"
+                  rows={2}
+                  maxLength={SCORE_REASON_MAX}
+                  value={scoreReason}
+                  onChange={(e) => setScoreReason(e.target.value)}
+                  placeholder={t('users.adjust_score_reason_placeholder')}
+                  className="w-full bg-surface-container-low border-none rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                />
+                {(scoreReasonError || scoreFieldErrors.reason) && (
+                  <p className="text-xs text-error font-medium">
+                    {scoreReasonError ?? scoreFieldErrors.reason}
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  data-testid="score-confirm"
+                  onClick={() => void handleAdjustScore()}
+                  disabled={!canSubmitScore}
+                  className="flex-1 bg-primary text-on-primary px-4 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 disabled:opacity-50"
+                >
+                  {isBusy(scoreActionKey)
+                    ? t('common.loading')
+                    : scoreDirection === 'increase'
+                    ? t('users.confirm_increase_score')
+                    : t('users.confirm_decrease_score')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setScoreDirection(null);
+                    setScoreFieldErrors({});
+                  }}
+                  className="px-4 py-2.5 bg-surface-container-high text-on-surface rounded-xl font-bold text-sm"
+                >
+                  {t('common.cancel')}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                data-testid="increase-score-open"
+                onClick={() => {
+                  setScorePoints('');
+                  setScoreReason('');
+                  setScoreFieldErrors({});
+                  setScoreDirection('increase');
+                }}
+                className="bg-secondary-container text-on-secondary-container px-6 py-2.5 rounded-lg font-bold hover:opacity-90 transition-all flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-lg">trending_up</span>
+                {t('users.increase_score')}
+              </button>
+              <button
+                type="button"
+                data-testid="decrease-score-open"
+                onClick={() => {
+                  setScorePoints('');
+                  setScoreReason('');
+                  setScoreFieldErrors({});
+                  setScoreDirection('decrease');
+                }}
+                className="bg-error-container text-on-error-container px-6 py-2.5 rounded-lg font-bold hover:opacity-90 transition-all flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-lg">trending_down</span>
+                {t('users.decrease_score')}
+              </button>
+            </>
+          )}
         </div>
       </section>
 
@@ -453,7 +653,21 @@ const UserDetails: React.FC = () => {
             label={t('users.refresh_stats')}
           />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
+          <div className="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant/10">
+            <p className="text-sm font-medium text-on-surface-variant mb-2">{t('users.score_title')}</p>
+            <div className="flex items-end justify-between">
+              <div className="flex items-center gap-2">
+                <h3 className="text-3xl font-extrabold text-primary" data-testid="stat-score">
+                  {(stats?.score ?? 70).toLocaleString(locale)}
+                </h3>
+                <span className="text-xs font-bold text-on-surface-variant">
+                  {scoreTierLabel(stats?.scoreTier ?? 'Silver', t)}
+                </span>
+              </div>
+              <span className="material-symbols-outlined text-secondary text-3xl opacity-40">military_tech</span>
+            </div>
+          </div>
           <div className="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant/10">
             <p className="text-sm font-medium text-on-surface-variant mb-2">{t('users.total_trips')}</p>
             <div className="flex items-end justify-between">

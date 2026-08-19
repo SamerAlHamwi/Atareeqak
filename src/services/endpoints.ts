@@ -42,6 +42,8 @@ export const ENDPOINTS = {
     COMPLAINTS: (id: string | number) => `/admin/passengers/${id}/complaints`,
     WALLET_CHARGES: (id: string | number) => `/admin/passengers/${id}/wallet-charges`,
     CHARGE_WALLET: (id: string | number) => `/admin/passengers/${id}/charge-wallet`,
+    INCREASE_SCORE: (id: string | number) => `/admin/passengers/${id}/increase-score`,
+    DECREASE_SCORE: (id: string | number) => `/admin/passengers/${id}/decrease-score`,
   },
   WALLET: {
     ADMIN_WALLET: '/admin/wallet',

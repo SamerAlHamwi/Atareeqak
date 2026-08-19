@@ -138,6 +138,10 @@ export interface PassengerStatsResponse {
   avg_rating: number;
   /** 0 both when the balance is zero and when the user has no wallet row. */
   wallet_balance: number;
+  /** `UserScore::score`, clamped [0, 100] server-side; defaults to 70 for a new user. */
+  score: number;
+  /** `UserScore::tier` — one of Gold/Silver/Bronze/Restricted. */
+  score_tier: string;
 }
 
 export interface PassengerMonthlyTripResponse {
@@ -270,6 +274,25 @@ export interface ChargeWalletResponse {
   transaction_id: string;
 }
 
+/**
+ * `PassengerProfileController::adjustScore()` validation (shared by
+ * increase-score / decrease-score): `points` → `required|integer|min:1|max:100`,
+ * `reason` → `nullable|string|max:500`.
+ *
+ * Mirrored client-side so an out-of-range value is disabled rather than
+ * submitted and 422'd.
+ */
+export const SCORE_POINTS_MIN = 1;
+export const SCORE_POINTS_MAX = 100;
+export const SCORE_REASON_MAX = 500;
+
+export interface AdjustScoreResponse {
+  status: string;
+  message: string;
+  previous_score: number;
+  new_score: number;
+}
+
 export const usersApi = {
   getAllUsers: async (params: UsersListParams = {}): Promise<UsersListResponse> => {
     const response = await api.get(ENDPOINTS.USERS.ALL, { params });
@@ -356,6 +379,28 @@ export const usersApi = {
     const response = await api.post(ENDPOINTS.PASSENGERS.CHARGE_WALLET(id), {
       amount,
       ...(adminNotes ? { admin_notes: adminNotes } : {}),
+    });
+    return response.data;
+  },
+  increasePassengerScore: async (
+    id: string | number,
+    points: number,
+    reason?: string
+  ): Promise<AdjustScoreResponse> => {
+    const response = await api.post(ENDPOINTS.PASSENGERS.INCREASE_SCORE(id), {
+      points,
+      ...(reason ? { reason } : {}),
+    });
+    return response.data;
+  },
+  decreasePassengerScore: async (
+    id: string | number,
+    points: number,
+    reason?: string
+  ): Promise<AdjustScoreResponse> => {
+    const response = await api.post(ENDPOINTS.PASSENGERS.DECREASE_SCORE(id), {
+      points,
+      ...(reason ? { reason } : {}),
     });
     return response.data;
   },

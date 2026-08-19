@@ -6,6 +6,7 @@ import type { IsStale } from '../../shared/hooks/useFetchEffect';
 import { extractApiError, isForbiddenError } from '../../../services/apiError';
 import { usersApi } from '../api/usersApi';
 import type {
+  AdjustScoreResponse,
   BanRequest,
   PassengerComplaintFilter,
   PassengerComplaintResponse,
@@ -34,6 +35,8 @@ export interface PassengerStats {
   totalSpending: number;
   avgRating: number;
   walletBalance: number;
+  score: number;
+  scoreTier: string;
 }
 
 export interface PassengerMonthlyTrip {
@@ -87,6 +90,13 @@ export interface WalletChargeResult {
   transactionId: string | null;
 }
 
+/** What the confirmation banner reports after a score adjustment. */
+export interface ScoreAdjustResult {
+  points: number;
+  previousScore: number;
+  newScore: number;
+}
+
 /** Sections that can be reloaded on their own, each with its own endpoint. */
 export type PassengerSection =
   | 'stats'
@@ -132,6 +142,8 @@ const mapStats = (s: PassengerStatsResponse | undefined): PassengerStats => ({
   totalSpending: s?.total_spending ?? 0,
   avgRating: s?.avg_rating ?? 0,
   walletBalance: s?.wallet_balance ?? 0,
+  score: s?.score ?? 70,
+  scoreTier: s?.score_tier ?? 'Silver',
 });
 
 const mapMonthlyTrips = (rows: PassengerMonthlyTripResponse[] = []): PassengerMonthlyTrip[] =>
@@ -203,6 +215,8 @@ interface UseUserDetailsReturn {
   isForbidden: boolean;
   refetch: () => Promise<void>;
   chargeWallet: (amount: number, notes?: string) => Promise<WalletChargeResult>;
+  increaseScore: (points: number, reason?: string) => Promise<ScoreAdjustResult>;
+  decreaseScore: (points: number, reason?: string) => Promise<ScoreAdjustResult>;
   banUser: (ban: BanRequest) => Promise<void>;
   unbanUser: () => Promise<void>;
 }
@@ -435,6 +449,45 @@ export const useUserDetails = (userId: string | undefined): UseUserDetailsReturn
     [userId, refetch]
   );
 
+  /** Shared by increaseScore/decreaseScore — only the endpoint called differs. */
+  const adjustScore = useCallback(
+    async (
+      call: (id: string | number, points: number, reason?: string) => Promise<AdjustScoreResponse>,
+      points: number,
+      reason?: string
+    ): Promise<ScoreAdjustResult> => {
+      if (!userId) {
+        throw new Error('No user id');
+      }
+      const response = await call(userId, points, reason);
+
+      // The adjustment busts the full-profile and stats caches server-side,
+      // so refetching picks up the fresh score/tier rather than showing a
+      // stale value until the next unrelated reload.
+      // Not part of the effect's sequence — always commit.
+      await refetch();
+
+      return {
+        points,
+        previousScore: response.previous_score,
+        newScore: response.new_score,
+      };
+    },
+    [userId, refetch]
+  );
+
+  const increaseScore = useCallback(
+    (points: number, reason?: string) =>
+      adjustScore(usersApi.increasePassengerScore, points, reason),
+    [adjustScore]
+  );
+
+  const decreaseScore = useCallback(
+    (points: number, reason?: string) =>
+      adjustScore(usersApi.decreasePassengerScore, points, reason),
+    [adjustScore]
+  );
+
   /**
    * The mutation already returns the new status, but it is re-read from
    * `GET /admin/users/{id}/status` so what is on screen is what a fresh page
@@ -481,6 +534,8 @@ export const useUserDetails = (userId: string | undefined): UseUserDetailsReturn
     isForbidden,
     refetch,
     chargeWallet,
+    increaseScore,
+    decreaseScore,
     banUser,
     unbanUser,
   };
