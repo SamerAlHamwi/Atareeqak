@@ -8,6 +8,7 @@ import type { ActionFeedback } from '../../shared/useApiAction';
 import { extractApiError } from '../../../services/apiError';
 import { authApi } from '../api/authApi';
 import { defaultRouteForRole } from '../../../app/roles';
+import logo from '../../../assets/logo.png';
 
 /** Auth failure codes the axios interceptor forwards as ?reason= on logout. */
 const SESSION_END_REASONS = ['ACCOUNT_INACTIVE', 'TOKEN_INVALIDATED', 'EMPLOYEE_NOT_FOUND'];
@@ -58,9 +59,9 @@ const Login: React.FC = () => {
 
   return (
     <div className="w-full max-w-lg flex flex-col items-center">
-      {/* Shield Icon */}
+      {/* Logo */}
       <div className="w-16 h-16 bg-surface-container-lowest rounded-2xl shadow-ambient flex items-center justify-center mb-6">
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><circle cx="12" cy="11" r="3"></circle><path d="M7 21h10"></path></svg>
+        <img src={logo} alt={t('auth.brand_name')} className="w-10 h-10 object-contain" />
       </div>
 
       <div className="text-center mb-10">

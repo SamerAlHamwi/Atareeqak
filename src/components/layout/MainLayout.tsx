@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { toggleLanguage } from '../../app/i18n';
 import Avatar from '../../features/shared/components/Avatar';
 import { NAV_ITEMS } from './navItems';
+import logo from '../../assets/logo.png';
 
 const MainLayout: React.FC = () => {
   const { logout, user, role } = useAuth();
@@ -64,6 +65,7 @@ const MainLayout: React.FC = () => {
       `}>
         <div className="flex flex-col items-center py-12 px-6">
           <div className="flex flex-col items-center">
+             <img src={logo} alt={t('auth.brand_name')} className="w-12 h-12 object-contain mb-2" />
              <span className="text-3xl font-black text-primary">{t('auth.brand_name')}</span>
              <p className="text-[11px] font-bold text-on-surface-variant/70 uppercase tracking-widest mt-1">
                {t('nav.smart_dashboard')}
