@@ -98,7 +98,7 @@ const ApproveForm: React.FC<FormProps> = ({
               onChange={(e) => setNationalId(e.target.value)}
               maxLength={NATIONAL_ID_MAX}
               autoComplete="off"
-              className="w-full bg-surface-container-low border-none rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              className="w-full bg-surface-container-low border border-outline-variant rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               placeholder={t('verifications.national_id_placeholder')}
             />
             <p className="text-xs text-on-surface-variant leading-relaxed">

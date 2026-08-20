@@ -293,7 +293,7 @@ const Staff: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Staff table */}
-            <div className="lg:col-span-8 bg-surface-container-lowest rounded-3xl overflow-hidden shadow-sm border border-outline-variant/10">
+            <div className="lg:col-span-8 bg-surface-container-lowest rounded-3xl overflow-hidden shadow-sm border border-outline-variant">
               <div className="p-6 border-b border-surface-container flex justify-between items-center">
                 <h4 className="font-bold text-lg text-primary">{t('staff.staff_list')}</h4>
               </div>
@@ -469,7 +469,7 @@ const Staff: React.FC = () => {
 
             {/* Side panel */}
             <div className="lg:col-span-4 space-y-8 sticky top-24">
-              <div className="bg-surface-container-lowest rounded-3xl p-8 shadow-sm space-y-6 border-t-4 border-secondary border-x border-b border-outline-variant/10">
+              <div className="bg-surface-container-lowest rounded-3xl p-8 shadow-sm space-y-6 border-t-4 border-secondary border-x border-b border-outline-variant">
                 <div className="flex items-center justify-between">
                   <h4 className="font-bold text-lg text-primary">{t('staff.add_new')}</h4>
                   <span className="material-symbols-outlined text-secondary">person_add</span>
@@ -484,7 +484,7 @@ const Staff: React.FC = () => {
                       maxLength={NAME_MAX_LENGTH}
                       onChange={(e) => setForm({ ...form, first_name: e.target.value })}
                       placeholder={t('staff.form_first_name')}
-                      className="w-full bg-surface-container-low border-none rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/30"
+                      className="w-full bg-surface-container-low border border-outline-variant rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/30"
                     />
                     <input
                       data-testid="create-last-name"
@@ -493,7 +493,7 @@ const Staff: React.FC = () => {
                       maxLength={NAME_MAX_LENGTH}
                       onChange={(e) => setForm({ ...form, last_name: e.target.value })}
                       placeholder={t('staff.form_last_name')}
-                      className="w-full bg-surface-container-low border-none rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/30"
+                      className="w-full bg-surface-container-low border border-outline-variant rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/30"
                     />
                   </div>
 
@@ -505,7 +505,7 @@ const Staff: React.FC = () => {
                       maxLength={USERNAME_MAX_LENGTH}
                       onChange={(e) => setForm({ ...form, username: e.target.value })}
                       placeholder={t('staff.form_username')}
-                      className="w-full bg-surface-container-low border-none rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/30"
+                      className="w-full bg-surface-container-low border border-outline-variant rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/30"
                       dir="ltr"
                     />
                     {/* Mirrors `alpha_dash|min:3|max:50` rather than 422'ing. */}
@@ -529,7 +529,7 @@ const Staff: React.FC = () => {
                       value={form.email}
                       onChange={(e) => setForm({ ...form, email: e.target.value })}
                       placeholder={t('staff.form_email')}
-                      className="w-full bg-surface-container-low border-none rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/30"
+                      className="w-full bg-surface-container-low border border-outline-variant rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/30"
                       dir="ltr"
                     />
                     {createErrors.email && (
@@ -544,7 +544,7 @@ const Staff: React.FC = () => {
                       value={form.password}
                       onChange={(e) => setForm({ ...form, password: e.target.value })}
                       placeholder={t('staff.form_password')}
-                      className="w-full bg-surface-container-low border-none rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/30"
+                      className="w-full bg-surface-container-low border border-outline-variant rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/30"
                       dir="ltr"
                     />
                     {form.password !== '' && !passwordValid && (
@@ -566,7 +566,7 @@ const Staff: React.FC = () => {
                     onChange={(e) =>
                       setForm({ ...form, role: e.target.value as CreatableStaffRole })
                     }
-                    className="w-full bg-surface-container-low border-none rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/30 cursor-pointer"
+                    className="w-full bg-surface-container-low border border-outline-variant rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/30 cursor-pointer"
                   >
                     {CREATABLE_STAFF_ROLES.map((role) => (
                       <option key={role} value={role}>
@@ -589,7 +589,7 @@ const Staff: React.FC = () => {
               </div>
 
               {selectedEmployee && (
-                <div className="bg-surface-container-lowest rounded-3xl p-8 shadow-sm space-y-6 border border-outline-variant/10">
+                <div className="bg-surface-container-lowest rounded-3xl p-8 shadow-sm space-y-6 border border-outline-variant">
                   <div className="flex items-center gap-3 p-4 bg-surface-container-low rounded-2xl">
                     <Avatar name={selectedEmployee.name} photo={selectedEmployee.photo} size="sm" />
                     <div className="text-start">
@@ -610,7 +610,7 @@ const Staff: React.FC = () => {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder={t('staff.form_new_password')}
-                      className="w-full bg-surface-container-low border-none rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/30"
+                      className="w-full bg-surface-container-low border border-outline-variant rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/30"
                       dir="ltr"
                     />
                     <button
@@ -726,7 +726,7 @@ const Staff: React.FC = () => {
                 value={rowNewPassword}
                 onChange={(e) => setRowNewPassword(e.target.value)}
                 placeholder={t('staff.form_new_password')}
-                className="w-full bg-surface-container-low border-none rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                className="w-full bg-surface-container-low border border-outline-variant rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
                 dir="ltr"
               />
               {rowNewPassword !== '' && rowNewPassword.length < PASSWORD_MIN_LENGTH && (

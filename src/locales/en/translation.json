@@ -81,7 +81,8 @@
     "logout": "Logout",
     "smart_dashboard": "Smart Dashboard",
     "admin_console": "Admin Console",
-    "earnings": "Earnings"
+    "earnings": "Earnings",
+    "main_menu": "Main Menu"
   },
   "header": {
     "admin_name": "Admin",

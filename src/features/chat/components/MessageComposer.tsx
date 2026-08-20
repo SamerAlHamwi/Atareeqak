@@ -50,7 +50,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({ onSend, disabl
   return (
     <form
       onSubmit={handleSubmit}
-      className="border-t border-outline-variant/10 bg-surface-container-lowest p-4 space-y-2"
+      className="border-t border-outline-variant bg-surface-container-lowest p-4 space-y-2"
     >
       {error && (
         <p data-testid="chat-send-error" className="text-xs font-medium text-error px-1 text-start">

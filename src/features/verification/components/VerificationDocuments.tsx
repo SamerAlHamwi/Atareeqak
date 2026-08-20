@@ -51,7 +51,7 @@ export const VerificationDocuments: React.FC<VerificationDocumentsProps> = ({
     return (
       <div
         data-testid="verification-select-hint"
-        className="lg:col-span-7 flex items-center justify-center p-12 text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant/10 min-h-[320px]"
+        className="lg:col-span-7 flex items-center justify-center p-12 text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant min-h-[320px]"
       >
         {t('verifications.select_hint')}
       </div>
@@ -66,7 +66,7 @@ export const VerificationDocuments: React.FC<VerificationDocumentsProps> = ({
     <div className="lg:col-span-7 space-y-6 sticky top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pe-1">
       <div
         data-testid="verification-detail"
-        className="bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/10 overflow-hidden"
+        className="bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant overflow-hidden"
       >
         {/* Header */}
         <div className="p-6 bg-primary text-on-primary">

@@ -75,7 +75,7 @@ export const ComplaintAttachments: React.FC<ComplaintAttachmentsProps> = ({ atta
             <li
               key={attachment.id}
               data-testid="complaint-attachment"
-              className="bg-surface-container-low rounded-lg overflow-hidden border border-outline-variant/10"
+              className="bg-surface-container-low rounded-lg overflow-hidden border border-outline-variant"
             >
               {isImage && !hasFailed ? (
                 <a href={attachment.url} target="_blank" rel="noreferrer" className="block">

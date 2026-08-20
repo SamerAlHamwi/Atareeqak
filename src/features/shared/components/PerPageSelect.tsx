@@ -32,7 +32,7 @@ const PerPageSelect: React.FC<PerPageSelectProps> = ({
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="bg-surface-container-low border-none rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer disabled:opacity-50"
+        className="bg-surface-container-low border border-outline-variant rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer disabled:opacity-50"
       >
         {options.map((option) => (
           <option key={option} value={option}>

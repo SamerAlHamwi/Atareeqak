@@ -53,7 +53,7 @@ export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
   return (
     <div className="lg:col-span-1 space-y-8">
       {/* ── Wallet directory ──────────────────────────────────────────────── */}
-      <div className="bg-surface-container-lowest p-8 rounded-xl shadow-sm space-y-6 border border-outline-variant/10">
+      <div className="bg-surface-container-lowest p-8 rounded-xl shadow-sm space-y-6 border border-outline-variant">
         <div className="flex items-center gap-3">
           <span className="material-symbols-outlined text-primary">account_balance</span>
           <h3 className="text-lg font-bold text-primary">{t('reports.wallet_mgmt')}</h3>
@@ -61,7 +61,7 @@ export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
         <div className="space-y-4">
           <input
             data-testid="wallet-search"
-            className="w-full bg-surface-container border-none rounded-lg text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/20 text-start"
+            className="w-full bg-surface-container border border-outline-variant rounded-lg text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/20 text-start"
             placeholder={t('reports.wallet_search_placeholder')}
             type="text"
             value={walletQuery}
@@ -139,7 +139,7 @@ export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
         <div className="space-y-3">
           <input
             data-testid="charge-phone"
-            className="w-full bg-surface-container-lowest border-none rounded-lg text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/20 text-start"
+            className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/20 text-start"
             placeholder={t('reports.credit_phone_placeholder')}
             type="text"
             dir="ltr"
@@ -158,7 +158,7 @@ export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
 
           <input
             data-testid="charge-amount"
-            className="w-full bg-surface-container-lowest border-none rounded-lg text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/20 text-start"
+            className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/20 text-start"
             placeholder={t('reports.credit_amount_placeholder')}
             type="number"
             min={ADMIN_CHARGE_MIN_AMOUNT}

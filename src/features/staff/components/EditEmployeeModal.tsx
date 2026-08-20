@@ -86,7 +86,7 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({
                   maxLength={NAME_MAX_LENGTH}
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder={t('staff.form_first_name')}
-                  className="w-full bg-surface-container-low border-none rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/30"
+                  className="w-full bg-surface-container-low border border-outline-variant rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/30"
                 />
                 {fieldError('first_name') && (
                   <p className="text-[11px] text-error mt-1">{fieldError('first_name')}</p>
@@ -100,7 +100,7 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({
                   maxLength={NAME_MAX_LENGTH}
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder={t('staff.form_last_name')}
-                  className="w-full bg-surface-container-low border-none rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/30"
+                  className="w-full bg-surface-container-low border border-outline-variant rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/30"
                 />
                 {fieldError('last_name') && (
                   <p className="text-[11px] text-error mt-1">{fieldError('last_name')}</p>
@@ -117,7 +117,7 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t('staff.form_email')}
                 dir="ltr"
-                className="w-full bg-surface-container-low border-none rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/30"
+                className="w-full bg-surface-container-low border border-outline-variant rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-secondary/30"
               />
               {fieldError('email') && (
                 <p className="text-[11px] text-error mt-1">{fieldError('email')}</p>

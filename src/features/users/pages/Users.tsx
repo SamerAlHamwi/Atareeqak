@@ -176,7 +176,7 @@ const Users: React.FC = () => {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className={`block w-full ${isRtl ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3 bg-surface-container-lowest border border-outline-variant/10 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all`}
+            className={`block w-full ${isRtl ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3 bg-surface-container-lowest border border-outline-variant rounded-2xl text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all`}
             placeholder={t('users.search_placeholder')}
             type="text"
           />
@@ -185,7 +185,7 @@ const Users: React.FC = () => {
 
       {/* Stats + filters */}
       <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-surface-container-lowest p-4 rounded-2xl flex flex-col gap-2 border border-outline-variant/10">
+        <div className="bg-surface-container-lowest p-4 rounded-2xl flex flex-col gap-2 border border-outline-variant">
           <label
             htmlFor="users-type-filter"
             className="text-xs font-bold text-on-surface-variant uppercase tracking-wider"
@@ -207,7 +207,7 @@ const Users: React.FC = () => {
           </select>
         </div>
         {/* `date` was typed in UsersListParams but never exposed until Phase 5. */}
-        <div className="bg-surface-container-lowest p-4 rounded-2xl flex flex-col gap-2 border border-outline-variant/10">
+        <div className="bg-surface-container-lowest p-4 rounded-2xl flex flex-col gap-2 border border-outline-variant">
           <label
             htmlFor="users-date-filter"
             className="text-xs font-bold text-on-surface-variant uppercase tracking-wider"
@@ -228,7 +228,7 @@ const Users: React.FC = () => {
             ))}
           </select>
         </div>
-        <div className="bg-surface-container-lowest p-4 rounded-2xl flex flex-col gap-2 border border-outline-variant/10">
+        <div className="bg-surface-container-lowest p-4 rounded-2xl flex flex-col gap-2 border border-outline-variant">
           <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
             {t('users.suspended_users')}
           </label>
@@ -266,7 +266,7 @@ const Users: React.FC = () => {
       </section>
 
       {/* Users Table Section */}
-      <section className="bg-surface-container-lowest rounded-3xl overflow-hidden shadow-sm border border-outline-variant/10">
+      <section className="bg-surface-container-lowest rounded-3xl overflow-hidden shadow-sm border border-outline-variant">
         <div className="overflow-x-auto">
           <table className="w-full text-start border-collapse">
             <thead>
@@ -433,7 +433,7 @@ const Users: React.FC = () => {
               {/* Details List */}
               <div className="space-y-4">
                 <h6 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest px-2">{t('users.additional_info')}</h6>
-                <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl divide-y divide-outline-variant/10 shadow-sm">
+                <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl divide-y divide-outline-variant/10 shadow-sm">
                   <div className="p-4 flex justify-between items-center">
                     <span className="text-sm text-on-surface-variant">{t('users.table_type')}</span>
                     <span className="text-sm font-bold">{t(`users.${panelUser.type}`)}</span>

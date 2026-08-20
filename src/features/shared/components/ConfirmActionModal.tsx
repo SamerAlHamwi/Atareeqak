@@ -151,7 +151,7 @@ const ModalForm: React.FC<ModalFormProps> = ({
                   data-testid="confirm-action-status"
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="w-full bg-surface-container-low border-none rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                  className="w-full bg-surface-container-low border border-outline-variant rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                 >
                   {statusOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -173,7 +173,7 @@ const ModalForm: React.FC<ModalFormProps> = ({
                 onChange={(e) => setReason(e.target.value)}
                 rows={3}
                 maxLength={maxReasonLength}
-                className="w-full bg-surface-container-low border-none rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+                className="w-full bg-surface-container-low border border-outline-variant rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
                 placeholder={
                   minReasonLength <= 1
                     ? t('modal.reason_placeholder_any')
@@ -197,7 +197,7 @@ const ModalForm: React.FC<ModalFormProps> = ({
                   <select
                     value={banType}
                     onChange={(e) => setBanType(e.target.value as 'permanent' | 'temporary')}
-                    className="w-full bg-surface-container-low border-none rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                    className="w-full bg-surface-container-low border border-outline-variant rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                   >
                     <option value="permanent">{t('modal.ban_permanent')}</option>
                     <option value="temporary">{t('modal.ban_temporary')}</option>
@@ -213,7 +213,7 @@ const ModalForm: React.FC<ModalFormProps> = ({
                       value={expiresAt}
                       min={minExpiryDate}
                       onChange={(e) => setExpiresAt(e.target.value)}
-                      className="w-full bg-surface-container-low border-none rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                      className="w-full bg-surface-container-low border border-outline-variant rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
                 )}

@@ -263,7 +263,7 @@ const Support: React.FC = () => {
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         <div className="lg:col-span-8 bg-surface-container-low rounded-xl overflow-hidden shadow-sm">
           {/* Filters */}
-          <div className="p-6 bg-surface-container-lowest border-b border-outline-variant/10 space-y-4">
+          <div className="p-6 bg-surface-container-lowest border-b border-outline-variant space-y-4">
             <FilterTabs
               items={tabs}
               active={statusFilter}

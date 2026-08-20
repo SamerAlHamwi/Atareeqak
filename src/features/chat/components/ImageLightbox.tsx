@@ -50,7 +50,7 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({ message, onClose }
         onClick={(event) => event.stopPropagation()}
         className="bg-surface-container-lowest rounded-2xl overflow-hidden max-w-3xl w-full shadow-ambient"
       >
-        <div className="flex items-center justify-between gap-4 px-5 py-3 border-b border-outline-variant/10">
+        <div className="flex items-center justify-between gap-4 px-5 py-3 border-b border-outline-variant">
           <div className="min-w-0 text-start">
             <p className="text-sm font-bold text-on-surface truncate">{name}</p>
             {message.image?.mime_type && (

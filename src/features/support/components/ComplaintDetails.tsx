@@ -31,7 +31,7 @@ export const ComplaintDetails: React.FC<ComplaintDetailsProps> = ({
     return (
       <div
         data-testid="complaint-select-hint"
-        className="lg:col-span-4 flex items-center justify-center p-12 text-center text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant/10 min-h-[280px]"
+        className="lg:col-span-4 flex items-center justify-center p-12 text-center text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant min-h-[280px]"
       >
         {t('support.select_hint')}
       </div>
@@ -56,7 +56,7 @@ export const ComplaintDetails: React.FC<ComplaintDetailsProps> = ({
     <div className="lg:col-span-4 space-y-6 sticky top-24">
       <div
         data-testid="complaint-detail"
-        className="bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/10 overflow-hidden"
+        className="bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant overflow-hidden"
       >
         <div className="p-6 bg-primary text-on-primary">
           <div className="flex justify-between items-start mb-4 gap-3">
@@ -115,11 +115,11 @@ export const ComplaintDetails: React.FC<ComplaintDetailsProps> = ({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="p-3 bg-surface rounded border border-outline-variant/10 text-start">
+            <div className="p-3 bg-surface rounded border border-outline-variant text-start">
               <p className="text-[10px] text-on-surface-variant">{t('support.table_category')}</p>
               <p className="text-xs font-bold text-secondary">{complaint.category}</p>
             </div>
-            <div className="p-3 bg-surface rounded border border-outline-variant/10 text-start">
+            <div className="p-3 bg-surface rounded border border-outline-variant text-start">
               <p className="text-[10px] text-on-surface-variant">{t('support.table_date')}</p>
               <p className="text-xs font-bold">{complaint.date}</p>
             </div>

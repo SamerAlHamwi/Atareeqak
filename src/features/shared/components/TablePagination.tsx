@@ -22,7 +22,7 @@ const TablePagination: React.FC<TablePaginationProps> = ({
   const isRtl = i18n.language.startsWith('ar');
 
   return (
-    <div className="bg-surface-container-low px-8 py-4 flex items-center justify-between border-t border-outline-variant/10">
+    <div className="bg-surface-container-low px-8 py-4 flex items-center justify-between border-t border-outline-variant">
       <span className="text-xs text-on-surface-variant">{info ?? ''}</span>
       <div className="flex gap-2 items-center">
         <button

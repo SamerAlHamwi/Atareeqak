@@ -66,7 +66,7 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
   };
 
   return (
-    <section className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/10 space-y-5">
+    <section className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant space-y-5">
       <div className="flex flex-wrap items-end gap-4">
         <div>
           <label
@@ -82,7 +82,7 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
             value={start}
             max={end || undefined}
             onChange={(e) => setStart(e.target.value)}
-            className="bg-surface-container-low border-none rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+            className="bg-surface-container-low border border-outline-variant rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
           />
         </div>
         <div>
@@ -99,7 +99,7 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
             value={end}
             min={start || undefined}
             onChange={(e) => setEnd(e.target.value)}
-            className="bg-surface-container-low border-none rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+            className="bg-surface-container-low border border-outline-variant rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
           />
         </div>
 
@@ -158,7 +158,7 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
       )}
 
       {/* ── PDF export ────────────────────────────────────────────────────── */}
-      <div className="border-t border-outline-variant/10 pt-5 space-y-3">
+      <div className="border-t border-outline-variant pt-5 space-y-3">
         <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
           {t('reports.export_sections_label')}
         </p>

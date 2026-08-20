@@ -77,8 +77,8 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   const to = Math.min(page * perPage, total);
 
   return (
-    <div className="lg:col-span-2 bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col border border-outline-variant/10">
-      <div className="p-6 space-y-4 border-b border-outline-variant/10">
+    <div className="lg:col-span-2 bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col border border-outline-variant">
+      <div className="p-6 space-y-4 border-b border-outline-variant">
         <div className="flex flex-wrap justify-between items-center gap-3">
           <h3 className="text-lg font-bold text-primary">{t('reports.wallet_requests')}</h3>
           <PerPageSelect

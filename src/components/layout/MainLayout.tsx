@@ -55,58 +55,96 @@ const MainLayout: React.FC = () => {
 
       {/* SideNavBar Shell */}
       <aside className={`
-        fixed top-0 h-screen w-80 z-[70] bg-surface-container-lowest transition-all duration-300 ease-in-out
-        ${isRtl ? 'right-0 border-l' : 'left-0 border-r'} border-outline-variant/20
+        fixed top-0 h-screen w-72 z-[70] bg-surface-container-lowest transition-all duration-300 ease-in-out
+        ${isRtl ? 'right-0 border-l' : 'left-0 border-r'} border-outline-variant/15
         ${isSidebarOpen
             ? (isRtl ? 'translate-x-0' : 'translate-x-0')
             : (isRtl ? 'translate-x-full lg:translate-x-0' : '-translate-x-full lg:translate-x-0')
         }
-        flex flex-col
+        flex flex-col shadow-ambient lg:shadow-none
       `}>
-        <div className="flex flex-col items-center py-12 px-6">
-          <div className="flex flex-col items-center">
-             <img src={logo} alt={t('auth.brand_name')} className="w-12 h-12 object-contain mb-2" />
-             <span className="text-3xl font-black text-primary">{t('auth.brand_name')}</span>
-             <p className="text-[11px] font-bold text-on-surface-variant/70 uppercase tracking-widest mt-1">
-               {t('nav.smart_dashboard')}
-             </p>
+        {/* Brand */}
+        <div className="flex flex-col items-center pt-10 pb-8 px-6">
+          <div className="relative mb-3">
+            <div className="absolute inset-0 bg-secondary/15 rounded-2xl blur-xl scale-110" aria-hidden="true" />
+            <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-surface-container-low to-surface-container flex items-center justify-center shadow-ambient ring-1 ring-outline-variant/20">
+              <img src={logo} alt={t('auth.brand_name')} className="w-9 h-9 object-contain" />
+            </div>
           </div>
+          <span className="text-2xl font-black text-primary tracking-tight">{t('auth.brand_name')}</span>
+          <p className="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-[0.2em] mt-1">
+            {t('nav.smart_dashboard')}
+          </p>
         </div>
 
-        <nav className="flex-1 px-6 space-y-2 overflow-y-auto">
+        <div className="mx-6 h-px bg-outline-variant/20" />
+
+        {/* Nav */}
+        <nav className="flex-1 px-4 pt-6 space-y-1 overflow-y-auto">
+          <p className="px-3 mb-2 text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-[0.2em]">
+            {t('nav.main_menu')}
+          </p>
           {visibleNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               onClick={() => setIsSidebarOpen(false)}
               className={({ isActive }) =>
-                `flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-black transition-all duration-200 ${
+                `group relative flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-bold transition-all duration-200 ${
                   isActive
-                    ? 'bg-primary-fixed text-on-primary-fixed-variant'
-                    : 'text-on-surface-variant hover:bg-surface-container-low'
+                    ? 'bg-gradient-to-r from-primary to-primary-container text-on-primary shadow-ambient'
+                    : 'text-on-surface-variant hover:bg-surface-container-low hover:text-primary'
                 }`
               }
             >
-              <span className="material-symbols-outlined text-2xl font-bold">{item.icon}</span>
-              <span>{t(item.labelKey)}</span>
+              {({ isActive }) => (
+                <>
+                  <span
+                    className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-0' : 'left-0'} h-5 w-1 rounded-full bg-secondary transition-all duration-200 ${
+                      isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-40'
+                    }`}
+                    aria-hidden="true"
+                  />
+                  <span
+                    className={`flex items-center justify-center w-9 h-9 rounded-lg transition-colors duration-200 ${
+                      isActive ? 'bg-white/15 text-on-primary' : 'bg-surface-container text-on-surface-variant group-hover:bg-surface-container-high group-hover:text-primary'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+                  </span>
+                  <span className="truncate">{t(item.labelKey)}</span>
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
 
-        <div className="p-6 border-t border-outline-variant/10">
+        {/* Footer */}
+        <div className="p-4 mt-2">
+          <div className="flex items-center gap-3 p-3 rounded-2xl bg-surface-container-low mb-2">
+            <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 ring-2 ring-surface-container-lowest shadow-sm">
+              <Avatar name={user?.name || t('header.admin_name')} photo={null} size="xl" className="rounded-none" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-black text-on-surface truncate">{user?.name || t('header.admin_name')}</p>
+              <p className="text-[11px] font-bold text-on-surface-variant/60 truncate">
+                {user?.roleLabel || (role ? t(`roles.${role}`) : t('header.admin_role'))}
+              </p>
+            </div>
+          </div>
           <button
             onClick={logout}
-            className={`w-full flex items-center justify-between px-5 py-4 text-on-surface-variant font-black text-sm hover:bg-surface-container-low rounded-2xl transition-colors`}
+            className="w-full flex items-center justify-between px-4 py-3 text-error font-bold text-sm bg-error-container/0 hover:bg-error-container/20 rounded-xl transition-colors duration-200"
           >
              <span>{t('nav.logout')}</span>
-             <span className={`material-symbols-outlined text-2xl ${isRtl ? 'rotate-180' : ''}`}>logout</span>
+             <span className={`material-symbols-outlined text-xl ${isRtl ? 'rotate-180' : ''}`}>logout</span>
           </button>
         </div>
       </aside>
 
       {/* Main Content Area */}
       <main className={`
-        ${isRtl ? 'lg:mr-80' : 'lg:ml-80'}
+        ${isRtl ? 'lg:mr-72' : 'lg:ml-72'}
         min-h-screen flex flex-col transition-all duration-300
       `}>
         {/* TopAppBar */}
@@ -162,7 +200,7 @@ const MainLayout: React.FC = () => {
                     isRtl ? 'left-0' : 'right-0'
                   }`}
                 >
-                  <div className="px-5 py-3 border-b border-outline-variant/10">
+                  <div className="px-5 py-3 border-b border-outline-variant">
                     <p className="text-sm font-black text-primary" data-testid="header-profile-name">
                       {user?.name || t('header.admin_name')}
                     </p>

@@ -434,7 +434,7 @@ const UserDetails: React.FC = () => {
                   value={chargeAmount}
                   onChange={(e) => setChargeAmount(e.target.value)}
                   placeholder={t('users.charge_amount_placeholder')}
-                  className="w-full bg-surface-container-low border-none rounded-xl px-4 py-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20"
+                  className="w-full bg-surface-container-low border border-outline-variant rounded-xl px-4 py-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20"
                 />
                 <p className="text-[11px] text-on-surface-variant">
                   {t('users.charge_amount_hint', {
@@ -463,7 +463,7 @@ const UserDetails: React.FC = () => {
                   value={chargeNotes}
                   onChange={(e) => setChargeNotes(e.target.value)}
                   placeholder={t('users.charge_notes_placeholder')}
-                  className="w-full bg-surface-container-low border-none rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                  className="w-full bg-surface-container-low border border-outline-variant rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                 />
                 {(notesError || chargeFieldErrors.admin_notes) && (
                   <p className="text-xs text-error font-medium">
@@ -542,7 +542,7 @@ const UserDetails: React.FC = () => {
                   value={scorePoints}
                   onChange={(e) => setScorePoints(e.target.value)}
                   placeholder={t('users.adjust_score_points_placeholder')}
-                  className="w-full bg-surface-container-low border-none rounded-xl px-4 py-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20"
+                  className="w-full bg-surface-container-low border border-outline-variant rounded-xl px-4 py-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20"
                 />
                 <p className="text-[11px] text-on-surface-variant">
                   {t('users.charge_amount_hint', {
@@ -571,7 +571,7 @@ const UserDetails: React.FC = () => {
                   value={scoreReason}
                   onChange={(e) => setScoreReason(e.target.value)}
                   placeholder={t('users.adjust_score_reason_placeholder')}
-                  className="w-full bg-surface-container-low border-none rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                  className="w-full bg-surface-container-low border border-outline-variant rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                 />
                 {(scoreReasonError || scoreFieldErrors.reason) && (
                   <p className="text-xs text-error font-medium">
@@ -654,7 +654,7 @@ const UserDetails: React.FC = () => {
           />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
-          <div className="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant/10">
+          <div className="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant">
             <p className="text-sm font-medium text-on-surface-variant mb-2">{t('users.score_title')}</p>
             <div className="flex items-end justify-between">
               <div className="flex items-center gap-2">
@@ -668,7 +668,7 @@ const UserDetails: React.FC = () => {
               <span className="material-symbols-outlined text-secondary text-3xl opacity-40">military_tech</span>
             </div>
           </div>
-          <div className="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant/10">
+          <div className="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant">
             <p className="text-sm font-medium text-on-surface-variant mb-2">{t('users.total_trips')}</p>
             <div className="flex items-end justify-between">
               <h3 className="text-3xl font-extrabold text-primary" data-testid="stat-total-rides">
@@ -677,7 +677,7 @@ const UserDetails: React.FC = () => {
               <span className="material-symbols-outlined text-secondary text-3xl opacity-40">route</span>
             </div>
           </div>
-          <div className="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant/10">
+          <div className="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant">
             <p className="text-sm font-medium text-on-surface-variant mb-2">{t('users.total_spending')}</p>
             <div className="flex items-end justify-between">
               <h3 className="text-3xl font-extrabold text-primary" data-testid="stat-total-spending">
@@ -686,7 +686,7 @@ const UserDetails: React.FC = () => {
               <span className="material-symbols-outlined text-secondary text-3xl opacity-40">payments</span>
             </div>
           </div>
-          <div className="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant/10">
+          <div className="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant">
             <p className="text-sm font-medium text-on-surface-variant mb-2">{t('users.rating')}</p>
             <div className="flex items-end justify-between">
               <div className="flex items-center gap-2">
@@ -698,7 +698,7 @@ const UserDetails: React.FC = () => {
               <span className="material-symbols-outlined text-secondary text-3xl opacity-40">thumb_up</span>
             </div>
           </div>
-          <div className="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant/10">
+          <div className="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant">
             <p className="text-sm font-medium text-on-surface-variant mb-2">{t('users.wallet_balance')}</p>
             <div className="flex items-end justify-between">
               <h3 className="text-3xl font-extrabold text-primary" data-testid="stat-wallet-balance">
@@ -713,7 +713,7 @@ const UserDetails: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         <div className="lg:col-span-2 space-y-10">
           {/* Monthly trips chart — GET /admin/passengers/{id}/monthly-trips?months= */}
-          <div className="bg-surface-container-lowest p-8 rounded-[2rem] border border-outline-variant/10">
+          <div className="bg-surface-container-lowest p-8 rounded-[2rem] border border-outline-variant">
             <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
               <div>
                 <h4 className="text-xl font-bold text-on-surface">{t('users.monthly_stats_title')}</h4>
@@ -785,7 +785,7 @@ const UserDetails: React.FC = () => {
                   value={tripLimit}
                   disabled={refreshingSection === 'recent-trips'}
                   onChange={(e) => void setTripLimit(Number(e.target.value))}
-                  className="bg-surface-container-low border-none rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer disabled:opacity-50"
+                  className="bg-surface-container-low border border-outline-variant rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer disabled:opacity-50"
                 >
                   {RECENT_TRIP_LIMITS.map((limit) => (
                     <option key={limit} value={limit}>
@@ -801,7 +801,7 @@ const UserDetails: React.FC = () => {
                 />
               </div>
             </div>
-            <div className="bg-surface-container-lowest rounded-[2rem] overflow-hidden border border-outline-variant/10">
+            <div className="bg-surface-container-lowest rounded-[2rem] overflow-hidden border border-outline-variant">
               <table className="w-full text-start">
                 <thead className="bg-surface-container-low text-on-surface-variant text-sm font-bold">
                   <tr>
@@ -887,7 +887,7 @@ const UserDetails: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-surface-container-lowest rounded-[2rem] overflow-hidden border border-outline-variant/10">
+            <div className="bg-surface-container-lowest rounded-[2rem] overflow-hidden border border-outline-variant">
               <table className="w-full text-start">
                 <thead className="bg-surface-container-low text-on-surface-variant text-sm font-bold">
                   <tr>
@@ -940,7 +940,7 @@ const UserDetails: React.FC = () => {
               />
             </div>
 
-            <div className="bg-surface-container-lowest rounded-[2rem] overflow-hidden border border-outline-variant/10">
+            <div className="bg-surface-container-lowest rounded-[2rem] overflow-hidden border border-outline-variant">
               <table className="w-full text-start">
                 <thead className="bg-surface-container-low text-on-surface-variant text-sm font-bold">
                   <tr>
@@ -986,7 +986,7 @@ const UserDetails: React.FC = () => {
 
         {/* Account info sidebar */}
         <div className="space-y-8">
-          <div className="bg-surface-container-lowest p-8 rounded-[2rem] border border-outline-variant/10 space-y-8">
+          <div className="bg-surface-container-lowest p-8 rounded-[2rem] border border-outline-variant space-y-8">
             <h4 className="text-xl font-bold text-primary">{t('users.account_info')}</h4>
             <div className="space-y-6">
               <div className="flex items-start gap-4">

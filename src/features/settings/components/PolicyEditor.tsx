@@ -65,7 +65,7 @@ export const PolicyEditor: React.FC<PolicyEditorProps> = ({ policy, isSaving, on
 
   return (
     <div className="space-y-6">
-      <div className="bg-surface-container-lowest rounded-3xl p-6 shadow-sm border border-outline-variant/10">
+      <div className="bg-surface-container-lowest rounded-3xl p-6 shadow-sm border border-outline-variant">
         <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2 block">
           {t('settings.last_updated_label')}
         </label>
@@ -75,7 +75,7 @@ export const PolicyEditor: React.FC<PolicyEditorProps> = ({ policy, isSaving, on
           value={lastUpdatedLabel}
           onChange={(e) => setLastUpdatedLabel(e.target.value)}
           placeholder={t('settings.last_updated_placeholder')}
-          className="w-full max-w-xs bg-surface-container-low border-none rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-primary/30"
+          className="w-full max-w-xs bg-surface-container-low border border-outline-variant rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-primary/30"
         />
       </div>
 
@@ -84,7 +84,7 @@ export const PolicyEditor: React.FC<PolicyEditorProps> = ({ policy, isSaving, on
           <div
             key={sectionIndex}
             data-testid="policy-section"
-            className="bg-surface-container-lowest rounded-3xl p-6 shadow-sm border border-outline-variant/10 space-y-4"
+            className="bg-surface-container-lowest rounded-3xl p-6 shadow-sm border border-outline-variant space-y-4"
           >
             <div className="flex items-start gap-3">
               <input
@@ -93,7 +93,7 @@ export const PolicyEditor: React.FC<PolicyEditorProps> = ({ policy, isSaving, on
                 value={section.title}
                 onChange={(e) => updateSection(sectionIndex, { title: e.target.value })}
                 placeholder={t('settings.section_title_placeholder')}
-                className="flex-1 bg-surface-container-low border-none rounded-xl text-sm font-bold px-4 py-3 focus:ring-2 focus:ring-primary/30"
+                className="flex-1 bg-surface-container-low border border-outline-variant rounded-xl text-sm font-bold px-4 py-3 focus:ring-2 focus:ring-primary/30"
               />
               <div className="flex items-center gap-1 shrink-0">
                 <button
@@ -132,7 +132,7 @@ export const PolicyEditor: React.FC<PolicyEditorProps> = ({ policy, isSaving, on
               onChange={(e) => updateSection(sectionIndex, { intro: e.target.value })}
               placeholder={t('settings.section_intro_placeholder')}
               rows={2}
-              className="w-full bg-surface-container-low border-none rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-primary/30 resize-y"
+              className="w-full bg-surface-container-low border border-outline-variant rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-primary/30 resize-y"
             />
 
             <div className="space-y-2">
@@ -145,7 +145,7 @@ export const PolicyEditor: React.FC<PolicyEditorProps> = ({ policy, isSaving, on
                     type="text"
                     value={point}
                     onChange={(e) => updatePoint(sectionIndex, pointIndex, e.target.value)}
-                    className="flex-1 bg-surface-container-low border-none rounded-xl text-sm px-4 py-2.5 focus:ring-2 focus:ring-primary/30"
+                    className="flex-1 bg-surface-container-low border border-outline-variant rounded-xl text-sm px-4 py-2.5 focus:ring-2 focus:ring-primary/30"
                   />
                   <button
                     type="button"

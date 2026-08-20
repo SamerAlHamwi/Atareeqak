@@ -170,7 +170,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
   return (
     <div className="bg-surface-container-low rounded-xl shadow-sm flex flex-col min-h-[36rem] max-h-[44rem] overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-3 px-6 py-4 bg-surface-container-lowest border-b border-outline-variant/10">
+      <div className="flex items-center gap-3 px-6 py-4 bg-surface-container-lowest border-b border-outline-variant">
         <Avatar name={customer.name} photo={customer.photo} size="md" />
         <div className="min-w-0 flex-1 text-start">
           <div className="flex items-center gap-2 flex-wrap">

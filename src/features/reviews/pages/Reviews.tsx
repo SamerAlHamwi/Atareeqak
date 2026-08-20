@@ -134,7 +134,7 @@ const Reviews: React.FC = () => {
 
       {/* Filters + Table */}
       <section className="bg-surface-container-low rounded-xl overflow-hidden shadow-sm">
-        <div className="p-6 bg-surface-container-lowest border-b border-outline-variant/10 flex flex-wrap items-center justify-between gap-4">
+        <div className="p-6 bg-surface-container-lowest border-b border-outline-variant flex flex-wrap items-center justify-between gap-4">
           <div className="relative w-full max-w-sm">
             <span
               className={`absolute inset-y-0 ${

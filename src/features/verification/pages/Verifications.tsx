@@ -221,7 +221,7 @@ const Verifications: React.FC = () => {
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Requests List */}
         <div className="lg:col-span-5 bg-surface-container-low rounded-xl overflow-hidden shadow-sm">
-          <div className="p-6 bg-surface-container-lowest border-b border-outline-variant/10 flex flex-wrap items-center justify-between gap-4">
+          <div className="p-6 bg-surface-container-lowest border-b border-outline-variant flex flex-wrap items-center justify-between gap-4">
             <span className="text-sm font-bold text-on-surface">
               {t('verifications.requests_list')}
             </span>

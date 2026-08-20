@@ -21,7 +21,7 @@ export const PlatformSettingsEditor: React.FC<PlatformSettingsEditorProps> = ({ 
 
   return (
     <div className="space-y-6">
-      <div className="bg-surface-container-lowest rounded-3xl p-6 shadow-sm border border-outline-variant/10 space-y-2">
+      <div className="bg-surface-container-lowest rounded-3xl p-6 shadow-sm border border-outline-variant space-y-2">
         <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2 block">
           {t('settings.platform_profit_percentage_label')}
         </label>
@@ -35,7 +35,7 @@ export const PlatformSettingsEditor: React.FC<PlatformSettingsEditorProps> = ({ 
             value={percentage}
             onChange={(e) => setPercentage(e.target.valueAsNumber)}
             dir="ltr"
-            className="w-full bg-surface-container-low border-none rounded-xl text-sm px-4 py-3 pe-10 focus:ring-2 focus:ring-primary/30"
+            className="w-full bg-surface-container-low border border-outline-variant rounded-xl text-sm px-4 py-3 pe-10 focus:ring-2 focus:ring-primary/30"
           />
           <span className="absolute inset-y-0 end-4 flex items-center text-on-surface-variant text-sm">%</span>
         </div>

@@ -93,7 +93,7 @@ export const WalletTransactionsDrawer: React.FC<WalletTransactionsDrawerProps> =
           </div>
         ) : (
           <>
-            <div className="px-6 py-3 border-b border-outline-variant/10 flex justify-end">
+            <div className="px-6 py-3 border-b border-outline-variant flex justify-end">
               <PerPageSelect
                 value={perPage}
                 options={WALLET_TRANSACTIONS_PER_PAGE_OPTIONS}

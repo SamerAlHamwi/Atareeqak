@@ -105,7 +105,7 @@ export const TripDetailsCard: React.FC<TripDetailsCardProps> = ({
           )}
         </div>
       </div>
-      <div className="bg-surface-container-low rounded-[2rem] overflow-hidden min-h-[280px] shadow-md border border-outline-variant/10">
+      <div className="bg-surface-container-low rounded-[2rem] overflow-hidden min-h-[280px] shadow-md border border-outline-variant">
         <LiveTripsMap
           trips={liveTrips}
           selectedTripId={selectedRawId}

@@ -64,7 +64,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
 
   return (
     <div className="bg-surface-container-low rounded-xl overflow-hidden shadow-sm flex flex-col">
-      <div className="p-6 bg-surface-container-lowest border-b border-outline-variant/10 space-y-4">
+      <div className="p-6 bg-surface-container-lowest border-b border-outline-variant space-y-4">
         <div className="relative">
           <span
             className={`material-symbols-outlined absolute top-1/2 -translate-y-1/2 text-on-surface-variant text-lg ${

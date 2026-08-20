@@ -124,7 +124,7 @@ const Settings: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-8 space-y-6">
-            <div className="flex gap-2 bg-surface-container-lowest p-1.5 rounded-2xl w-fit shadow-sm border border-outline-variant/10">
+            <div className="flex gap-2 bg-surface-container-lowest p-1.5 rounded-2xl w-fit shadow-sm border border-outline-variant">
               {TABS.map((tab) => (
                 <button
                   key={tab}
@@ -178,7 +178,7 @@ const Settings: React.FC = () => {
           </div>
 
           <div className="lg:col-span-4 sticky top-24">
-            <div className="bg-surface-container-lowest rounded-3xl p-8 shadow-sm space-y-5 border-t-4 border-secondary border-x border-b border-outline-variant/10">
+            <div className="bg-surface-container-lowest rounded-3xl p-8 shadow-sm space-y-5 border-t-4 border-secondary border-x border-b border-outline-variant">
               <div className="flex items-center justify-between">
                 <h4 className="font-bold text-lg text-primary">{t('settings.contact_title')}</h4>
                 <span className="material-symbols-outlined text-secondary">contact_mail</span>
@@ -193,7 +193,7 @@ const Settings: React.FC = () => {
                     type="text"
                     value={form.company}
                     onChange={(e) => setContactForm({ ...form, company: e.target.value })}
-                    className="w-full bg-surface-container-low border-none rounded-xl text-sm px-4 py-2.5 focus:ring-2 focus:ring-secondary/30"
+                    className="w-full bg-surface-container-low border border-outline-variant rounded-xl text-sm px-4 py-2.5 focus:ring-2 focus:ring-secondary/30"
                   />
                 </div>
                 <div>
@@ -204,7 +204,7 @@ const Settings: React.FC = () => {
                     type="text"
                     value={form.appName}
                     onChange={(e) => setContactForm({ ...form, appName: e.target.value })}
-                    className="w-full bg-surface-container-low border-none rounded-xl text-sm px-4 py-2.5 focus:ring-2 focus:ring-secondary/30"
+                    className="w-full bg-surface-container-low border border-outline-variant rounded-xl text-sm px-4 py-2.5 focus:ring-2 focus:ring-secondary/30"
                   />
                 </div>
                 <div>
@@ -215,7 +215,7 @@ const Settings: React.FC = () => {
                     type="email"
                     value={form.contactEmail}
                     onChange={(e) => setContactForm({ ...form, contactEmail: e.target.value })}
-                    className="w-full bg-surface-container-low border-none rounded-xl text-sm px-4 py-2.5 focus:ring-2 focus:ring-secondary/30"
+                    className="w-full bg-surface-container-low border border-outline-variant rounded-xl text-sm px-4 py-2.5 focus:ring-2 focus:ring-secondary/30"
                     dir="ltr"
                   />
                 </div>
@@ -227,7 +227,7 @@ const Settings: React.FC = () => {
                     type="text"
                     value={form.contactPhone}
                     onChange={(e) => setContactForm({ ...form, contactPhone: e.target.value })}
-                    className="w-full bg-surface-container-low border-none rounded-xl text-sm px-4 py-2.5 focus:ring-2 focus:ring-secondary/30"
+                    className="w-full bg-surface-container-low border border-outline-variant rounded-xl text-sm px-4 py-2.5 focus:ring-2 focus:ring-secondary/30"
                     dir="ltr"
                   />
                 </div>
@@ -239,7 +239,7 @@ const Settings: React.FC = () => {
                     type="text"
                     value={form.contactAddress}
                     onChange={(e) => setContactForm({ ...form, contactAddress: e.target.value })}
-                    className="w-full bg-surface-container-low border-none rounded-xl text-sm px-4 py-2.5 focus:ring-2 focus:ring-secondary/30"
+                    className="w-full bg-surface-container-low border border-outline-variant rounded-xl text-sm px-4 py-2.5 focus:ring-2 focus:ring-secondary/30"
                   />
                 </div>
                 <div>
@@ -250,7 +250,7 @@ const Settings: React.FC = () => {
                     type="text"
                     value={form.consentLabel}
                     onChange={(e) => setContactForm({ ...form, consentLabel: e.target.value })}
-                    className="w-full bg-surface-container-low border-none rounded-xl text-sm px-4 py-2.5 focus:ring-2 focus:ring-secondary/30"
+                    className="w-full bg-surface-container-low border border-outline-variant rounded-xl text-sm px-4 py-2.5 focus:ring-2 focus:ring-secondary/30"
                   />
                 </div>
               </div>

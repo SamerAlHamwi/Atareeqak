@@ -85,7 +85,8 @@
     "logout": "تسجيل الخروج",
     "smart_dashboard": "لوحة التحكم الذكية",
     "admin_console": "إدارة النظام",
-    "earnings": "الأرباح"
+    "earnings": "الأرباح",
+    "main_menu": "القائمة الرئيسية"
   },
   "header": {
     "admin_name": "المشرف",

@@ -162,7 +162,7 @@ const Drivers: React.FC = () => {
 
       {/* Summary Bento Grid */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-surface-container-lowest p-6 rounded-xl flex flex-col justify-between h-40 group hover:translate-y-[-4px] transition-transform duration-300 border border-outline-variant/10 shadow-sm">
+        <div className="bg-surface-container-lowest p-6 rounded-xl flex flex-col justify-between h-40 group hover:translate-y-[-4px] transition-transform duration-300 border border-outline-variant shadow-sm">
           <div className="flex justify-between items-start">
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
               <span className="material-symbols-outlined">group</span>
@@ -176,7 +176,7 @@ const Drivers: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-surface-container-lowest p-6 rounded-xl flex flex-col justify-between h-40 group hover:translate-y-[-4px] transition-transform duration-300 border border-outline-variant/10 shadow-sm">
+        <div className="bg-surface-container-lowest p-6 rounded-xl flex flex-col justify-between h-40 group hover:translate-y-[-4px] transition-transform duration-300 border border-outline-variant shadow-sm">
           <div className="flex justify-between items-start">
             <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
               <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>sensors</span>
@@ -191,7 +191,7 @@ const Drivers: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-surface-container-lowest p-6 rounded-xl flex flex-col justify-between h-40 group hover:translate-y-[-4px] transition-transform duration-300 border border-outline-variant/10 shadow-sm">
+        <div className="bg-surface-container-lowest p-6 rounded-xl flex flex-col justify-between h-40 group hover:translate-y-[-4px] transition-transform duration-300 border border-outline-variant shadow-sm">
           <div className="flex justify-between items-start">
             <div className="w-12 h-12 rounded-full bg-error-container/20 flex items-center justify-center text-error">
               <span className="material-symbols-outlined">pending_actions</span>
@@ -205,7 +205,7 @@ const Drivers: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-surface-container-lowest p-6 rounded-xl flex flex-col justify-between h-40 group hover:translate-y-[-4px] transition-transform duration-300 border border-outline-variant/10 shadow-sm">
+        <div className="bg-surface-container-lowest p-6 rounded-xl flex flex-col justify-between h-40 group hover:translate-y-[-4px] transition-transform duration-300 border border-outline-variant shadow-sm">
           <div className="flex justify-between items-start">
             <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
               <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
@@ -244,7 +244,7 @@ const Drivers: React.FC = () => {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className={`block w-full ${isRtl ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3 bg-surface-container-lowest border border-outline-variant/10 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all`}
+            className={`block w-full ${isRtl ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3 bg-surface-container-lowest border border-outline-variant rounded-2xl text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all`}
             placeholder={t('drivers.search_placeholder')}
             type="text"
           />
@@ -252,7 +252,7 @@ const Drivers: React.FC = () => {
       </section>
 
       {/* Data Table Section */}
-      <section className="bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-outline-variant/10">
+      <section className="bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-outline-variant">
         <div className="overflow-x-auto">
           <table className="w-full text-start border-separate border-spacing-y-0">
             <thead>
@@ -357,7 +357,7 @@ const Drivers: React.FC = () => {
       {/* Secondary Widget Section */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Activity */}
-        <div className="lg:col-span-2 bg-surface-container-lowest p-8 rounded-2xl border border-outline-variant/10 shadow-sm">
+        <div className="lg:col-span-2 bg-surface-container-lowest p-8 rounded-2xl border border-outline-variant shadow-sm">
           <h3 className="text-lg font-bold mb-6 font-headline text-primary">{t('drivers.recent_activity')}</h3>
           {activity.length === 0 ? (
             <p className="text-sm text-on-surface-variant">{t('common.no_data')}</p>

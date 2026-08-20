@@ -32,11 +32,11 @@ export const TripsTable: React.FC<TripsTableProps> = ({
   const { t } = useTranslation();
 
   return (
-    <section className="bg-surface-container-lowest rounded-[2rem] shadow-ambient border border-outline-variant/10 overflow-hidden">
+    <section className="bg-surface-container-lowest rounded-[2rem] shadow-ambient border border-outline-variant overflow-hidden">
       <div className="overflow-x-auto p-8 pb-0">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="text-start border-b border-outline-variant/10">
+            <tr className="text-start border-b border-outline-variant">
               <th className="pb-6 font-headline font-bold text-on-surface-variant text-sm px-4 text-start">{t('trips.table_trip_id')}</th>
               <th className="pb-6 font-headline font-bold text-on-surface-variant text-sm px-4 text-start">{t('trips.table_driver')}</th>
               <th className="pb-6 font-headline font-bold text-on-surface-variant text-sm px-4 text-start">{t('trips.table_route')}</th>

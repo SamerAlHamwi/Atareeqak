@@ -79,7 +79,7 @@ export const FaqEditor: React.FC<FaqEditorProps> = ({ faq, isSaving, onSave }) =
           <div
             key={groupIndex}
             data-testid="faq-group"
-            className="bg-surface-container-lowest rounded-3xl p-6 shadow-sm border border-outline-variant/10 space-y-4"
+            className="bg-surface-container-lowest rounded-3xl p-6 shadow-sm border border-outline-variant space-y-4"
           >
             <div className="flex items-start gap-3">
               <input
@@ -88,7 +88,7 @@ export const FaqEditor: React.FC<FaqEditorProps> = ({ faq, isSaving, onSave }) =
                 value={group.title}
                 onChange={(e) => updateGroup(groupIndex, { title: e.target.value })}
                 placeholder={t('settings.faq_group_title_placeholder')}
-                className="flex-1 bg-surface-container-low border-none rounded-xl text-sm font-bold px-4 py-3 focus:ring-2 focus:ring-primary/30"
+                className="flex-1 bg-surface-container-low border border-outline-variant rounded-xl text-sm font-bold px-4 py-3 focus:ring-2 focus:ring-primary/30"
               />
               <input
                 data-testid={`faq-group-icon-${groupIndex}`}
@@ -96,7 +96,7 @@ export const FaqEditor: React.FC<FaqEditorProps> = ({ faq, isSaving, onSave }) =
                 value={group.icon}
                 onChange={(e) => updateGroup(groupIndex, { icon: e.target.value })}
                 placeholder={t('settings.faq_group_icon_placeholder')}
-                className="w-40 bg-surface-container-low border-none rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-primary/30"
+                className="w-40 bg-surface-container-low border border-outline-variant rounded-xl text-sm px-4 py-3 focus:ring-2 focus:ring-primary/30"
                 dir="ltr"
               />
               <div className="flex items-center gap-1 shrink-0">
@@ -145,7 +145,7 @@ export const FaqEditor: React.FC<FaqEditorProps> = ({ faq, isSaving, onSave }) =
                       value={entry.question}
                       onChange={(e) => updateEntry(groupIndex, entryIndex, { question: e.target.value })}
                       placeholder={t('settings.faq_question_placeholder')}
-                      className="flex-1 bg-surface-container-lowest border-none rounded-xl text-sm font-semibold px-4 py-2.5 focus:ring-2 focus:ring-primary/30"
+                      className="flex-1 bg-surface-container-lowest border border-outline-variant rounded-xl text-sm font-semibold px-4 py-2.5 focus:ring-2 focus:ring-primary/30"
                     />
                     <button
                       type="button"
@@ -161,7 +161,7 @@ export const FaqEditor: React.FC<FaqEditorProps> = ({ faq, isSaving, onSave }) =
                     onChange={(e) => updateEntry(groupIndex, entryIndex, { answer: e.target.value })}
                     placeholder={t('settings.faq_answer_placeholder')}
                     rows={2}
-                    className="w-full bg-surface-container-lowest border-none rounded-xl text-sm px-4 py-2.5 focus:ring-2 focus:ring-primary/30 resize-y"
+                    className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl text-sm px-4 py-2.5 focus:ring-2 focus:ring-primary/30 resize-y"
                   />
                 </div>
               ))}
