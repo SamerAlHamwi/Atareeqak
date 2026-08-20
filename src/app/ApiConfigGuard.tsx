@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
+import { CloudOff } from 'lucide-react';
 import PageLoader from '../features/shared/components/PageLoader';
 
 type Status = 'checking' | 'ok' | 'unconfigured';
@@ -57,7 +58,7 @@ const ApiConfigGuard: React.FC<{ children: React.ReactNode }> = ({ children }) =
   if (status === 'unconfigured') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-surface text-center p-6">
-        <span className="material-symbols-outlined text-5xl text-error">cloud_off</span>
+        <CloudOff size={48} className="text-error" />
         <h1 className="text-2xl font-extrabold font-headline text-primary">
           {t('common.api_unconfigured_title')}
         </h1>

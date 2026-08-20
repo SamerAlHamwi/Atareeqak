@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { ClipboardList, Timer, CheckCircle2, AlertOctagon, type LucideIcon } from 'lucide-react';
 import type { ComplaintCounts, EscalatedCounts } from '../api/supportApi';
 
 interface SupportStatsProps {
@@ -12,7 +13,7 @@ interface StatCard {
   key: string;
   label: string;
   value: number;
-  icon: string;
+  icon: LucideIcon;
   /** Palette tokens only — no raw hex, per the frontend conventions. */
   accent: string;
   iconWrap: string;
@@ -78,7 +79,7 @@ export const SupportStats: React.FC<SupportStatsProps> = ({
       // pending + in_review — the two states an agent can still act on.
       label: t('support.total_open'),
       value: counts.pending + counts.in_review,
-      icon: 'pending_actions',
+      icon: ClipboardList,
       accent: 'border-secondary',
       iconWrap: 'bg-secondary/10',
       iconColor: 'text-secondary',
@@ -88,7 +89,7 @@ export const SupportStats: React.FC<SupportStatsProps> = ({
       key: 'pending',
       label: t('support.pending'),
       value: counts.pending,
-      icon: 'timer',
+      icon: Timer,
       accent: 'border-tertiary-fixed-variant',
       iconWrap: 'bg-tertiary-fixed/30',
       iconColor: 'text-on-tertiary-fixed-variant',
@@ -98,7 +99,7 @@ export const SupportStats: React.FC<SupportStatsProps> = ({
       key: 'resolved',
       label: t('support.resolved'),
       value: counts.resolved,
-      icon: 'task_alt',
+      icon: CheckCircle2,
       accent: 'border-secondary',
       iconWrap: 'bg-secondary/10',
       iconColor: 'text-secondary',
@@ -111,7 +112,7 @@ export const SupportStats: React.FC<SupportStatsProps> = ({
       key: 'escalated',
       label: t('support.escalated'),
       value: escalatedCounts.escalated,
-      icon: 'priority_high',
+      icon: AlertOctagon,
       accent: 'border-error',
       iconWrap: 'bg-error-container',
       iconColor: 'text-error',
@@ -140,9 +141,7 @@ export const SupportStats: React.FC<SupportStatsProps> = ({
             </h3>
           </div>
           <div className={`${card.iconWrap} p-4 rounded-full`}>
-            <span className={`material-symbols-outlined ${card.iconColor} text-3xl`}>
-              {card.icon}
-            </span>
+            <card.icon size={28} className={card.iconColor} />
           </div>
         </div>
       ))}

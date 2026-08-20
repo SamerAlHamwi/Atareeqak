@@ -2,6 +2,27 @@ import React, { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
+import {
+  RefreshCw,
+  ArrowLeft,
+  ArrowRight,
+  Calendar,
+  BadgeCheck,
+  CreditCard,
+  Undo2,
+  Ban,
+  TrendingUp,
+  TrendingDown,
+  Award,
+  Route,
+  Banknote,
+  Star,
+  ThumbsUp,
+  Wallet,
+  Smartphone,
+  Mail,
+  MapPin,
+} from 'lucide-react';
 import ActionBanner from '../../shared/components/ActionBanner';
 import Avatar from '../../shared/components/Avatar';
 import BanStatusBanner from '../../shared/components/BanStatusBanner';
@@ -88,9 +109,7 @@ const RefreshButton: React.FC<{
     aria-label={label}
     className="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors disabled:opacity-40"
   >
-    <span className={`material-symbols-outlined text-lg ${isBusy ? 'animate-spin' : ''}`}>
-      refresh
-    </span>
+    <RefreshCw size={18} className={isBusy ? 'animate-spin' : ''} />
   </button>
 );
 
@@ -357,7 +376,7 @@ const UserDetails: React.FC = () => {
           onClick={() => navigate('/passengers')}
           className="inline-flex items-center gap-2 text-sm font-bold text-primary hover:underline"
         >
-          <span className="material-symbols-outlined text-base">arrow_back</span>
+          <ArrowLeft size={16} />
           {t('users.back_to_list')}
         </button>
         <ErrorBanner message={error ?? undefined} onRetry={() => void refetch()} />
@@ -375,7 +394,7 @@ const UserDetails: React.FC = () => {
           onClick={() => navigate('/passengers')}
           className="inline-flex items-center gap-2 text-sm font-bold text-primary hover:underline"
         >
-          <span className="material-symbols-outlined text-base">arrow_back</span>
+          <ArrowLeft size={16} />
           {t('users.back_to_list')}
         </button>
         <span className="text-xs text-on-surface-variant">
@@ -404,11 +423,11 @@ const UserDetails: React.FC = () => {
             <h2 className="text-3xl md:text-4xl font-extrabold text-primary font-headline">{passenger.name}</h2>
             <div className="flex flex-wrap items-center gap-4 text-on-surface-variant font-medium">
               <span className="flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-sm">calendar_today</span>
+                <Calendar size={16} />
                 {t('users.member_since', { date: passenger.joinedLabel })}
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-sm">verified</span>
+                <BadgeCheck size={16} />
                 {passenger.isVerified ? t('users.status_verified') : t('users.status_pending')}
               </span>
             </div>
@@ -500,7 +519,7 @@ const UserDetails: React.FC = () => {
               onClick={() => setShowChargeForm(true)}
               className="bg-primary text-on-primary px-6 py-2.5 rounded-lg font-bold hover:opacity-90 transition-all flex items-center gap-2"
             >
-              <span className="material-symbols-outlined text-lg">add_card</span>
+              <CreditCard size={18} />
               {t('users.charge_wallet')}
             </button>
           )}
@@ -519,7 +538,7 @@ const UserDetails: React.FC = () => {
               isBanned ? 'bg-secondary-container text-on-secondary-container' : 'bg-error-container text-on-error-container'
             }`}
           >
-            <span className="material-symbols-outlined text-lg">{isBanned ? 'undo' : 'block'}</span>
+            {isBanned ? <Undo2 size={18} /> : <Ban size={18} />}
             {isBanned ? t('users.unban_action') : t('users.ban_action')}
           </button>
 
@@ -618,7 +637,7 @@ const UserDetails: React.FC = () => {
                 }}
                 className="bg-secondary-container text-on-secondary-container px-6 py-2.5 rounded-lg font-bold hover:opacity-90 transition-all flex items-center gap-2"
               >
-                <span className="material-symbols-outlined text-lg">trending_up</span>
+                <TrendingUp size={18} />
                 {t('users.increase_score')}
               </button>
               <button
@@ -632,7 +651,7 @@ const UserDetails: React.FC = () => {
                 }}
                 className="bg-error-container text-on-error-container px-6 py-2.5 rounded-lg font-bold hover:opacity-90 transition-all flex items-center gap-2"
               >
-                <span className="material-symbols-outlined text-lg">trending_down</span>
+                <TrendingDown size={18} />
                 {t('users.decrease_score')}
               </button>
             </>
@@ -665,7 +684,7 @@ const UserDetails: React.FC = () => {
                   {scoreTierLabel(stats?.scoreTier ?? 'Silver', t)}
                 </span>
               </div>
-              <span className="material-symbols-outlined text-secondary text-3xl opacity-40">military_tech</span>
+              <Award size={28} className="text-secondary opacity-40" />
             </div>
           </div>
           <div className="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant">
@@ -674,7 +693,7 @@ const UserDetails: React.FC = () => {
               <h3 className="text-3xl font-extrabold text-primary" data-testid="stat-total-rides">
                 {(stats?.totalRides ?? 0).toLocaleString(locale)}
               </h3>
-              <span className="material-symbols-outlined text-secondary text-3xl opacity-40">route</span>
+              <Route size={28} className="text-secondary opacity-40" />
             </div>
           </div>
           <div className="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant">
@@ -683,7 +702,7 @@ const UserDetails: React.FC = () => {
               <h3 className="text-3xl font-extrabold text-primary" data-testid="stat-total-spending">
                 {formatMoney(stats?.totalSpending ?? 0)}
               </h3>
-              <span className="material-symbols-outlined text-secondary text-3xl opacity-40">payments</span>
+              <Banknote size={28} className="text-secondary opacity-40" />
             </div>
           </div>
           <div className="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant">
@@ -693,9 +712,9 @@ const UserDetails: React.FC = () => {
                 <h3 className="text-3xl font-extrabold text-primary">
                   {(stats?.avgRating ?? 0).toLocaleString(locale)}
                 </h3>
-                <span className="material-symbols-outlined text-amber-500" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                <Star size={20} fill="currentColor" className="text-amber-500" />
               </div>
-              <span className="material-symbols-outlined text-secondary text-3xl opacity-40">thumb_up</span>
+              <ThumbsUp size={28} className="text-secondary opacity-40" />
             </div>
           </div>
           <div className="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant">
@@ -704,7 +723,7 @@ const UserDetails: React.FC = () => {
               <h3 className="text-3xl font-extrabold text-primary" data-testid="stat-wallet-balance">
                 {formatMoney(stats?.walletBalance ?? 0)}
               </h3>
-              <span className="material-symbols-outlined text-secondary text-3xl opacity-40">account_balance_wallet</span>
+              <Wallet size={28} className="text-secondary opacity-40" />
             </div>
           </div>
         </div>
@@ -830,9 +849,11 @@ const UserDetails: React.FC = () => {
                           <td className="px-8 py-6">
                             <div className="flex items-center gap-2 font-bold">
                               <span>{trip.from}</span>
-                              <span className="material-symbols-outlined text-xs text-secondary">
-                                {isRtl ? 'arrow_back' : 'arrow_forward'}
-                              </span>
+                              {isRtl ? (
+                                <ArrowLeft size={14} className="text-secondary" />
+                              ) : (
+                                <ArrowRight size={14} className="text-secondary" />
+                              )}
                               <span>{trip.to}</span>
                             </div>
                           </td>
@@ -990,21 +1011,21 @@ const UserDetails: React.FC = () => {
             <h4 className="text-xl font-bold text-primary">{t('users.account_info')}</h4>
             <div className="space-y-6">
               <div className="flex items-start gap-4">
-                <div className="bg-surface-container-low p-3 rounded-2xl"><span className="material-symbols-outlined text-secondary">phone_iphone</span></div>
+                <div className="bg-surface-container-low p-3 rounded-2xl"><Smartphone size={20} className="text-secondary" /></div>
                 <div>
                   <p className="text-xs text-on-surface-variant font-bold mb-1">{t('users.phone')}</p>
                   <p className="text-sm font-bold text-on-surface" dir="ltr">{passenger.phone || '--'}</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
-                <div className="bg-surface-container-low p-3 rounded-2xl"><span className="material-symbols-outlined text-secondary">mail_outline</span></div>
+                <div className="bg-surface-container-low p-3 rounded-2xl"><Mail size={20} className="text-secondary" /></div>
                 <div>
                   <p className="text-xs text-on-surface-variant font-bold mb-1">{t('auth.email')}</p>
                   <p className="text-sm font-bold text-on-surface">{passenger.email || '--'}</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
-                <div className="bg-surface-container-low p-3 rounded-2xl"><span className="material-symbols-outlined text-secondary">location_on</span></div>
+                <div className="bg-surface-container-low p-3 rounded-2xl"><MapPin size={20} className="text-secondary" /></div>
                 <div>
                   <p className="text-xs text-on-surface-variant font-bold mb-1">{t('users.city')}</p>
                   <p className="text-sm font-bold text-on-surface">{passenger.address || '--'}</p>

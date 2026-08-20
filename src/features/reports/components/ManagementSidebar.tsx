@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Landmark, CreditCard } from 'lucide-react';
 import type { Wallet } from '../../wallet/api/walletApi';
 import {
   ADMIN_CHARGE_MAX_AMOUNT,
@@ -55,7 +56,7 @@ export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
       {/* ── Wallet directory ──────────────────────────────────────────────── */}
       <div className="bg-surface-container-lowest p-8 rounded-xl shadow-sm space-y-6 border border-outline-variant">
         <div className="flex items-center gap-3">
-          <span className="material-symbols-outlined text-primary">account_balance</span>
+          <Landmark size={20} className="text-primary" />
           <h3 className="text-lg font-bold text-primary">{t('reports.wallet_mgmt')}</h3>
         </div>
         <div className="space-y-4">
@@ -130,7 +131,7 @@ export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
       {/* ── Manual charge (system_admin only) ─────────────────────────────── */}
       <div className="bg-surface-container-low p-8 rounded-xl space-y-6">
         <div className="flex items-center gap-3">
-          <span className="material-symbols-outlined text-secondary">add_card</span>
+          <CreditCard size={20} className="text-secondary" />
           <h3 className="text-lg font-bold text-primary">{t('reports.manual_credit')}</h3>
         </div>
         <p className="text-sm text-on-surface-variant leading-relaxed">

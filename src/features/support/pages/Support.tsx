@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Inbox, AlertOctagon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../../app/context/useAuth';
 import { hasPermission } from '../../../app/permissions';
 import { extractApiError } from '../../../services/apiError';
@@ -239,9 +240,7 @@ const Support: React.FC = () => {
                     : 'text-on-surface-variant hover:text-on-surface'
                 }`}
               >
-                <span className="material-symbols-outlined text-lg">
-                  {tab === 'inbox' ? 'inbox' : 'priority_high'}
-                </span>
+                {tab === 'inbox' ? <Inbox size={18} /> : <AlertOctagon size={18} />}
                 {t(`support.tab_${tab}`)}
                 {tab === 'escalated' && escalatedCounts && escalatedCounts.escalated > 0 && (
                   <span className="bg-error text-on-error text-[10px] font-bold px-2 py-0.5 rounded-full">
@@ -392,15 +391,18 @@ const Support: React.FC = () => {
                       <td
                         className={`py-4 ${isRtl ? 'pl-4 rounded-l-lg' : 'pr-4 rounded-r-lg'} text-start`}
                       >
-                        <span
-                          className={`material-symbols-outlined ${
-                            selectedComplaint?.rawId === cmp.rawId
-                              ? 'text-secondary'
-                              : 'text-outline-variant'
-                          } group-hover:text-secondary transition-all`}
-                        >
-                          {isRtl ? 'chevron_left' : 'chevron_right'}
-                        </span>
+                        {(() => {
+                          const RowChevron = isRtl ? ChevronLeft : ChevronRight;
+                          return (
+                            <RowChevron
+                              className={`${
+                                selectedComplaint?.rawId === cmp.rawId
+                                  ? 'text-secondary'
+                                  : 'text-outline-variant'
+                              } group-hover:text-secondary transition-all`}
+                            />
+                          );
+                        })()}
                       </td>
                     </tr>
                   ))

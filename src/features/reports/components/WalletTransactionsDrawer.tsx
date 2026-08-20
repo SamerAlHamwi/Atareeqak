@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { X } from 'lucide-react';
 import TablePagination from '../../shared/components/TablePagination';
 import TableSkeleton from '../../shared/components/TableSkeleton';
 import ErrorBanner from '../../shared/components/ErrorBanner';
@@ -78,7 +79,7 @@ export const WalletTransactionsDrawer: React.FC<WalletTransactionsDrawerProps> =
             className="p-2 hover:bg-surface-container-high rounded-full transition-colors"
             aria-label={t('common.cancel')}
           >
-            <span className="material-symbols-outlined">close</span>
+            <X size={24} />
           </button>
         </header>
 

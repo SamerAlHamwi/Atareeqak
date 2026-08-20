@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Users, Zap, UserX, UserCheck, Pencil, KeyRound, Trash2, UserPlus } from 'lucide-react';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
 import ConfirmActionModal from '../../shared/components/ConfirmActionModal';
@@ -249,7 +250,7 @@ const Staff: React.FC = () => {
                 </h3>
               </div>
               <div className="w-12 h-12 bg-primary/5 rounded-full flex items-center justify-center text-primary">
-                <span className="material-symbols-outlined text-3xl">groups</span>
+                <Users size={28} />
               </div>
             </div>
             <div className="bg-surface-container-lowest p-6 rounded-2xl border-b-2 border-secondary/10 flex items-center justify-between shadow-sm">
@@ -265,12 +266,7 @@ const Staff: React.FC = () => {
                 </h3>
               </div>
               <div className="w-12 h-12 bg-secondary/5 rounded-full flex items-center justify-center text-secondary">
-                <span
-                  className="material-symbols-outlined text-3xl"
-                  style={{ fontVariationSettings: "'FILL' 1" }}
-                >
-                  bolt
-                </span>
+                <Zap size={28} fill="currentColor" />
               </div>
             </div>
             <div className="bg-surface-container-lowest p-6 rounded-2xl border-b-2 border-tertiary-container/10 flex items-center justify-between shadow-sm">
@@ -286,7 +282,7 @@ const Staff: React.FC = () => {
                 </h3>
               </div>
               <div className="w-12 h-12 bg-tertiary-container/5 rounded-full flex items-center justify-center text-tertiary-container">
-                <span className="material-symbols-outlined text-3xl">person_off</span>
+                <UserX size={28} />
               </div>
             </div>
           </div>
@@ -312,13 +308,8 @@ const Staff: React.FC = () => {
                         `created_by` deliberately has NO column: it is NULL for
                         every seeded employee, so the column would read
                         "Unknown" on every row. Same call Phase 4 made for
-                        `banned_by` (BUG-5). `last_login_at` IS shown — only one
-                        of three rows has a value, but "never" is a real,
-                        useful fact about an account, not a missing field.
+                        `banned_by` (BUG-5).
                       */}
-                      <th className="px-6 py-4 font-bold text-start">
-                        {t('staff.table_last_login')}
-                      </th>
                       <th className="px-6 py-4 font-bold text-center">
                         {t('staff.table_actions')}
                       </th>
@@ -326,11 +317,11 @@ const Staff: React.FC = () => {
                   </thead>
                   <tbody className="divide-y divide-surface-container/50">
                     {isLoading ? (
-                      <TableSkeleton rows={3} cols={5} firstColAvatar />
+                      <TableSkeleton rows={3} cols={4} firstColAvatar />
                     ) : staff.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={5}
+                          colSpan={4}
                           className="px-6 py-10 text-center text-on-surface-variant font-medium"
                         >
                           {t('staff.empty')}
@@ -382,9 +373,6 @@ const Staff: React.FC = () => {
                               {emp.isActive ? t('staff.status.active') : t('staff.status.inactive')}
                             </span>
                           </td>
-                          <td className="px-6 py-5 text-xs text-on-surface-variant font-manrope text-start">
-                            {emp.lastLogin ?? t('staff.never_logged_in')}
-                          </td>
                           <td className="px-6 py-5 text-center">
                             <div
                               className={`flex justify-center gap-2 transition-opacity ${
@@ -404,7 +392,7 @@ const Staff: React.FC = () => {
                                 className="p-1.5 rounded-lg text-primary hover:bg-primary/10 disabled:opacity-40"
                                 title={t('staff.edit_title')}
                               >
-                                <span className="material-symbols-outlined text-sm">edit</span>
+                                <Pencil size={16} />
                               </button>
                               {/*
                                 system_admin / sycash passwords are restricted —
@@ -424,7 +412,7 @@ const Staff: React.FC = () => {
                                   className="p-1.5 rounded-lg text-secondary hover:bg-secondary/10 disabled:opacity-40"
                                   title={t('staff.reset_password_title')}
                                 >
-                                  <span className="material-symbols-outlined text-sm">lock_reset</span>
+                                  <KeyRound size={16} />
                                 </button>
                               )}
                               <button
@@ -441,9 +429,7 @@ const Staff: React.FC = () => {
                                 }`}
                                 title={emp.isActive ? t('staff.deactivate') : t('staff.activate')}
                               >
-                                <span className="material-symbols-outlined text-sm">
-                                  {emp.isActive ? 'person_off' : 'how_to_reg'}
-                                </span>
+                                {emp.isActive ? <UserX size={16} /> : <UserCheck size={16} />}
                               </button>
                               <button
                                 data-testid={`staff-delete-${emp.id}`}
@@ -455,7 +441,7 @@ const Staff: React.FC = () => {
                                 className="p-1.5 rounded-lg text-error hover:bg-error-container/20 disabled:opacity-40"
                                 title={t('staff.delete')}
                               >
-                                <span className="material-symbols-outlined text-sm">delete</span>
+                                <Trash2 size={16} />
                               </button>
                             </div>
                           </td>
@@ -472,7 +458,7 @@ const Staff: React.FC = () => {
               <div className="bg-surface-container-lowest rounded-3xl p-8 shadow-sm space-y-6 border-t-4 border-secondary border-x border-b border-outline-variant">
                 <div className="flex items-center justify-between">
                   <h4 className="font-bold text-lg text-primary">{t('staff.add_new')}</h4>
-                  <span className="material-symbols-outlined text-secondary">person_add</span>
+                  <UserPlus size={20} className="text-secondary" />
                 </div>
 
                 <div className="space-y-4">

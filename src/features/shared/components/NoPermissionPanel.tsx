@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Lock } from 'lucide-react';
 import { useAuth } from '../../../app/context/useAuth';
 import { defaultRouteForRole } from '../../../app/roles';
 
@@ -23,7 +24,7 @@ const NoPermissionPanel: React.FC = () => {
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center text-center gap-4">
       <div className="w-16 h-16 rounded-full bg-error-container flex items-center justify-center text-error">
-        <span className="material-symbols-outlined text-3xl">lock</span>
+        <Lock size={28} />
       </div>
       <h2 className="text-2xl font-extrabold font-headline text-primary">
         {t('common.no_permission')}

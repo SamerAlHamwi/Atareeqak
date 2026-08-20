@@ -1,5 +1,15 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import {
+  Wallet,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Undo2,
+  PiggyBank,
+  Landmark,
+  Lock,
+  type LucideIcon,
+} from 'lucide-react';
 import type { ReportData } from '../api/reportsApi';
 
 interface OverviewCardsProps {
@@ -10,7 +20,7 @@ interface OverviewCardsProps {
 }
 
 interface MoneyCardProps {
-  icon: string;
+  icon: LucideIcon;
   label: string;
   /** Pre-formatted server string, e.g. "135,600.00 SYP". Never re-formatted. */
   value: string | undefined;
@@ -27,7 +37,7 @@ const toneClasses = {
 } as const;
 
 const MoneyCard: React.FC<MoneyCardProps> = ({
-  icon,
+  icon: Icon,
   label,
   value,
   isLoading,
@@ -37,8 +47,8 @@ const MoneyCard: React.FC<MoneyCardProps> = ({
 }) => (
   <div className="bg-surface-container-lowest p-6 rounded-xl border-b-2 border-outline-variant/15 flex flex-col justify-between h-40 shadow-sm">
     <div className="flex justify-between items-start">
-      <span className={`material-symbols-outlined p-2 rounded-lg ${toneClasses[tone]}`}>
-        {icon}
+      <span className={`p-2 rounded-lg inline-flex ${toneClasses[tone]}`}>
+        <Icon size={20} />
       </span>
       {badge}
     </div>
@@ -111,7 +121,7 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({ report, isLoading,
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MoneyCard
-            icon="account_balance_wallet"
+            icon={Wallet}
             label={t('reports.platform_fees')}
             value={financial?.primary_admin.total_platform_fees}
             isLoading={isLoading}
@@ -119,7 +129,7 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({ report, isLoading,
             testId="kpi-platform-fees"
           />
           <MoneyCard
-            icon="input"
+            icon={ArrowDownToLine}
             label={t('reports.escrow_in')}
             value={financial?.sycash.total_escrow_in}
             isLoading={isLoading}
@@ -127,7 +137,7 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({ report, isLoading,
             testId="kpi-escrow-in"
           />
           <MoneyCard
-            icon="output"
+            icon={ArrowUpFromLine}
             label={t('reports.escrow_out')}
             value={financial?.sycash.total_escrow_out}
             isLoading={isLoading}
@@ -135,7 +145,7 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({ report, isLoading,
             testId="kpi-escrow-out"
           />
           <MoneyCard
-            icon="undo"
+            icon={Undo2}
             label={t('reports.refunds_paid')}
             value={financial?.sycash.total_refunds_paid}
             isLoading={isLoading}
@@ -179,7 +189,7 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({ report, isLoading,
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <MoneyCard
-            icon="savings"
+            icon={PiggyBank}
             label={t('reports.primary_admin_balance')}
             value={financial?.primary_admin.current_balance}
             isLoading={isLoading}
@@ -187,7 +197,7 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({ report, isLoading,
             testId="kpi-primary-balance"
           />
           <MoneyCard
-            icon="account_balance"
+            icon={Landmark}
             label={t('reports.sycash_balance')}
             value={financial?.sycash.current_balance}
             isLoading={isLoading}
@@ -195,7 +205,7 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({ report, isLoading,
             testId="kpi-sycash-balance"
           />
           <MoneyCard
-            icon="lock_clock"
+            icon={Lock}
             label={t('reports.locked_funds')}
             value={financial?.active_rides_locked}
             isLoading={isLoading}

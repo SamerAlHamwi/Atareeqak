@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface TablePaginationProps {
   page: number;
@@ -31,7 +32,7 @@ const TablePagination: React.FC<TablePaginationProps> = ({
           disabled={page <= 1 || isLoading}
           className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high text-on-surface-variant disabled:opacity-40"
         >
-          <span className="material-symbols-outlined text-sm">{isRtl ? 'chevron_right' : 'chevron_left'}</span>
+          {isRtl ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>
         <span className="text-xs font-bold text-on-surface px-2">
           {page} / {Math.max(lastPage, 1)}
@@ -42,7 +43,7 @@ const TablePagination: React.FC<TablePaginationProps> = ({
           disabled={page >= lastPage || isLoading}
           className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high text-on-surface-variant disabled:opacity-40"
         >
-          <span className="material-symbols-outlined text-sm">{isRtl ? 'chevron_left' : 'chevron_right'}</span>
+          {isRtl ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
         </button>
       </div>
     </div>

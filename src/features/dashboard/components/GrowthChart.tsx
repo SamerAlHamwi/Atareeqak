@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { BarChart3 } from 'lucide-react';
 import { GROWTH_PERIODS } from '../hooks/useDashboard';
 import type { DashboardChartPoint, GrowthMonths } from '../hooks/useDashboard';
 
@@ -78,7 +79,7 @@ export const GrowthChart: React.FC<GrowthChartProps> = ({
         </div>
       ) : !hasData ? (
         <div className="h-80 w-full flex flex-col items-center justify-center gap-3 text-on-surface-variant">
-          <span className="material-symbols-outlined text-5xl opacity-40">bar_chart</span>
+          <BarChart3 size={48} className="opacity-40" />
           <p className="text-sm font-bold">{t('dashboard.growth_empty')}</p>
         </div>
       ) : (

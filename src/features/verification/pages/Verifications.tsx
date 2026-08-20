@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { RefreshCw, ShieldCheck, Car, Users, CheckCircle2 } from 'lucide-react';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
 import ErrorBanner from '../../shared/components/ErrorBanner';
@@ -147,7 +148,7 @@ const Verifications: React.FC = () => {
             disabled={isLoading}
             className="flex items-center gap-2 bg-surface-container-high text-on-surface text-xs font-bold px-4 py-2 rounded-full hover:bg-surface-container-highest transition-all disabled:opacity-50"
           >
-            <span className="material-symbols-outlined text-sm">refresh</span>
+            <RefreshCw size={16} />
             {t('verifications.refresh')}
           </button>
           {updatedAt && (
@@ -178,7 +179,7 @@ const Verifications: React.FC = () => {
             </h3>
           </div>
           <div className="bg-secondary/10 p-4 rounded-full">
-            <span className="material-symbols-outlined text-secondary text-3xl">verified_user</span>
+            <ShieldCheck size={28} className="text-secondary" />
           </div>
         </div>
         <div className="bg-surface-container-lowest p-6 rounded-xl shadow-sm border-b-2 border-primary flex items-center justify-between">
@@ -194,7 +195,7 @@ const Verifications: React.FC = () => {
             </h3>
           </div>
           <div className="bg-primary/10 p-4 rounded-full">
-            <span className="material-symbols-outlined text-primary text-3xl">directions_car</span>
+            <Car size={28} className="text-primary" />
           </div>
         </div>
         <div className="bg-surface-container-lowest p-6 rounded-xl shadow-sm border-b-2 border-tertiary-fixed-variant flex items-center justify-between">
@@ -210,9 +211,7 @@ const Verifications: React.FC = () => {
             </h3>
           </div>
           <div className="bg-tertiary-fixed/30 p-4 rounded-full">
-            <span className="material-symbols-outlined text-on-tertiary-fixed-variant text-3xl">
-              group
-            </span>
+            <Users size={28} className="text-on-tertiary-fixed-variant" />
           </div>
         </div>
       </section>
@@ -251,7 +250,7 @@ const Verifications: React.FC = () => {
               data-testid="verifications-empty"
               className="py-16 text-center text-on-surface-variant flex flex-col items-center gap-3 px-6"
             >
-              <span className="material-symbols-outlined text-5xl text-secondary/40">task_alt</span>
+              <CheckCircle2 size={48} className="text-secondary/40" />
               {typeFilter === 'all'
                 ? t('verifications.empty')
                 : t('verifications.empty_filtered', {

@@ -1,17 +1,28 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import {
+  Paperclip,
+  ImageOff,
+  Image as ImageIcon,
+  FileText,
+  Film,
+  AudioLines,
+  File as FileIcon,
+  Download,
+  type LucideIcon,
+} from 'lucide-react';
 import type { ComplaintAttachmentResponse } from '../api/supportApi';
 
 interface ComplaintAttachmentsProps {
   attachments: ComplaintAttachmentResponse[];
 }
 
-const formatIcon = (mimeType: string): string => {
-  if (mimeType.startsWith('image/')) return 'image';
-  if (mimeType === 'application/pdf') return 'picture_as_pdf';
-  if (mimeType.startsWith('video/')) return 'movie';
-  if (mimeType.startsWith('audio/')) return 'graphic_eq';
-  return 'draft';
+const formatIcon = (mimeType: string): LucideIcon => {
+  if (mimeType.startsWith('image/')) return ImageIcon;
+  if (mimeType === 'application/pdf') return FileText;
+  if (mimeType.startsWith('video/')) return Film;
+  if (mimeType.startsWith('audio/')) return AudioLines;
+  return FileIcon;
 };
 
 /**
@@ -47,7 +58,7 @@ export const ComplaintAttachments: React.FC<ComplaintAttachmentsProps> = ({ atta
     return (
       <div>
         <h5 className="text-xs font-bold text-primary mb-2 flex items-center gap-2">
-          <span className="material-symbols-outlined text-sm">attach_file</span>
+          <Paperclip size={16} />
           {t('support.attachments_title', { count: 0 })}
         </h5>
         <p
@@ -63,7 +74,7 @@ export const ComplaintAttachments: React.FC<ComplaintAttachmentsProps> = ({ atta
   return (
     <div>
       <h5 className="text-xs font-bold text-primary mb-2 flex items-center gap-2">
-        <span className="material-symbols-outlined text-sm">attach_file</span>
+        <Paperclip size={16} />
         {t('support.attachments_title', { count: attachments.length })}
       </h5>
       <ul className="space-y-3" data-testid="complaint-attachments">
@@ -93,9 +104,7 @@ export const ComplaintAttachments: React.FC<ComplaintAttachmentsProps> = ({ atta
                   data-testid="attachment-unavailable"
                   className="flex flex-col items-center justify-center gap-1 py-6 px-3 bg-surface-container-high text-center"
                 >
-                  <span className="material-symbols-outlined text-on-surface-variant">
-                    broken_image
-                  </span>
+                  <ImageOff className="text-on-surface-variant" />
                   <p className="text-[11px] font-bold text-on-surface-variant">
                     {t('support.attachment_unavailable')}
                   </p>
@@ -104,9 +113,10 @@ export const ComplaintAttachments: React.FC<ComplaintAttachmentsProps> = ({ atta
 
               <div className="flex items-center justify-between gap-3 p-3">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="material-symbols-outlined text-base text-on-surface-variant shrink-0">
-                    {formatIcon(attachment.mime_type)}
-                  </span>
+                  {(() => {
+                    const AttachmentIcon = formatIcon(attachment.mime_type);
+                    return <AttachmentIcon size={18} className="text-on-surface-variant shrink-0" />;
+                  })()}
                   <div className="min-w-0 text-start">
                     <p className="text-[11px] font-bold text-on-surface truncate">
                       {attachment.original_name}
@@ -123,7 +133,7 @@ export const ComplaintAttachments: React.FC<ComplaintAttachmentsProps> = ({ atta
                   data-testid="attachment-link"
                   className="flex items-center gap-1 text-[11px] font-bold text-secondary hover:underline shrink-0"
                 >
-                  <span className="material-symbols-outlined text-sm">download</span>
+                  <Download size={16} />
                   {t('support.attachment_open')}
                 </a>
               </div>

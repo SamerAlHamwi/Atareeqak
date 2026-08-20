@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ImageOff, Image as ImageIcon } from 'lucide-react';
 import Avatar from '../../shared/components/Avatar';
 import type { ChatMessage } from '../hooks/useChat';
 
@@ -111,9 +112,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               data-testid="chat-image-unavailable"
               className="flex flex-col items-center justify-center gap-1 py-6 px-6 bg-surface-container-highest text-center"
             >
-              <span className="material-symbols-outlined text-on-surface-variant">
-                broken_image
-              </span>
+              <ImageOff className="text-on-surface-variant" />
               <p className="text-[11px] font-bold text-on-surface-variant">
                 {t('chat.image_unavailable')}
               </p>
@@ -135,7 +134,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 fromAgent ? 'text-on-primary-fixed-variant/80' : 'text-on-surface-variant'
               }`}
             >
-              <span className="material-symbols-outlined text-sm shrink-0">image</span>
+              <ImageIcon size={16} className="shrink-0" />
               <span className="truncate">{message.image?.original_name}</span>
               {size && <span className="shrink-0">· {size}</span>}
             </div>

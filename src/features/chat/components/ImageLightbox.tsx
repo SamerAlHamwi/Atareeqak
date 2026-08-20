@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { X, ExternalLink } from 'lucide-react';
 import type { ChatMessage } from '../hooks/useChat';
 
 interface ImageLightboxProps {
@@ -66,7 +67,7 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({ message, onClose }
             aria-label={t('common.dismiss')}
             className="w-9 h-9 shrink-0 flex items-center justify-center rounded-full hover:bg-surface-container-high text-on-surface-variant"
           >
-            <span className="material-symbols-outlined">close</span>
+            <X size={24} />
           </button>
         </div>
 
@@ -86,7 +87,7 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({ message, onClose }
             rel="noreferrer"
             className="flex items-center gap-1 text-xs font-bold text-secondary hover:underline shrink-0"
           >
-            <span className="material-symbols-outlined text-sm">open_in_new</span>
+            <ExternalLink size={16} />
             {t('chat.image_open')}
           </a>
         </div>

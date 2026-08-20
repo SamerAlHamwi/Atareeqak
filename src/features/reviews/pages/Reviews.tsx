@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
+import { UserSearch, X, Search, Trash2 } from 'lucide-react';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
 import ConfirmActionModal from '../../shared/components/ConfirmActionModal';
@@ -119,14 +120,14 @@ const Reviews: React.FC = () => {
           data-testid="reviews-user-filter"
           className="flex items-center gap-3 bg-secondary-container text-on-secondary-container px-5 py-3 rounded-2xl"
         >
-          <span className="material-symbols-outlined text-lg">person_search</span>
+          <UserSearch size={18} />
           <span className="text-sm font-medium">{t('reviews.filtered_by_user', { id: userId })}</span>
           <button
             onClick={clearUserFilter}
             data-testid="reviews-clear-user-filter"
             className="ms-auto flex items-center gap-1 text-xs font-bold hover:underline"
           >
-            <span className="material-symbols-outlined text-sm">close</span>
+            <X size={16} />
             {t('reviews.clear_user_filter')}
           </button>
         </div>
@@ -141,7 +142,7 @@ const Reviews: React.FC = () => {
                 isRtl ? 'right-0 pr-4' : 'left-0 pl-4'
               } flex items-center pointer-events-none text-on-surface-variant`}
             >
-              <span className="material-symbols-outlined text-lg">search</span>
+              <Search size={18} />
             </span>
             <input
               value={search}
@@ -238,7 +239,7 @@ const Reviews: React.FC = () => {
                         data-testid="review-delete"
                         className="flex items-center gap-1 text-error text-xs font-bold hover:bg-error-container/50 px-3 py-1.5 rounded-lg transition-colors"
                       >
-                        <span className="material-symbols-outlined text-sm">delete</span>
+                        <Trash2 size={16} />
                         {t('reviews.delete')}
                       </button>
                     </td>

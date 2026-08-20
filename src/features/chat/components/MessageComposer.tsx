@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Send, MoreHorizontal } from 'lucide-react';
 import { extractApiError } from '../../../services/apiError';
 import { MESSAGE_MAX_LENGTH } from '../api/chatApi';
 
@@ -84,9 +85,11 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({ onSend, disabl
           aria-label={t('chat.send')}
           className="w-12 h-12 shrink-0 flex items-center justify-center rounded-full bg-primary text-white disabled:opacity-40 hover:bg-primary/90 transition-colors"
         >
-          <span className={`material-symbols-outlined ${isSending ? 'animate-pulse' : ''}`}>
-            {isSending ? 'more_horiz' : 'send'}
-          </span>
+          {isSending ? (
+            <MoreHorizontal className="animate-pulse" />
+          ) : (
+            <Send />
+          )}
         </button>
       </div>
       {value.length > MESSAGE_MAX_LENGTH - 200 && (

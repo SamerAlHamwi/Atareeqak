@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { X } from 'lucide-react';
 import type { VerificationDocument } from '../api/verificationsApi';
 
 interface ApproveVerificationModalProps {
@@ -74,7 +75,7 @@ const ApproveForm: React.FC<FormProps> = ({
               aria-label={t('common.cancel')}
               className="p-2 hover:bg-surface-container-high rounded-full transition-colors disabled:opacity-40"
             >
-              <span className="material-symbols-outlined">close</span>
+              <X size={24} />
             </button>
           </div>
 

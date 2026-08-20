@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ArrowUp, ArrowDown, Trash2, X, Plus, PlusCircle } from 'lucide-react';
 import type { FaqDocument, FaqEntry, FaqGroup } from '../hooks/useSettings';
 
 interface FaqEditorProps {
@@ -107,7 +108,7 @@ export const FaqEditor: React.FC<FaqEditorProps> = ({ faq, isSaving, onSave }) =
                   className="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high disabled:opacity-30"
                   title={t('settings.move_up')}
                 >
-                  <span className="material-symbols-outlined text-sm">arrow_upward</span>
+                  <ArrowUp size={16} />
                 </button>
                 <button
                   type="button"
@@ -116,7 +117,7 @@ export const FaqEditor: React.FC<FaqEditorProps> = ({ faq, isSaving, onSave }) =
                   className="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high disabled:opacity-30"
                   title={t('settings.move_down')}
                 >
-                  <span className="material-symbols-outlined text-sm">arrow_downward</span>
+                  <ArrowDown size={16} />
                 </button>
                 <button
                   type="button"
@@ -125,7 +126,7 @@ export const FaqEditor: React.FC<FaqEditorProps> = ({ faq, isSaving, onSave }) =
                   className="p-2 rounded-lg text-error hover:bg-error-container/20"
                   title={t('settings.remove_group')}
                 >
-                  <span className="material-symbols-outlined text-sm">delete</span>
+                  <Trash2 size={16} />
                 </button>
               </div>
             </div>
@@ -153,7 +154,7 @@ export const FaqEditor: React.FC<FaqEditorProps> = ({ faq, isSaving, onSave }) =
                       className="p-1.5 rounded-lg text-error hover:bg-error-container/20 shrink-0"
                       title={t('settings.remove_entry')}
                     >
-                      <span className="material-symbols-outlined text-sm">close</span>
+                      <X size={16} />
                     </button>
                   </div>
                   <textarea
@@ -170,7 +171,7 @@ export const FaqEditor: React.FC<FaqEditorProps> = ({ faq, isSaving, onSave }) =
                 onClick={() => addEntry(groupIndex)}
                 className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
               >
-                <span className="material-symbols-outlined text-sm">add</span>
+                <Plus size={16} />
                 {t('settings.add_entry')}
               </button>
             </div>
@@ -185,7 +186,7 @@ export const FaqEditor: React.FC<FaqEditorProps> = ({ faq, isSaving, onSave }) =
           onClick={addGroup}
           className="flex items-center gap-2 text-sm font-bold text-primary hover:underline"
         >
-          <span className="material-symbols-outlined text-base">add_circle</span>
+          <PlusCircle size={16} />
           {t('settings.add_group')}
         </button>
 

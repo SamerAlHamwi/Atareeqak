@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Loader2, MapPinOff } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { LiveTrip } from '../hooks/useLiveTrips';
@@ -180,9 +181,11 @@ export const LiveTripsMap: React.FC<LiveTripsMapProps> = ({
       {(isLoading || trips.length === 0) && (
         <div className="absolute inset-0 z-[500] bg-surface/60 backdrop-blur-[2px] flex items-center justify-center pointer-events-none">
           <div className="bg-surface-container-lowest px-6 py-3 rounded-2xl shadow-md text-sm font-bold text-on-surface-variant flex items-center gap-2">
-            <span className="material-symbols-outlined text-secondary">
-              {isLoading ? 'progress_activity' : 'explore_off'}
-            </span>
+            {isLoading ? (
+              <Loader2 size={20} className="text-secondary animate-spin" />
+            ) : (
+              <MapPinOff size={20} className="text-secondary" />
+            )}
             {isLoading ? t('common.loading') : t('trips.no_live_trips')}
           </div>
         </div>

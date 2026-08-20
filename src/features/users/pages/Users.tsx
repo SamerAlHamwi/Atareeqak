@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Search, Users as UsersIcon, Car, User, Eye, BadgeCheck, Undo2, Ban, X } from 'lucide-react';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
 import Avatar from '../../shared/components/Avatar';
@@ -171,7 +172,7 @@ const Users: React.FC = () => {
         </div>
         <div className="relative w-full md:max-w-xs">
           <span className={`absolute inset-y-0 ${isRtl ? 'right-0 pr-4' : 'left-0 pl-4'} flex items-center pointer-events-none text-on-surface-variant`}>
-            <span className="material-symbols-outlined text-lg">search</span>
+            <Search size={18} />
           </span>
           <input
             value={search}
@@ -243,7 +244,7 @@ const Users: React.FC = () => {
               {stats ? stats.total_registered.toLocaleString(i18n.language) : '—'}
             </p>
           </div>
-          <span className="material-symbols-outlined text-3xl opacity-30">group</span>
+          <UsersIcon size={28} className="opacity-30" />
         </div>
       </section>
 
@@ -310,9 +311,11 @@ const Users: React.FC = () => {
                     </td>
                     <td className="px-6 py-4">
                       <span className="flex items-center gap-2 text-sm font-medium">
-                        <span className={`material-symbols-outlined ${user.type === 'driver' ? 'text-secondary' : 'text-primary'} text-lg`}>
-                          {user.type === 'driver' ? 'steering_wheel_heat' : 'person'}
-                        </span>
+                        {user.type === 'driver' ? (
+                          <Car size={18} className="text-secondary" />
+                        ) : (
+                          <User size={18} className="text-primary" />
+                        )}
                         {t(`users.${user.type}`)}
                       </span>
                     </td>
@@ -337,7 +340,7 @@ const Users: React.FC = () => {
                           className="p-2 hover:bg-surface-container-high rounded-lg text-primary"
                           title={t('users.open_profile')}
                         >
-                          <span className="material-symbols-outlined">visibility</span>
+                          <Eye size={20} />
                         </button>
                         {user.status === 'pending' && (
                           <button
@@ -348,7 +351,7 @@ const Users: React.FC = () => {
                             className="p-2 hover:bg-secondary/10 rounded-lg text-secondary"
                             title={t('users.verify_action')}
                           >
-                            <span className="material-symbols-outlined">verified</span>
+                            <BadgeCheck size={20} />
                           </button>
                         )}
                         <button
@@ -365,9 +368,7 @@ const Users: React.FC = () => {
                           }`}
                           title={isBannedUser(user) ? t('users.unban_action') : t('users.ban_action')}
                         >
-                          <span className="material-symbols-outlined">
-                            {isBannedUser(user) ? 'undo' : 'block'}
-                          </span>
+                          {isBannedUser(user) ? <Undo2 size={20} /> : <Ban size={20} />}
                         </button>
                       </div>
                     </td>
@@ -408,7 +409,7 @@ const Users: React.FC = () => {
             <div className="p-8 space-y-8">
               <div className="flex justify-between items-start">
                 <button className="p-2 hover:bg-surface-container-high rounded-full transition-colors" onClick={closePanel}>
-                  <span className="material-symbols-outlined">close</span>
+                  <X size={24} />
                 </button>
                 <span className="px-4 py-1.5 bg-secondary text-white text-xs font-bold rounded-full">{t('users.profile_panel_title')}</span>
               </div>
@@ -418,9 +419,7 @@ const Users: React.FC = () => {
                   <Avatar name={panelUser.name} photo={panelUser.photo} size="lg" className="h-28 w-28 text-3xl border-4 border-surface-container-lowest shadow-lg mx-auto" />
                   {panelUser.status === 'verified' && (
                     <div className="absolute bottom-1 right-1 p-1.5 bg-secondary text-white rounded-full border-2 border-surface-container-lowest">
-                      <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
-                        verified
-                      </span>
+                      <BadgeCheck size={16} fill="currentColor" className="text-white" />
                     </div>
                   )}
                 </div>
@@ -462,7 +461,7 @@ const Users: React.FC = () => {
                     className="px-4 py-3 border border-secondary text-secondary rounded-xl hover:bg-secondary/10 transition-all"
                     title={t('users.verify_action')}
                   >
-                    <span className="material-symbols-outlined">verified</span>
+                    <BadgeCheck size={20} />
                   </button>
                 )}
                 <button
@@ -471,9 +470,7 @@ const Users: React.FC = () => {
                   className="px-4 py-3 border border-error text-error rounded-xl hover:bg-error-container transition-all disabled:opacity-50"
                   title={isBannedUser(panelUser) ? t('users.unban_action') : t('users.ban_action')}
                 >
-                  <span className="material-symbols-outlined">
-                    {isBannedUser(panelUser) ? 'undo' : 'block'}
-                  </span>
+                  {isBannedUser(panelUser) ? <Undo2 size={20} /> : <Ban size={20} />}
                 </button>
               </div>
             </div>

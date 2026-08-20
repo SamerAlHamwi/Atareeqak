@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { MessageCircle } from 'lucide-react';
 import Avatar from '../../shared/components/Avatar';
 import PageLoader from '../../shared/components/PageLoader';
 import MessageBubble from './MessageBubble';
@@ -157,7 +158,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
         className="bg-surface-container-low rounded-xl shadow-sm min-h-[36rem] flex flex-col items-center justify-center gap-3 text-center px-8"
       >
         <div className="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant">
-          <span className="material-symbols-outlined text-3xl">forum</span>
+          <MessageCircle size={28} />
         </div>
         <h3 className="font-headline text-lg font-bold text-primary">{t('chat.select_title')}</h3>
         <p className="text-sm text-on-surface-variant max-w-xs">{t('chat.select_hint')}</p>

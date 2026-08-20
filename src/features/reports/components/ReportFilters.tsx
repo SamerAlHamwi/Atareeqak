@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { RefreshCw, Download } from 'lucide-react';
 import { PDF_SECTIONS, isValidRangeStrings } from '../api/reportsApi';
 import type { PdfSection, ReportDateRange } from '../api/reportsApi';
 
@@ -129,7 +130,7 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
           disabled={isLoading}
           className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-bold text-secondary border border-secondary hover:bg-secondary-container/40 transition-colors disabled:opacity-50"
         >
-          <span className="material-symbols-outlined text-sm">refresh</span>
+          <RefreshCw size={16} />
           {isLoading ? t('common.loading') : t('reports.refresh')}
         </button>
       </div>
@@ -189,7 +190,7 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
             disabled={isExporting}
             className="flex items-center gap-2 text-xs font-bold text-secondary hover:bg-secondary-container px-4 py-2 rounded-full border border-secondary transition-colors disabled:opacity-50"
           >
-            <span className="material-symbols-outlined text-sm">download</span>
+            <Download size={16} />
             {isExporting ? t('common.loading') : t('reports.export_pdf')}
           </button>
           <span className="text-[11px] text-on-surface-variant">

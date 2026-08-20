@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AlertTriangle, RefreshCw, Mail } from 'lucide-react';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
 import { useSettings } from '../hooks/useSettings';
@@ -97,7 +98,7 @@ const Settings: React.FC = () => {
           className="bg-error-container text-on-error-container rounded-3xl p-8 space-y-5"
         >
           <div className="flex items-start gap-4">
-            <span className="material-symbols-outlined text-3xl">report</span>
+            <AlertTriangle size={28} />
             <div className="space-y-2">
               <h3 className="text-xl font-extrabold font-headline">{t('settings.unavailable_title')}</h3>
               <p className="text-sm leading-relaxed">{t('settings.unavailable_body')}</p>
@@ -113,7 +114,7 @@ const Settings: React.FC = () => {
             onClick={() => void refetch()}
             className="flex items-center gap-2 bg-error text-on-error text-xs font-bold px-4 py-2 rounded-full hover:opacity-90 transition-all"
           >
-            <span className="material-symbols-outlined text-sm">refresh</span>
+            <RefreshCw size={16} />
             {t('common.retry')}
           </button>
         </div>
@@ -181,7 +182,7 @@ const Settings: React.FC = () => {
             <div className="bg-surface-container-lowest rounded-3xl p-8 shadow-sm space-y-5 border-t-4 border-secondary border-x border-b border-outline-variant">
               <div className="flex items-center justify-between">
                 <h4 className="font-bold text-lg text-primary">{t('settings.contact_title')}</h4>
-                <span className="material-symbols-outlined text-secondary">contact_mail</span>
+                <Mail size={20} className="text-secondary" />
               </div>
 
               <div className="space-y-3">

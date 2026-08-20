@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { AlignLeft, FileText, Send, AlertOctagon, CheckCircle2 } from 'lucide-react';
 import type { Complaint } from '../hooks/useSupport';
 import Avatar from '../../shared/components/Avatar';
 import ComplaintAttachments from './ComplaintAttachments';
@@ -97,7 +98,7 @@ export const ComplaintDetails: React.FC<ComplaintDetailsProps> = ({
           {complaint.title && (
             <div>
               <h5 className="text-xs font-bold text-primary mb-2 flex items-center gap-2">
-                <span className="material-symbols-outlined text-sm">subject</span>
+                <AlignLeft size={16} />
                 {t('support.title_label')}
               </h5>
               <p className="text-sm font-bold text-on-surface text-start">{complaint.title}</p>
@@ -106,7 +107,7 @@ export const ComplaintDetails: React.FC<ComplaintDetailsProps> = ({
 
           <div>
             <h5 className="text-xs font-bold text-primary mb-2 flex items-center gap-2">
-              <span className="material-symbols-outlined text-sm">description</span>
+              <FileText size={16} />
               {t('support.content_title')}
             </h5>
             <div className="bg-surface-container-low p-4 rounded-lg text-sm text-on-surface-variant leading-relaxed text-start whitespace-pre-line">
@@ -156,7 +157,7 @@ export const ComplaintDetails: React.FC<ComplaintDetailsProps> = ({
               data-testid="complaint-respond"
               className="w-full bg-secondary text-on-secondary text-xs font-bold py-3 rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <span className="material-symbols-outlined text-sm">send</span>
+              <Send size={16} />
               {t('support.respond')}
             </button>
           )}
@@ -168,7 +169,7 @@ export const ComplaintDetails: React.FC<ComplaintDetailsProps> = ({
               data-testid="complaint-escalate"
               className="w-full bg-surface-container-high text-on-surface text-xs font-bold py-3 rounded-lg hover:bg-surface-container-highest transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <span className="material-symbols-outlined text-sm">priority_high</span>
+              <AlertOctagon size={16} />
               {t('support.escalate')}
             </button>
           )}
@@ -180,7 +181,7 @@ export const ComplaintDetails: React.FC<ComplaintDetailsProps> = ({
               data-testid="complaint-resolve-escalated"
               className="w-full bg-secondary text-on-secondary text-xs font-bold py-3 rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <span className="material-symbols-outlined text-sm">task_alt</span>
+              <CheckCircle2 size={16} />
               {t('support.resolve_and_notify')}
             </button>
           )}

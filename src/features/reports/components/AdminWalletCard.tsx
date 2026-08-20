@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { Wallet as WalletIcon } from 'lucide-react';
 import type { Wallet } from '../../wallet/api/walletApi';
 
 interface AdminWalletCardProps {
@@ -41,8 +42,8 @@ export const AdminWalletCard: React.FC<AdminWalletCardProps> = ({
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <span className="material-symbols-outlined bg-white/20 p-2 rounded-lg">
-            account_balance_wallet
+          <span className="bg-white/20 p-2 rounded-lg inline-flex">
+            <WalletIcon size={20} />
           </span>
           <div>
             <p className="text-sm opacity-80">{t('reports.my_wallet')}</p>

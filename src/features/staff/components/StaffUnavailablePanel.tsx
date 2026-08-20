@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface StaffUnavailablePanelProps {
   /** The real message from the failed `GET /employees`, not a canned string. */
@@ -25,7 +26,7 @@ export const StaffUnavailablePanel: React.FC<StaffUnavailablePanelProps> = ({
       className="bg-error-container text-on-error-container rounded-3xl p-8 space-y-5"
     >
       <div className="flex items-start gap-4">
-        <span className="material-symbols-outlined text-3xl">report</span>
+        <AlertTriangle size={28} />
         <div className="space-y-2">
           <h3 className="text-xl font-extrabold font-headline">{t('staff.unavailable_title')}</h3>
           <p className="text-sm leading-relaxed">{t('staff.unavailable_body')}</p>
@@ -49,7 +50,7 @@ export const StaffUnavailablePanel: React.FC<StaffUnavailablePanelProps> = ({
         onClick={onRetry}
         className="flex items-center gap-2 bg-error text-on-error text-xs font-bold px-4 py-2 rounded-full hover:opacity-90 transition-all"
       >
-        <span className="material-symbols-outlined text-sm">refresh</span>
+        <RefreshCw size={16} />
         {t('common.retry')}
       </button>
     </div>

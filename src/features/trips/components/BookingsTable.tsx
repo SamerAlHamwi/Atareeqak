@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { CalendarX2, ArrowRight, Phone, XCircle } from 'lucide-react';
 import TableSkeleton from '../../shared/components/TableSkeleton';
 import type { Booking } from '../hooks/useBookings';
 import { isCancellableBooking } from '../hooks/useBookings';
@@ -80,9 +81,7 @@ export const BookingsTable: React.FC<BookingsTableProps> = ({
             {!isLoading && bookings.length === 0 && (
               <tr>
                 <td colSpan={BOOKINGS_TABLE_COLS} className="py-16 text-center">
-                  <span className="material-symbols-outlined text-4xl text-outline block mb-2">
-                    event_busy
-                  </span>
+                  <CalendarX2 size={36} className="text-outline block mb-2 mx-auto" />
                   <p className="text-sm font-bold text-on-surface-variant">
                     {t('bookings.empty_title')}
                   </p>
@@ -106,9 +105,7 @@ export const BookingsTable: React.FC<BookingsTableProps> = ({
                   <td className="py-6 px-4 text-start">
                     <div className="flex items-center gap-2 text-sm">
                       <span>{booking.from}</span>
-                      <span className="material-symbols-outlined text-xs text-outline rotate-180 ltr:rotate-0">
-                        trending_flat
-                      </span>
+                      <ArrowRight size={14} className="text-outline rotate-180 ltr:rotate-0" />
                       <span>{booking.to}</span>
                     </div>
                     <p className="text-[10px] text-on-surface-variant mt-1">
@@ -148,7 +145,7 @@ export const BookingsTable: React.FC<BookingsTableProps> = ({
                           className="p-2 text-on-surface-variant hover:text-secondary transition-colors"
                           title={t('bookings.call_passenger')}
                         >
-                          <span className="material-symbols-outlined text-lg">call</span>
+                          <Phone size={18} />
                         </a>
                       )}
                       {isCancellableBooking(booking) && (
@@ -158,7 +155,7 @@ export const BookingsTable: React.FC<BookingsTableProps> = ({
                           className="p-2 text-on-surface-variant hover:text-error transition-colors disabled:opacity-40"
                           title={t('bookings.cancel_booking')}
                         >
-                          <span className="material-symbols-outlined text-lg">cancel</span>
+                          <XCircle size={18} />
                         </button>
                       )}
                     </div>

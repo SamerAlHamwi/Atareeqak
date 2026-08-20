@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
+import { Menu, LogOut, Languages } from 'lucide-react';
 import { useAuth } from '../../app/context/useAuth';
 import { canAccess } from '../../app/roles';
 import { useTranslation } from 'react-i18next';
@@ -12,36 +13,11 @@ const MainLayout: React.FC = () => {
   const { logout, user, role } = useAuth();
   const { t, i18n } = useTranslation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const profileMenuRef = useRef<HTMLDivElement>(null);
 
   const visibleNavItems = NAV_ITEMS.filter((item) => canAccess(role, item.section));
 
   // Robust RTL check
   const isRtl = i18n.language.startsWith('ar');
-
-  useEffect(() => {
-    if (!isProfileMenuOpen) {
-      return;
-    }
-    const handleClickOutside = (event: MouseEvent) => {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
-        setIsProfileMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isProfileMenuOpen]);
-
-  const formattedLastLogin = user?.lastLoginAt
-    ? new Date(user.lastLoginAt).toLocaleString(i18n.language, {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    : null;
 
   return (
     <div className="bg-surface text-on-surface min-h-screen font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
@@ -110,7 +86,7 @@ const MainLayout: React.FC = () => {
                       isActive ? 'bg-white/15 text-on-primary' : 'bg-surface-container text-on-surface-variant group-hover:bg-surface-container-high group-hover:text-primary'
                     }`}
                   >
-                    <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+                    <item.icon size={20} />
                   </span>
                   <span className="truncate">{t(item.labelKey)}</span>
                 </>
@@ -133,129 +109,45 @@ const MainLayout: React.FC = () => {
             </div>
           </div>
           <button
+            type="button"
+            onClick={() => toggleLanguage()}
+            data-testid="sidebar-toggle-language"
+            className="w-full flex items-center justify-between px-4 py-3 text-on-surface-variant font-bold text-sm hover:bg-surface-container-low rounded-xl transition-colors duration-200"
+          >
+            <span>{t('header.toggle_language')}</span>
+            <span className="flex items-center gap-2 text-on-surface-variant/60">
+              {isRtl ? 'English' : 'العربية'}
+              <Languages size={18} />
+            </span>
+          </button>
+          <button
+            data-testid="sidebar-logout"
             onClick={logout}
             className="w-full flex items-center justify-between px-4 py-3 text-error font-bold text-sm bg-error-container/0 hover:bg-error-container/20 rounded-xl transition-colors duration-200"
           >
              <span>{t('nav.logout')}</span>
-             <span className={`material-symbols-outlined text-xl ${isRtl ? 'rotate-180' : ''}`}>logout</span>
+             <LogOut size={20} className={isRtl ? 'rotate-180' : ''} />
           </button>
         </div>
       </aside>
+
+      {/* Mobile Menu Trigger */}
+      <button
+        className={`lg:hidden fixed top-4 z-[65] p-2.5 bg-surface-container-lowest text-on-surface-variant rounded-xl shadow-ambient transition-colors ${
+          isRtl ? 'right-4' : 'left-4'
+        }`}
+        onClick={() => setIsSidebarOpen(true)}
+      >
+         <Menu size={24} />
+      </button>
 
       {/* Main Content Area */}
       <main className={`
         ${isRtl ? 'lg:mr-72' : 'lg:ml-72'}
         min-h-screen flex flex-col transition-all duration-300
       `}>
-        {/* TopAppBar */}
-        <header className="flex items-center justify-between px-6 lg:px-10 h-24 w-full sticky top-0 z-40 bg-surface/80 backdrop-blur-md">
-          {/* Mobile Menu Icon */}
-          <button
-            className="lg:hidden p-2 text-on-surface-variant hover:bg-surface-container-lowest rounded-xl transition-colors"
-            onClick={() => setIsSidebarOpen(true)}
-          >
-             <span className="material-symbols-outlined text-3xl">menu</span>
-          </button>
-
-          <div className="flex-1" />
-
-          <div className="flex items-center gap-4 lg:gap-8">
-            <div className={`relative ${isRtl ? 'lg:pr-8' : 'lg:pl-8'}`} ref={profileMenuRef}>
-              <button
-                type="button"
-                onClick={() => setIsProfileMenuOpen((open) => !open)}
-                aria-haspopup="menu"
-                aria-expanded={isProfileMenuOpen}
-                data-testid="header-profile-trigger"
-                className="flex items-center gap-4 rounded-2xl transition-colors hover:bg-white/60 p-1"
-              >
-                <div className="hidden sm:flex text-right rtl flex flex-col">
-                  <p className="text-sm font-black text-primary leading-none">
-                    {user?.name || t('header.admin_name')}
-                  </p>
-                  <p className="text-[11px] font-bold text-on-surface-variant/70 mt-1.5">
-                    {user?.roleLabel || (role ? t(`roles.${role}`) : t('header.admin_role'))}
-                  </p>
-                </div>
-                {/*
-                  Was a hardcoded Unsplash portrait of an unrelated person. The
-                  logged-in employee has no photo endpoint (`POST /admin/photo`
-                  is a stub that cannot be completed — BUG-12), so initials it is.
-                */}
-                <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full overflow-hidden border-2 lg:border-4 border-surface-container-lowest shadow-md">
-                  <Avatar
-                    name={user?.name || t('header.admin_name')}
-                    photo={null}
-                    size="xl"
-                    className="rounded-none"
-                  />
-                </div>
-              </button>
-
-              {isProfileMenuOpen && (
-                <div
-                  role="menu"
-                  data-testid="header-profile-menu"
-                  className={`absolute top-full mt-2 w-72 bg-surface-container-lowest rounded-2xl shadow-ambient border border-outline-variant/20 py-2 z-50 ${
-                    isRtl ? 'left-0' : 'right-0'
-                  }`}
-                >
-                  <div className="px-5 py-3 border-b border-outline-variant">
-                    <p className="text-sm font-black text-primary" data-testid="header-profile-name">
-                      {user?.name || t('header.admin_name')}
-                    </p>
-                    <p className="text-xs font-bold text-on-surface-variant/70 mt-0.5" data-testid="header-profile-role">
-                      {user?.roleLabel || (role ? t(`roles.${role}`) : t('header.admin_role'))}
-                    </p>
-                    {user?.email && (
-                      <p
-                        className="text-xs text-on-surface-variant/70 mt-2 truncate ltr:font-mono"
-                        dir="ltr"
-                        data-testid="header-profile-email"
-                      >
-                        {user.email}
-                      </p>
-                    )}
-                    <p className="text-xs text-on-surface-variant/70 mt-1" data-testid="header-profile-last-login">
-                      {t('header.last_login')}: {formattedLastLogin ?? t('staff.never_logged_in')}
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      toggleLanguage();
-                      setIsProfileMenuOpen(false);
-                    }}
-                    data-testid="header-toggle-language"
-                    className="w-full flex items-center justify-between px-5 py-3 text-sm font-bold text-on-surface-variant hover:bg-surface-container-low transition-colors"
-                  >
-                    <span>{t('header.toggle_language')}</span>
-                    <span className="text-on-surface-variant/60">{isRtl ? 'English' : 'العربية'}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setIsProfileMenuOpen(false);
-                      logout();
-                    }}
-                    data-testid="header-logout"
-                    className="w-full flex items-center justify-between px-5 py-3 text-sm font-bold text-error hover:bg-error-container/20 transition-colors"
-                  >
-                    <span>{t('nav.logout')}</span>
-                    <span className={`material-symbols-outlined text-xl ${isRtl ? 'rotate-180' : ''}`}>logout</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </header>
-
         {/* Content */}
-        <div className="p-6 lg:p-10 flex-1">
+        <div className="p-6 pt-20 lg:p-10 flex-1">
           <Outlet />
         </div>
 

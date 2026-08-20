@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { MapPinOff } from 'lucide-react';
 import type { DashboardCityRow } from '../hooks/useDashboard';
 
 interface CityDistributionCardProps {
@@ -19,7 +20,7 @@ export const CityDistributionCard: React.FC<CityDistributionCardProps> = ({ citi
 
       {cities.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 py-10 text-on-surface-variant">
-          <span className="material-symbols-outlined text-4xl opacity-40">location_off</span>
+          <MapPinOff size={36} className="opacity-40" />
           <p className="text-sm font-bold text-center">{t('dashboard.cities_empty')}</p>
         </div>
       ) : (

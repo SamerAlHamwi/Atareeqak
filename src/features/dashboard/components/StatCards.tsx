@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ArrowUp, ArrowDown, Minus, type LucideIcon } from 'lucide-react';
 import type { DashboardStats } from '../../../types/index';
 import type { StatDelta } from '../hooks/useDashboard';
 
@@ -10,10 +11,10 @@ interface StatCardsProps {
   completedTripsDelta: StatDelta | null;
 }
 
-const DIRECTION_STYLES: Record<StatDelta['direction'], { icon: string; classes: string }> = {
-  up: { icon: 'arrow_upward', classes: 'text-secondary bg-secondary-container/40' },
-  down: { icon: 'arrow_downward', classes: 'text-error bg-error-container' },
-  flat: { icon: 'remove', classes: 'text-on-surface-variant bg-surface-container' },
+const DIRECTION_STYLES: Record<StatDelta['direction'], { icon: LucideIcon; classes: string }> = {
+  up: { icon: ArrowUp, classes: 'text-secondary bg-secondary-container/40' },
+  down: { icon: ArrowDown, classes: 'text-error bg-error-container' },
+  flat: { icon: Minus, classes: 'text-on-surface-variant bg-surface-container' },
 };
 
 /**
@@ -27,7 +28,7 @@ const DeltaBadge: React.FC<{ delta: StatDelta | null }> = ({ delta }) => {
     return null;
   }
 
-  const { icon, classes } = DIRECTION_STYLES[delta.direction];
+  const { icon: DeltaIcon, classes } = DIRECTION_STYLES[delta.direction];
   const magnitude = Math.abs(delta.value);
   const label =
     delta.unit === 'percent'
@@ -39,7 +40,7 @@ const DeltaBadge: React.FC<{ delta: StatDelta | null }> = ({ delta }) => {
       className={`flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-full ${classes}`}
       title={t('dashboard.delta_tooltip')}
     >
-      <span className="material-symbols-outlined text-[12px] font-bold">{icon}</span>
+      <DeltaIcon size={12} strokeWidth={3} />
       {label}
     </div>
   );

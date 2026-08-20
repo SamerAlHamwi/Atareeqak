@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { MailX } from 'lucide-react';
 import ErrorBanner from '../../shared/components/ErrorBanner';
 import NoPermissionPanel from '../../shared/components/NoPermissionPanel';
 import ConversationList from '../components/ConversationList';
@@ -80,7 +81,7 @@ const Chat: React.FC = () => {
           data-testid="chat-blocked"
           className="bg-error-container text-on-error-container rounded-2xl px-6 py-8 flex flex-col items-center text-center gap-3"
         >
-          <span className="material-symbols-outlined text-3xl">mail_off</span>
+          <MailX size={28} />
           <p className="text-sm font-bold">{blockedMessage}</p>
           <p className="text-xs opacity-80 max-w-md">{t('chat.no_email_hint')}</p>
         </div>

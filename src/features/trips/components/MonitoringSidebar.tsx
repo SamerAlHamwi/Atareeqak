@@ -1,16 +1,17 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { CheckCircle2, AlertTriangle, Car, Star, type LucideIcon } from 'lucide-react';
 import { useTripMonitoring } from '../hooks/useTripMonitoring';
 import PageLoader from '../../shared/components/PageLoader';
 
-const eventIcon = (status: string): { icon: string; classes: string } => {
+const eventIcon = (status: string): { icon: LucideIcon; classes: string } => {
   switch (status) {
     case 'completed':
-      return { icon: 'check_circle', classes: 'bg-tertiary-fixed text-on-tertiary-fixed-variant' };
+      return { icon: CheckCircle2, classes: 'bg-tertiary-fixed text-on-tertiary-fixed-variant' };
     case 'cancelled':
-      return { icon: 'warning', classes: 'bg-error-container text-on-error-container' };
+      return { icon: AlertTriangle, classes: 'bg-error-container text-on-error-container' };
     default:
-      return { icon: 'directions_car', classes: 'bg-primary-fixed text-on-primary-fixed-variant' };
+      return { icon: Car, classes: 'bg-primary-fixed text-on-primary-fixed-variant' };
   }
 };
 
@@ -79,13 +80,13 @@ export const MonitoringSidebar: React.FC = () => {
         ) : (
           <div className="space-y-6">
             {recentEvents.map((event) => {
-              const { icon, classes } = eventIcon(event.status);
+              const { icon: EventIcon, classes } = eventIcon(event.status);
               return (
                 <div key={event.id} className="flex gap-4">
                   <div
                     className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${classes}`}
                   >
-                    <span className="material-symbols-outlined text-lg">{icon}</span>
+                    <EventIcon size={18} />
                   </div>
                   <div>
                     <p className="text-sm font-bold">{event.route}</p>
@@ -104,7 +105,7 @@ export const MonitoringSidebar: React.FC = () => {
       <div className="bg-gradient-to-br from-tertiary-container to-tertiary p-8 rounded-[2rem] text-on-tertiary shadow-lg">
         <div className="flex justify-between items-start mb-6">
           <h4 className="font-headline font-bold text-lg">{t('trips.top_drivers')}</h4>
-          <span className="material-symbols-outlined opacity-50">star</span>
+          <Star size={24} className="opacity-50" />
         </div>
         {isLoading ? (
           <PageLoader size="sm" labelClassName="text-on-tertiary opacity-80" />
@@ -130,12 +131,7 @@ export const MonitoringSidebar: React.FC = () => {
                   <span className="text-sm font-medium">{driver.name}</span>
                 </div>
                 <div className="flex items-center gap-1 text-secondary-fixed">
-                  <span
-                    className="material-symbols-outlined text-sm"
-                    style={{ fontVariationSettings: "'FILL' 1" }}
-                  >
-                    star
-                  </span>
+                  <Star size={16} fill="currentColor" />
                   <span className="text-xs font-bold">{driver.rating}</span>
                 </div>
               </div>

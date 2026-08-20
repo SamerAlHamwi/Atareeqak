@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { MapPinOff, ArrowRight, Eye, XCircle } from 'lucide-react';
 import TableSkeleton from '../../shared/components/TableSkeleton';
 import type { Trip } from '../hooks/useTrips';
 import { isCancellableTrip } from '../hooks/useTrips';
@@ -51,9 +52,7 @@ export const TripsTable: React.FC<TripsTableProps> = ({
             {!isLoading && trips.length === 0 && (
               <tr>
                 <td colSpan={TRIPS_TABLE_COLS} className="py-16 text-center">
-                  <span className="material-symbols-outlined text-4xl text-outline block mb-2">
-                    explore_off
-                  </span>
+                  <MapPinOff size={36} className="text-outline block mb-2 mx-auto" />
                   <p className="text-sm font-bold text-on-surface-variant">{t('trips.empty_title')}</p>
                   <p className="text-xs text-on-surface-variant/70 mt-1">{t('trips.empty_hint')}</p>
                 </td>
@@ -111,9 +110,7 @@ export const TripsTable: React.FC<TripsTableProps> = ({
                 <td className="py-6 px-4 text-start">
                   <div className="flex items-center gap-2 text-sm">
                     <span>{trip.from}</span>
-                    <span className="material-symbols-outlined text-xs text-outline rotate-180 ltr:rotate-0">
-                      trending_flat
-                    </span>
+                    <ArrowRight size={14} className="text-outline rotate-180 ltr:rotate-0" />
                     <span>{trip.to}</span>
                   </div>
                 </td>
@@ -156,7 +153,7 @@ export const TripsTable: React.FC<TripsTableProps> = ({
                       className="p-2 text-on-surface-variant hover:text-primary transition-colors disabled:opacity-40"
                       title={t('trips.view_details')}
                     >
-                      <span className="material-symbols-outlined text-lg">visibility</span>
+                      <Eye size={18} />
                     </button>
                     {isCancellableTrip(trip) && (
                       <button
@@ -165,7 +162,7 @@ export const TripsTable: React.FC<TripsTableProps> = ({
                         className="p-2 text-on-surface-variant hover:text-error transition-colors disabled:opacity-40"
                         title={t('trips.cancel_trip')}
                       >
-                        <span className="material-symbols-outlined text-lg">cancel</span>
+                        <XCircle size={18} />
                       </button>
                     )}
                   </div>

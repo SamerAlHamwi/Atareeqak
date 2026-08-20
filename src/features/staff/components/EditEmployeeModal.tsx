@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { X } from 'lucide-react';
 import { EMAIL_MAX_LENGTH, NAME_MAX_LENGTH } from '../api/staffApi';
 import type { UpdateEmployeeRequest } from '../api/staffApi';
 import type { Employee } from '../hooks/useStaff';
@@ -72,7 +73,7 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({
               disabled={isBusy}
               className="p-2 hover:bg-surface-container-high rounded-full transition-colors disabled:opacity-40"
             >
-              <span className="material-symbols-outlined">close</span>
+              <X size={24} />
             </button>
           </div>
 

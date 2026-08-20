@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { RefreshCw, FileDown, UserPlus } from 'lucide-react';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
 import ErrorBanner from '../../shared/components/ErrorBanner';
@@ -95,9 +96,7 @@ const Dashboard: React.FC = () => {
             disabled={isLoading}
             className="flex items-center gap-2 px-6 py-3 bg-surface-container-lowest border border-outline-variant/40 text-on-surface rounded-[1.25rem] font-black text-sm shadow-sm hover:bg-surface-container-low transition-all disabled:opacity-50"
           >
-            <span className={`material-symbols-outlined text-lg ${isLoading ? 'animate-spin' : ''}`}>
-              refresh
-            </span>
+            <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
             {t('dashboard.refresh')}
           </button>
 
@@ -107,7 +106,7 @@ const Dashboard: React.FC = () => {
             disabled={isBusy('dashboard-export')}
             className="flex items-center gap-2 px-6 py-3 bg-surface-container-lowest border border-outline-variant/40 text-on-surface rounded-[1.25rem] font-black text-sm shadow-sm hover:bg-surface-container-low transition-all disabled:opacity-50"
           >
-            <span className="material-symbols-outlined text-lg">export_notes</span>
+            <FileDown size={18} />
             {isBusy('dashboard-export') ? t('common.loading') : t('dashboard.export_data')}
           </button>
 
@@ -115,7 +114,7 @@ const Dashboard: React.FC = () => {
             to="/staff"
             className="flex items-center gap-2 px-6 py-3 bg-primary text-on-primary rounded-[1.25rem] font-black text-sm shadow-lg hover:opacity-90 transition-all"
           >
-            <span className="material-symbols-outlined text-lg">person_add</span>
+            <UserPlus size={18} />
             {t('dashboard.add_employee')}
           </Link>
         </div>

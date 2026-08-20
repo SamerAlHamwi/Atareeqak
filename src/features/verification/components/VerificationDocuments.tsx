@@ -1,5 +1,19 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import {
+  FolderOpen,
+  ImageOff,
+  ZoomIn,
+  ScanFace,
+  IdCard,
+  Car,
+  Wrench,
+  FileText,
+  CheckCircle2,
+  XCircle,
+  X,
+  type LucideIcon,
+} from 'lucide-react';
 import Avatar from '../../shared/components/Avatar';
 import { VERIFICATION_DOCUMENT_TYPES } from '../api/verificationsApi';
 import type { VerificationDocumentType } from '../api/verificationsApi';
@@ -13,11 +27,11 @@ interface VerificationDocumentsProps {
   isRejecting: boolean;
 }
 
-const documentIcons: Record<VerificationDocumentType, string> = {
-  face_id: 'badge',
-  back_id: 'id_card',
-  license: 'directions_car',
-  mechanic_card: 'build',
+const documentIcons: Record<VerificationDocumentType, LucideIcon> = {
+  face_id: ScanFace,
+  back_id: IdCard,
+  license: Car,
+  mechanic_card: Wrench,
 };
 
 const typeOrder = (type: VerificationDocumentType): number => {
@@ -100,7 +114,7 @@ export const VerificationDocuments: React.FC<VerificationDocumentsProps> = ({
         {/* Documents grid */}
         <div className="p-6">
           <h5 className="text-xs font-bold text-primary mb-4 flex items-center gap-2">
-            <span className="material-symbols-outlined text-sm">folder_open</span>
+            <FolderOpen size={16} />
             {t('verifications.documents_title', { count: documents.length })}
           </h5>
 
@@ -133,7 +147,7 @@ export const VerificationDocuments: React.FC<VerificationDocumentsProps> = ({
                           data-testid={`verification-doc-failed-${doc.type}`}
                           className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-surface-container-high text-on-surface-variant px-4 text-center"
                         >
-                          <span className="material-symbols-outlined text-3xl">broken_image</span>
+                          <ImageOff size={28} />
                           <span className="text-[11px] font-bold leading-tight">
                             {t('verifications.preview_unavailable')}
                           </span>
@@ -148,18 +162,17 @@ export const VerificationDocuments: React.FC<VerificationDocumentsProps> = ({
                             loading="lazy"
                           />
                           <span className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <span className="material-symbols-outlined text-white text-3xl">
-                              zoom_in
-                            </span>
+                            <ZoomIn size={28} className="text-white" />
                           </span>
                         </>
                       )}
                     </button>
                     <div className="flex items-center justify-between px-4 py-3 gap-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="material-symbols-outlined text-secondary text-lg shrink-0">
-                          {documentIcons[doc.type] ?? 'description'}
-                        </span>
+                        {(() => {
+                          const DocIcon = documentIcons[doc.type] ?? FileText;
+                          return <DocIcon size={18} className="text-secondary shrink-0" />;
+                        })()}
                         <span className="text-xs font-bold truncate">{label}</span>
                       </div>
                       {/* Still offered when the inline preview failed: the URL is
@@ -189,7 +202,7 @@ export const VerificationDocuments: React.FC<VerificationDocumentsProps> = ({
             disabled={isBusy}
             className="flex-1 bg-secondary text-on-secondary text-sm font-bold py-3.5 rounded-xl hover:bg-secondary/90 transition-all flex items-center justify-center gap-2 shadow-sm shadow-secondary/20 disabled:opacity-50"
           >
-            <span className="material-symbols-outlined text-lg">check_circle</span>
+            <CheckCircle2 size={18} />
             {isApproving ? t('common.loading') : t('verifications.approve')}
           </button>
           <button
@@ -198,7 +211,7 @@ export const VerificationDocuments: React.FC<VerificationDocumentsProps> = ({
             disabled={isBusy}
             className="flex-1 bg-error-container text-on-error-container text-sm font-bold py-3.5 rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            <span className="material-symbols-outlined text-lg">cancel</span>
+            <XCircle size={18} />
             {isRejecting ? t('common.loading') : t('verifications.reject')}
           </button>
         </div>
@@ -212,7 +225,7 @@ export const VerificationDocuments: React.FC<VerificationDocumentsProps> = ({
         >
           {previewFailed ? (
             <div className="flex flex-col items-center gap-3 text-white">
-              <span className="material-symbols-outlined text-5xl">broken_image</span>
+              <ImageOff size={48} />
               <p className="text-sm font-bold">{t('verifications.preview_unavailable')}</p>
             </div>
           ) : (
@@ -228,7 +241,7 @@ export const VerificationDocuments: React.FC<VerificationDocumentsProps> = ({
             aria-label={t('common.cancel')}
             className="absolute top-6 end-6 w-12 h-12 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors"
           >
-            <span className="material-symbols-outlined">close</span>
+            <X size={24} />
           </button>
         </div>
       )}

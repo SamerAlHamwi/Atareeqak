@@ -2,6 +2,24 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
+import {
+  ArrowLeft,
+  BadgeCheck,
+  IdCard,
+  Calendar,
+  Phone,
+  Star,
+  Undo2,
+  Ban,
+  Route,
+  Wallet,
+  XCircle,
+  MapPin,
+  Car,
+  ShieldCheck,
+  CheckCircle2,
+  History,
+} from 'lucide-react';
 import ActionBanner from '../../shared/components/ActionBanner';
 import Avatar from '../../shared/components/Avatar';
 import ConfirmActionModal from '../../shared/components/ConfirmActionModal';
@@ -97,7 +115,7 @@ const DriverDetails: React.FC = () => {
           onClick={() => navigate('/drivers')}
           className="inline-flex items-center gap-2 text-sm font-bold text-primary hover:underline"
         >
-          <span className="material-symbols-outlined text-base">arrow_back</span>
+          <ArrowLeft size={16} />
           {t('drivers.back_to_list')}
         </button>
         <ErrorBanner message={error ?? undefined} />
@@ -118,7 +136,7 @@ const DriverDetails: React.FC = () => {
           onClick={() => navigate('/drivers')}
           className="inline-flex items-center gap-2 text-sm font-bold text-primary hover:underline"
         >
-          <span className="material-symbols-outlined text-base">arrow_back</span>
+          <ArrowLeft size={16} />
           {t('drivers.back_to_list')}
         </button>
         <span className="text-xs text-on-surface-variant">{driver.ref}</span>
@@ -131,7 +149,7 @@ const DriverDetails: React.FC = () => {
           </div>
           {driver.isVerified && (
             <div className="absolute bottom-1 right-1 bg-secondary text-white h-8 w-8 rounded-full flex items-center justify-center border-2 border-white">
-              <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
+              <BadgeCheck size={16} fill="currentColor" className="text-white" />
             </div>
           )}
         </div>
@@ -144,13 +162,13 @@ const DriverDetails: React.FC = () => {
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-4 md:gap-6 text-on-surface-variant font-medium justify-end text-sm">
-            <span className="inline-flex items-center gap-1"><span className="material-symbols-outlined text-sm">id_card</span> {driver.ref}</span>
-            <span className="inline-flex items-center gap-1"><span className="material-symbols-outlined text-sm">calendar_today</span> {t('drivers.member_since', { date: driver.joinedLabel })}</span>
+            <span className="inline-flex items-center gap-1"><IdCard size={16} /> {driver.ref}</span>
+            <span className="inline-flex items-center gap-1"><Calendar size={16} /> {t('drivers.member_since', { date: driver.joinedLabel })}</span>
             {driver.phone && (
-              <span className="inline-flex items-center gap-1" dir="ltr"><span className="material-symbols-outlined text-sm">call</span> {driver.phone}</span>
+              <span className="inline-flex items-center gap-1" dir="ltr"><Phone size={16} /> {driver.phone}</span>
             )}
             <span className="inline-flex items-center gap-1 text-on-surface bg-surface-container-high px-2 py-0.5 rounded">
-              <span className="material-symbols-outlined text-amber-500" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+              <Star size={16} fill="currentColor" className="text-amber-500" />
               {driver.ratingAverage.toFixed(2)} ({driver.ratingCount})
             </span>
           </div>
@@ -164,7 +182,7 @@ const DriverDetails: React.FC = () => {
             disabled={isBusy('toggle-freeze-driver')}
             className="bg-error-container text-error px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:opacity-90 transition-all disabled:opacity-50"
           >
-            <span className="material-symbols-outlined">{isBanned ? 'undo' : 'block'}</span>
+            {isBanned ? <Undo2 size={20} /> : <Ban size={20} />}
             {isBusy('toggle-freeze-driver')
               ? t('common.loading')
               : isBanned
@@ -189,7 +207,7 @@ const DriverDetails: React.FC = () => {
       <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <div className="bg-surface-container-lowest p-6 rounded-xl space-y-3">
           <div className="flex justify-between items-center">
-            <span className="material-symbols-outlined text-secondary bg-secondary-container/30 p-2 rounded-lg">route</span>
+            <span className="text-secondary bg-secondary-container/30 p-2 rounded-lg inline-flex"><Route size={20} /></span>
             <span className="text-on-surface-variant text-sm font-bold">{t('drivers.total_rides')}</span>
           </div>
           <div className="text-3xl font-extrabold text-primary font-headline">{driver.totalRides.toLocaleString()}</div>
@@ -200,7 +218,7 @@ const DriverDetails: React.FC = () => {
 
         <div className="bg-surface-container-lowest p-6 rounded-xl space-y-3">
           <div className="flex justify-between items-center">
-            <span className="material-symbols-outlined text-secondary bg-secondary-container/30 p-2 rounded-lg">account_balance_wallet</span>
+            <span className="text-secondary bg-secondary-container/30 p-2 rounded-lg inline-flex"><Wallet size={20} /></span>
             <span className="text-on-surface-variant text-sm font-bold">{t('drivers.total_earnings')}</span>
           </div>
           <div className="text-3xl font-extrabold text-primary font-headline">
@@ -211,7 +229,7 @@ const DriverDetails: React.FC = () => {
 
         <div className="bg-surface-container-lowest p-6 rounded-xl space-y-3">
           <div className="flex justify-between items-center">
-            <span className="material-symbols-outlined text-error bg-error-container/30 p-2 rounded-lg">cancel</span>
+            <span className="text-error bg-error-container/30 p-2 rounded-lg inline-flex"><XCircle size={20} /></span>
             <span className="text-on-surface-variant text-sm font-bold">{t('drivers.cancel_rate')}</span>
           </div>
           <div className="text-3xl font-extrabold text-error font-headline">{driver.cancelRate}%</div>
@@ -222,7 +240,7 @@ const DriverDetails: React.FC = () => {
 
         <div className="bg-surface-container-lowest p-6 rounded-xl space-y-3">
           <div className="flex justify-between items-center">
-            <span className="material-symbols-outlined text-primary bg-primary-container/10 p-2 rounded-lg">location_on</span>
+            <span className="text-primary bg-primary-container/10 p-2 rounded-lg inline-flex"><MapPin size={20} /></span>
             <span className="text-on-surface-variant text-sm font-bold">{t('drivers.favorite_destination')}</span>
           </div>
           <div className="text-xl font-extrabold text-primary font-headline">
@@ -244,7 +262,7 @@ const DriverDetails: React.FC = () => {
                 <img alt={driver.vehicleType} className="w-full h-full object-cover" src={driver.vehiclePhoto} />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-on-surface-variant">
-                  <span className="material-symbols-outlined text-6xl opacity-30">directions_car</span>
+                  <Car size={56} className="opacity-30" />
                 </div>
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
@@ -265,7 +283,7 @@ const DriverDetails: React.FC = () => {
 
           <div className="bg-surface-container-lowest rounded-xl p-6 space-y-6">
             <h3 className="text-lg font-extrabold text-primary font-headline flex items-center gap-2 border-b border-surface-container-low pb-4">
-              <span className="material-symbols-outlined">verified_user</span>
+              <ShieldCheck size={20} />
               {t('drivers.documents_title')}
             </h3>
             {driver.documents.length === 0 ? (
@@ -275,9 +293,7 @@ const DriverDetails: React.FC = () => {
                 {driver.documents.map((doc) => (
                   <div key={doc.type} className="flex items-center justify-between p-3 bg-surface rounded-lg">
                     <div className="flex items-center gap-3">
-                      <span className="material-symbols-outlined text-secondary" style={{ fontVariationSettings: "'FILL' 1" }}>
-                        check_circle
-                      </span>
+                      <CheckCircle2 size={20} className="text-secondary" />
                       <span className="font-medium">{documentLabelKeys[doc.type] ? t(documentLabelKeys[doc.type]) : doc.type}</span>
                     </div>
                     <a
@@ -299,7 +315,7 @@ const DriverDetails: React.FC = () => {
           <div className="bg-surface-container-lowest rounded-xl overflow-hidden">
             <div className="p-6 border-b border-surface-container-low flex items-center justify-between gap-3">
               <h3 className="text-lg font-extrabold text-primary font-headline flex items-center gap-2">
-                <span className="material-symbols-outlined">history</span>
+                <History size={20} />
                 {t('drivers.recent_rides')}
               </h3>
             </div>
@@ -328,7 +344,7 @@ const DriverDetails: React.FC = () => {
                           <td className="px-6 py-4">
                             <div className="flex items-center justify-end gap-2">
                               <span className="text-on-surface font-medium">{ride.from}</span>
-                              <span className="material-symbols-outlined text-xs text-outline">arrow_back</span>
+                              <ArrowLeft size={14} className="text-outline" />
                               <span className="text-on-surface font-medium">{ride.to}</span>
                             </div>
                           </td>

@@ -1,6 +1,21 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import {
+  Users,
+  Radio,
+  ClipboardList,
+  Star,
+  Search,
+  Eye,
+  Undo2,
+  Ban,
+  CheckCircle2,
+  XCircle,
+  PencilLine,
+  Info,
+  type LucideIcon,
+} from 'lucide-react';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
 import Avatar from '../../shared/components/Avatar';
@@ -49,16 +64,16 @@ const activityIconClasses = (color: string): string => {
   }
 };
 
-const activityIconName = (icon: string): string => {
+const activityIconComponent = (icon: string): LucideIcon => {
   switch (icon) {
     case 'check':
-      return 'check_circle';
+      return CheckCircle2;
     case 'x':
-      return 'cancel';
+      return XCircle;
     case 'edit':
-      return 'edit_square';
+      return PencilLine;
     default:
-      return 'info';
+      return Info;
   }
 };
 
@@ -165,7 +180,7 @@ const Drivers: React.FC = () => {
         <div className="bg-surface-container-lowest p-6 rounded-xl flex flex-col justify-between h-40 group hover:translate-y-[-4px] transition-transform duration-300 border border-outline-variant shadow-sm">
           <div className="flex justify-between items-start">
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-              <span className="material-symbols-outlined">group</span>
+              <Users size={24} />
             </div>
           </div>
           <div>
@@ -179,7 +194,7 @@ const Drivers: React.FC = () => {
         <div className="bg-surface-container-lowest p-6 rounded-xl flex flex-col justify-between h-40 group hover:translate-y-[-4px] transition-transform duration-300 border border-outline-variant shadow-sm">
           <div className="flex justify-between items-start">
             <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
-              <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>sensors</span>
+              <Radio size={24} />
             </div>
             <span className="text-xs font-bold text-secondary bg-secondary/10 px-2 py-1 rounded-full">{t('dashboard.live')}</span>
           </div>
@@ -194,7 +209,7 @@ const Drivers: React.FC = () => {
         <div className="bg-surface-container-lowest p-6 rounded-xl flex flex-col justify-between h-40 group hover:translate-y-[-4px] transition-transform duration-300 border border-outline-variant shadow-sm">
           <div className="flex justify-between items-start">
             <div className="w-12 h-12 rounded-full bg-error-container/20 flex items-center justify-center text-error">
-              <span className="material-symbols-outlined">pending_actions</span>
+              <ClipboardList size={24} />
             </div>
           </div>
           <div>
@@ -208,7 +223,7 @@ const Drivers: React.FC = () => {
         <div className="bg-surface-container-lowest p-6 rounded-xl flex flex-col justify-between h-40 group hover:translate-y-[-4px] transition-transform duration-300 border border-outline-variant shadow-sm">
           <div className="flex justify-between items-start">
             <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
-              <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+              <Star size={24} fill="currentColor" />
             </div>
           </div>
           <div>
@@ -239,7 +254,7 @@ const Drivers: React.FC = () => {
         </div>
         <div className="relative w-full md:max-w-xs">
           <span className={`absolute inset-y-0 ${isRtl ? 'right-0 pr-4' : 'left-0 pl-4'} flex items-center pointer-events-none text-on-surface-variant`}>
-            <span className="material-symbols-outlined text-lg">search</span>
+            <Search size={18} />
           </span>
           <input
             value={search}
@@ -302,9 +317,7 @@ const Drivers: React.FC = () => {
                     </td>
                     <td className="px-6 py-5 text-start">
                       <div className={`flex items-center gap-1 ${driver.rating ? 'text-amber-500' : 'text-on-surface-variant/50'}`}>
-                        <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: driver.rating ? "'FILL' 1" : "" }}>
-                          {driver.rating ? 'star' : 'star_outline'}
-                        </span>
+                        <Star size={18} fill={driver.rating ? 'currentColor' : 'none'} />
                         <span className="font-bold">{driver.rating ?? '--'}</span>
                       </div>
                     </td>
@@ -315,7 +328,7 @@ const Drivers: React.FC = () => {
                           className="p-2 hover:bg-surface-container-high rounded-lg text-primary transition-colors"
                           title={t('drivers.view_profile')}
                         >
-                          <span className="material-symbols-outlined">visibility</span>
+                          <Eye size={20} />
                         </button>
                         <button
                           onClick={() => void handleToggleStatus(driver)}
@@ -323,7 +336,7 @@ const Drivers: React.FC = () => {
                           className={`p-2 rounded-lg transition-colors disabled:opacity-40 ${isBannedDriver(driver) ? 'hover:bg-secondary/10 text-secondary' : 'hover:bg-error/10 text-error'}`}
                           title={isBannedDriver(driver) ? t('drivers.unban_action') : t('drivers.ban_action')}
                         >
-                          <span className="material-symbols-outlined">{isBannedDriver(driver) ? 'undo' : 'block'}</span>
+                          {isBannedDriver(driver) ? <Undo2 size={20} /> : <Ban size={20} />}
                         </button>
                       </div>
                     </td>
@@ -369,7 +382,10 @@ const Drivers: React.FC = () => {
                     <div className={`absolute ${isRtl ? 'right-[19px]' : 'left-[19px]'} top-8 bottom-0 w-[2px] bg-outline-variant/20`}></div>
                   )}
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 shrink-0 ${activityIconClasses(item.color)}`}>
-                    <span className="material-symbols-outlined text-sm">{activityIconName(item.icon)}</span>
+                    {(() => {
+                      const ActivityIcon = activityIconComponent(item.icon);
+                      return <ActivityIcon size={16} />;
+                    })()}
                   </div>
                   <div className="flex flex-col gap-1">
                     <p className="text-sm font-bold">{item.message}</p>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { Search, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import Avatar from '../../shared/components/Avatar';
 import PerPageSelect from '../../shared/components/PerPageSelect';
 import TablePagination from '../../shared/components/TablePagination';
@@ -66,13 +67,12 @@ export const ConversationList: React.FC<ConversationListProps> = ({
     <div className="bg-surface-container-low rounded-xl overflow-hidden shadow-sm flex flex-col">
       <div className="p-6 bg-surface-container-lowest border-b border-outline-variant space-y-4">
         <div className="relative">
-          <span
-            className={`material-symbols-outlined absolute top-1/2 -translate-y-1/2 text-on-surface-variant text-lg ${
+          <Search
+            size={18}
+            className={`absolute top-1/2 -translate-y-1/2 text-on-surface-variant ${
               isRtl ? 'right-4' : 'left-4'
             }`}
-          >
-            search
-          </span>
+          />
           <input
             type="search"
             value={search}
@@ -147,9 +147,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                             </span>
                           )}
                           {conversation.lastMessage.isImage && (
-                            <span className="material-symbols-outlined text-[13px] align-middle me-1">
-                              image
-                            </span>
+                            <ImageIcon size={13} className="inline-block align-middle me-1" />
                           )}
                           {conversation.lastMessage.content}
                         </>
@@ -158,9 +156,11 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                       )}
                     </p>
                   </div>
-                  <span className="material-symbols-outlined text-outline-variant text-lg shrink-0">
-                    {isRtl ? 'chevron_left' : 'chevron_right'}
-                  </span>
+                  {isRtl ? (
+                    <ChevronLeft size={18} className="text-outline-variant shrink-0" />
+                  ) : (
+                    <ChevronRight size={18} className="text-outline-variant shrink-0" />
+                  )}
                 </button>
               </li>
             );

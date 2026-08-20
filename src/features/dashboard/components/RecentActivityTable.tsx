@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Receipt } from 'lucide-react';
 import TableSkeleton from '../../shared/components/TableSkeleton';
 import type { DashboardActivityRow } from '../hooks/useDashboard';
 
@@ -57,9 +58,7 @@ export const RecentActivityTable: React.FC<RecentActivityTableProps> = ({ rows, 
               <tr>
                 <td colSpan={6} className="py-16">
                   <div className="flex flex-col items-center gap-3 text-on-surface-variant">
-                    <span className="material-symbols-outlined text-5xl opacity-40">
-                      receipt_long
-                    </span>
+                    <Receipt size={48} className="opacity-40" />
                     <p className="text-sm font-bold">{t('dashboard.activities_empty')}</p>
                   </div>
                 </td>

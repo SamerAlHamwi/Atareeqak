@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { Ban, LogOut } from 'lucide-react';
 import type { UserStatusResponse } from '../../users/api/usersApi';
 
 interface BanStatusBannerProps {
@@ -50,7 +51,7 @@ const BanStatusBanner: React.FC<BanStatusBannerProps> = ({ status }) => {
         className="bg-error-container text-on-error-container px-6 py-4 rounded-2xl space-y-2"
       >
         <div className="flex items-center gap-2 font-bold">
-          <span className="material-symbols-outlined">block</span>
+          <Ban size={20} />
           <span>
             {ban.type === 'temporary'
               ? t('common.ban_banner_temporary')
@@ -98,7 +99,7 @@ const BanStatusBanner: React.FC<BanStatusBannerProps> = ({ status }) => {
         data-testid="ban-status-banner"
         className="bg-surface-container-high text-on-surface-variant px-6 py-4 rounded-2xl flex items-center gap-2 text-sm font-medium"
       >
-        <span className="material-symbols-outlined">logout</span>
+        <LogOut size={20} />
         {t('common.status_banner_logged_out')}
       </div>
     );

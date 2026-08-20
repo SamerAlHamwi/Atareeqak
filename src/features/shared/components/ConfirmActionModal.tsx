@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { X } from 'lucide-react';
 
 export interface ConfirmActionPayload {
   reason: string;
@@ -125,7 +126,7 @@ const ModalForm: React.FC<ModalFormProps> = ({
               disabled={isBusy}
               className="p-2 hover:bg-surface-container-high rounded-full transition-colors disabled:opacity-40"
             >
-              <span className="material-symbols-outlined">close</span>
+              <X size={24} />
             </button>
           </div>
 
