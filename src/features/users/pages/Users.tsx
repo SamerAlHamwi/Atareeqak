@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Search, Users as UsersIcon, Car, User, Eye, BadgeCheck, Undo2, Ban, X } from 'lucide-react';
+import { Search, Users as UsersIcon, Car, User, Eye, BadgeCheck, Undo2, Ban, X, MessageSquare } from 'lucide-react';
 import { useApiAction } from '../../shared/useApiAction';
 import ActionBanner from '../../shared/components/ActionBanner';
 import Avatar from '../../shared/components/Avatar';
@@ -332,6 +332,16 @@ const Users: React.FC = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center ltr:justify-end rtl:justify-start gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            navigate(`/chat?userId=${user.id}`);
+                          }}
+                          className="p-2 hover:bg-surface-container-high rounded-lg text-primary"
+                          title={t('users.chat_with_user')}
+                        >
+                          <MessageSquare size={20} />
+                        </button>
                         <button
                           onClick={(event) => {
                             event.stopPropagation();

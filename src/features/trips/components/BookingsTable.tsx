@@ -1,6 +1,7 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { CalendarX2, ArrowRight, Phone, XCircle } from 'lucide-react';
+import { CalendarX2, ArrowRight, Phone, XCircle, MessageSquare } from 'lucide-react';
 import TableSkeleton from '../../shared/components/TableSkeleton';
 import type { Booking } from '../hooks/useBookings';
 import { isCancellableBooking } from '../hooks/useBookings';
@@ -31,6 +32,7 @@ export const BookingsTable: React.FC<BookingsTableProps> = ({
   footer,
 }) => {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
 
   const formatDeparture = (iso: string | null): string => {
     if (!iso) return '--';
@@ -147,6 +149,16 @@ export const BookingsTable: React.FC<BookingsTableProps> = ({
                         >
                           <Phone size={18} />
                         </a>
+                      )}
+                      {booking.passenger?.id && (
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/chat?userId=${booking.passenger.id}`)}
+                          className="p-2 text-on-surface-variant hover:text-primary transition-colors"
+                          title={t('bookings.chat_passenger')}
+                        >
+                          <MessageSquare size={18} />
+                        </button>
                       )}
                       {isCancellableBooking(booking) && (
                         <button

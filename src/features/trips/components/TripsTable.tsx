@@ -1,7 +1,7 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { MapPinOff, ArrowRight, Eye, XCircle } from 'lucide-react';
+import { MapPinOff, ArrowRight, Eye, XCircle, MessageSquare } from 'lucide-react';
 import TableSkeleton from '../../shared/components/TableSkeleton';
 import type { Trip } from '../hooks/useTrips';
 import { isCancellableTrip } from '../hooks/useTrips';
@@ -31,6 +31,7 @@ export const TripsTable: React.FC<TripsTableProps> = ({
   footer,
 }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   return (
     <section className="bg-surface-container-lowest rounded-[2rem] shadow-ambient border border-outline-variant overflow-hidden">
@@ -155,6 +156,18 @@ export const TripsTable: React.FC<TripsTableProps> = ({
                     >
                       <Eye size={18} />
                     </button>
+                    {trip.driverId && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/chat?userId=${trip.driverId}`);
+                        }}
+                        className="p-2 text-on-surface-variant hover:text-primary transition-colors"
+                        title={t('trips.chat_driver')}
+                      >
+                        <MessageSquare size={18} />
+                      </button>
+                    )}
                     {isCancellableTrip(trip) && (
                       <button
                         onClick={(e) => onCancelTrip(trip, e)}

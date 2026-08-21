@@ -22,6 +22,7 @@ import {
   Smartphone,
   Mail,
   MapPin,
+  MessageSquare,
 } from 'lucide-react';
 import ActionBanner from '../../shared/components/ActionBanner';
 import Avatar from '../../shared/components/Avatar';
@@ -435,6 +436,15 @@ const UserDetails: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => navigate(`/chat?userId=${passenger.id}`)}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-primary text-on-primary hover:opacity-90 transition-all shadow-sm"
+            title={t('users.chat_with_user')}
+          >
+            <MessageSquare size={18} />
+            <span>{t('users.chat_with_user')}</span>
+          </button>
           {showChargeForm ? (
             <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-2xl p-4 space-y-3 w-full md:w-80">
               <div className="space-y-1">

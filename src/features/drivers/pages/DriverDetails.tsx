@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   CheckCircle2,
   History,
+  MessageSquare,
 } from 'lucide-react';
 import ActionBanner from '../../shared/components/ActionBanner';
 import Avatar from '../../shared/components/Avatar';
@@ -175,6 +176,15 @@ const DriverDetails: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => navigate(`/chat?userId=${driver.id}`)}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-primary text-on-primary hover:opacity-90 transition-all shadow-sm"
+            title={t('drivers.chat_with_driver')}
+          >
+            <MessageSquare size={18} />
+            <span>{t('drivers.chat_with_driver')}</span>
+          </button>
           <button
             type="button"
             data-testid="driver-ban-toggle"

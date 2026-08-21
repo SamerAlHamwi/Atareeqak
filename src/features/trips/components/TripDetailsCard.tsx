@@ -1,5 +1,7 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { MessageSquare, Phone } from 'lucide-react';
 import type { Trip } from '../hooks/useTrips';
 import type { LiveTrip } from '../hooks/useLiveTrips';
 import { LiveTripsMap } from './LiveTripsMap';
@@ -18,12 +20,15 @@ export const TripDetailsCard: React.FC<TripDetailsCardProps> = ({
   liveUpdatedAt = null,
 }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   // Live telemetry for the selected trip, when it is currently on the road
   const selectedRawId = trip ? Number(trip.rawId) : null;
   const selectedLive =
     selectedRawId != null ? liveTrips.find((l) => l.id === selectedRawId) ?? null : null;
   const featured = selectedLive ?? liveTrips[0] ?? null;
+
+  const driverUserId = featured?.driver?.id ?? trip?.driverId;
 
   return (
     <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -59,7 +64,35 @@ export const TripDetailsCard: React.FC<TripDetailsCardProps> = ({
             </p>
           </div>
         </div>
-        <div className="mt-6 flex items-center justify-between">
+
+        {/* Passengers section */}
+        {featured && featured.passengers.length > 0 && (
+          <div className="mt-4 pt-3 border-t border-white/10">
+            <p className="text-xs font-bold mb-2 opacity-80">{t('trips.passengers_list')}</p>
+            <div className="flex flex-wrap gap-2">
+              {featured.passengers.map((passenger, index) => (
+                <div
+                  key={passenger.id ?? index}
+                  className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-xl text-xs backdrop-blur-sm"
+                >
+                  <span className="font-medium">{passenger.name}</span>
+                  {passenger.id && (
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/chat?userId=${passenger.id}`)}
+                      className="p-1 hover:bg-white/20 rounded-lg text-white transition-colors"
+                      title={t('trips.chat_with_passenger')}
+                    >
+                      <MessageSquare size={13} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <div className="flex -space-x-3 rtl:space-x-reverse items-center">
             {(featured?.passengers ?? []).slice(0, 3).map((passenger, index) => (
               <div
@@ -81,28 +114,30 @@ export const TripDetailsCard: React.FC<TripDetailsCardProps> = ({
               </span>
             )}
           </div>
-          {/*
-            There is no "message the driver" endpoint on the admin API, but live
-            trips carry driver.communication_number — so this dials directly
-            instead of pretending to send a request.
-          */}
-          {featured?.driverPhone ? (
-            <a
-              href={`tel:${featured.driverPhone}`}
-              className="bg-secondary text-on-secondary px-6 py-2 rounded-xl text-sm font-bold shadow-md hover:opacity-90 transition-all"
-            >
-              {t('trips.contact_driver')}
-            </a>
-          ) : (
-            <button
-              type="button"
-              disabled
-              title={t('trips.no_driver_phone')}
-              className="bg-secondary text-on-secondary px-6 py-2 rounded-xl text-sm font-bold shadow-md opacity-50"
-            >
-              {t('trips.contact_driver')}
-            </button>
-          )}
+
+          <div className="flex items-center gap-2">
+            {driverUserId && (
+              <button
+                type="button"
+                onClick={() => navigate(`/chat?userId=${driverUserId}`)}
+                className="inline-flex items-center gap-2 bg-primary text-on-primary px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:opacity-90 transition-all"
+                title={t('trips.chat_with_driver')}
+              >
+                <MessageSquare size={16} />
+                <span>{t('trips.chat_driver')}</span>
+              </button>
+            )}
+            {featured?.driverPhone && (
+              <a
+                href={`tel:${featured.driverPhone}`}
+                className="inline-flex items-center gap-1.5 bg-secondary text-on-secondary px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:opacity-90 transition-all"
+                title={t('trips.contact_driver')}
+              >
+                <Phone size={16} />
+                <span>{t('trips.contact_driver')}</span>
+              </a>
+            )}
+          </div>
         </div>
       </div>
       <div className="bg-surface-container-low rounded-[2rem] overflow-hidden min-h-[280px] shadow-md border border-outline-variant">

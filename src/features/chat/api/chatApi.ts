@@ -181,6 +181,13 @@ export const imageMetaOf = (metadata: ChatMessageResponse['metadata']): ChatImag
   };
 };
 
+export interface StartConversationResponse {
+  status: string;
+  conversation_id: number;
+  is_new: boolean;
+  conversation: ConversationResponse;
+}
+
 export const chatApi = {
   /**
    * ⚠️ Unpaged — returns EVERY conversation for this agent in one response.
@@ -193,6 +200,11 @@ export const chatApi = {
    */
   getConversations: async (): Promise<ConversationsListResponse> => {
     const response = await api.get(ENDPOINTS.STAFF.CHAT_CONVERSATIONS);
+    return response.data;
+  },
+
+  startConversation: async (userId: number | string): Promise<StartConversationResponse> => {
+    const response = await api.post(ENDPOINTS.STAFF.CHAT_CONVERSATIONS, { user_id: Number(userId) });
     return response.data;
   },
 

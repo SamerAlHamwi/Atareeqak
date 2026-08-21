@@ -168,7 +168,7 @@ interface LearnedCustomer {
  * `conversation.user` is checked first, which is why the fix landed without a
  * line changing here: the inference simply stopped being load-bearing.
  */
-export const useChat = () => {
+export const useChat = (initialSelectedId: number | null = null) => {
   const { t, i18n } = useTranslation();
   const language = i18n.language;
 
@@ -191,7 +191,7 @@ export const useChat = () => {
   const [page, setPage] = useState(1);
 
   // ── Open thread ──────────────────────────────────────────────────────────
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(initialSelectedId);
   const [rawMessages, setRawMessages] = useState<ChatMessageResponse[]>([]);
   const [threadConversation, setThreadConversation] = useState<ConversationResponse | null>(null);
   const [isThreadLoading, setIsThreadLoading] = useState(false);
@@ -716,6 +716,27 @@ export const useChat = () => {
     setThreadError(null);
   }, []);
 
+  const openChatWithUser = useCallback(
+    async (userId: number | string) => {
+      try {
+        setIsLoading(true);
+        const res = await chatApi.startConversation(userId);
+        if (res.conversation_id) {
+          await loadConversations(true, () => false).catch(() => {});
+          setSelectedId(res.conversation_id);
+          setThreadError(null);
+          return res.conversation_id;
+        }
+      } catch (err) {
+        setError(extractApiError(err, t('chat.load_failed')));
+      } finally {
+        setIsLoading(false);
+      }
+      return null;
+    },
+    [loadConversations, t]
+  );
+
   return {
     // list
     conversations: pagedConversations,
@@ -736,6 +757,7 @@ export const useChat = () => {
     // thread
     selectedId,
     selectConversation,
+    openChatWithUser,
     selectedConversation,
     messages,
     isThreadLoading,

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { MailX } from 'lucide-react';
 import ErrorBanner from '../../shared/components/ErrorBanner';
@@ -19,6 +20,10 @@ import { useChat } from '../hooks/useChat';
  */
 const Chat: React.FC = () => {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const userIdParam = searchParams.get('userId');
+  const conversationIdParam = searchParams.get('conversationId');
+
   const {
     conversations,
     total,
@@ -37,6 +42,7 @@ const Chat: React.FC = () => {
     lastPage,
     selectedId,
     selectConversation,
+    openChatWithUser,
     selectedConversation,
     messages,
     isThreadLoading,
@@ -45,7 +51,22 @@ const Chat: React.FC = () => {
     isLoadingOlder,
     loadOlderMessages,
     sendMessage,
-  } = useChat();
+  } = useChat(conversationIdParam ? Number(conversationIdParam) : null);
+
+  const handledUserParam = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (userIdParam && handledUserParam.current !== userIdParam) {
+      handledUserParam.current = userIdParam;
+      void openChatWithUser(Number(userIdParam));
+    }
+  }, [userIdParam, openChatWithUser]);
+
+  useEffect(() => {
+    if (conversationIdParam && Number(conversationIdParam) !== selectedId) {
+      selectConversation(Number(conversationIdParam));
+    }
+  }, [conversationIdParam, selectedId, selectConversation]);
 
   // `RoleRoute` already blocks navigation, but a role change mid-session can
   // still 403 a page it already let through.

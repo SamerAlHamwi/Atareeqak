@@ -14,6 +14,7 @@ import {
   XCircle,
   PencilLine,
   Info,
+  MessageSquare,
   type LucideIcon,
 } from 'lucide-react';
 import { useApiAction } from '../../shared/useApiAction';
@@ -323,6 +324,13 @@ const Drivers: React.FC = () => {
                     </td>
                     <td className="px-8 py-5">
                       <div className="flex items-center ltr:justify-end rtl:justify-start gap-2">
+                        <button
+                          onClick={() => navigate(`/chat?userId=${driver.id}`)}
+                          className="p-2 hover:bg-surface-container-high rounded-lg text-primary transition-colors"
+                          title={t('drivers.chat_with_driver')}
+                        >
+                          <MessageSquare size={20} />
+                        </button>
                         <button
                           onClick={() => navigate(`/drivers/${driver.id}`)}
                           className="p-2 hover:bg-surface-container-high rounded-lg text-primary transition-colors"

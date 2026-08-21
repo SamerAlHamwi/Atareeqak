@@ -13,8 +13,8 @@ interface ApproveVerificationModalProps {
   onClose: () => void;
 }
 
-/** Mirrors `national_id => required|string|max:50` in StaffAdminController. */
-const NATIONAL_ID_MAX = 50;
+/** National ID must be exactly 10 digits per Syrian national ID format. */
+const NATIONAL_ID_LENGTH = 10;
 
 type FormProps = Omit<ApproveVerificationModalProps, 'open'>;
 
@@ -31,9 +31,6 @@ const ApproveForm: React.FC<FormProps> = ({
   const [validationError, setValidationError] = useState('');
 
   const trimmed = nationalId.trim();
-  const tooLong = trimmed.length > NATIONAL_ID_MAX;
-  // Disabled rather than submitted-and-422'd, per the Phase 3 convention.
-  const canSubmit = trimmed.length > 0 && !tooLong;
 
   // The pending payload carries document *images* only — no national ID value
   // exists anywhere in it (the column is written by this very endpoint), so the
@@ -41,11 +38,12 @@ const ApproveForm: React.FC<FormProps> = ({
   const idDocuments = documents.filter((doc) => doc.type === 'face_id' || doc.type === 'back_id');
 
   const handleConfirm = async () => {
-    if (!canSubmit) {
-      setValidationError(
-        tooLong ? t('verifications.national_id_max', { count: NATIONAL_ID_MAX })
-          : t('verifications.national_id_required')
-      );
+    if (!trimmed) {
+      setValidationError(t('verifications.national_id_required'));
+      return;
+    }
+    if (!/^\d{10}$/.test(trimmed)) {
+      setValidationError(t('verifications.national_id_digits'));
       return;
     }
     setValidationError('');
@@ -96,8 +94,22 @@ const ApproveForm: React.FC<FormProps> = ({
               id="approve-national-id"
               data-testid="approve-national-id"
               value={nationalId}
-              onChange={(e) => setNationalId(e.target.value)}
-              maxLength={NATIONAL_ID_MAX}
+              onChange={(e) => {
+                const val = e.target.value;
+                setNationalId(val);
+                if (validationError) {
+                  if (!val.trim()) {
+                    setValidationError(t('verifications.national_id_required'));
+                  } else if (!/^\d{10}$/.test(val.trim())) {
+                    setValidationError(t('verifications.national_id_digits'));
+                  } else {
+                    setValidationError('');
+                  }
+                }
+              }}
+              maxLength={NATIONAL_ID_LENGTH}
+              inputMode="numeric"
+              pattern="[0-9]*"
               autoComplete="off"
               className="w-full bg-surface-container-low border border-outline-variant rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               placeholder={t('verifications.national_id_placeholder')}
@@ -120,7 +132,7 @@ const ApproveForm: React.FC<FormProps> = ({
             <button
               data-testid="approve-confirm"
               onClick={() => void handleConfirm()}
-              disabled={isBusy || !canSubmit}
+              disabled={isBusy}
               className="flex-1 bg-secondary text-on-secondary py-3 rounded-2xl font-bold text-sm hover:opacity-90 transition-all disabled:opacity-50"
             >
               {isBusy ? t('common.loading') : t('verifications.approve_confirm')}
