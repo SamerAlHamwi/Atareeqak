@@ -613,8 +613,10 @@
       "financial_issue": "Financial issue",
       "account_issue": "Account issue",
       "technical_issue": "Technical issue",
+      "no_show": "No-show conflict",
       "other": "Other"
     },
+    "auto_generated_badge": "Auto-generated — needs investigation",
     "title_label": "Subject",
     "unassigned": "Unassigned",
     "select_hint": "Select a complaint to see its details",

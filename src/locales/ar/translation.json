@@ -713,8 +713,10 @@
       "financial_issue": "مشكلة مالية",
       "account_issue": "مشكلة في الحساب",
       "technical_issue": "عطل تقني",
+      "no_show": "تعارض تقارير الغياب",
       "other": "أخرى"
     },
+    "auto_generated_badge": "تم إنشاؤها تلقائياً — تحتاج إلى تحقيق",
     "title_label": "الموضوع",
     "unassigned": "غير مسندة",
     "select_hint": "اختر شكوى لعرض تفاصيلها",
