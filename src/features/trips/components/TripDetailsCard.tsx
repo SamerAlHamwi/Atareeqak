@@ -28,7 +28,7 @@ export const TripDetailsCard: React.FC<TripDetailsCardProps> = ({
     selectedRawId != null ? liveTrips.find((l) => l.id === selectedRawId) ?? null : null;
   const featured = selectedLive ?? liveTrips[0] ?? null;
 
-  const driverUserId = featured?.driver?.id ?? trip?.driverId;
+  const driverUserId = featured?.driverId ?? trip?.driverId;
 
   return (
     <section className="grid grid-cols-1 md:grid-cols-2 gap-8">

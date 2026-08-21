@@ -18,9 +18,11 @@ export interface Booking {
   status: BookingStatusValue;
   seats: number;
   passenger: string;
+  passengerId: number | null;
   passengerEmail: string;
   communicationNumber: string | null;
   driver: string;
+  driverId: number | null;
   from: string;
   to: string;
   departureTime: string | null;
@@ -58,9 +60,11 @@ const mapBooking = (b: BookingResponse, t: TFunction): Booking => ({
   status: b.status,
   seats: b.seats,
   passenger: b.passenger?.name?.trim() || t('common.unknown'),
+  passengerId: b.passenger?.id ?? null,
   passengerEmail: b.passenger?.email || '',
   communicationNumber: b.communication_number ?? null,
   driver: b.ride?.driver?.name?.trim() || t('common.unknown'),
+  driverId: b.ride?.driver?.id ?? null,
   from: b.ride?.pickup_address || '',
   to: b.ride?.destination_address || '',
   departureTime: b.ride?.departure_time ?? null,

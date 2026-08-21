@@ -150,10 +150,10 @@ export const BookingsTable: React.FC<BookingsTableProps> = ({
                           <Phone size={18} />
                         </a>
                       )}
-                      {booking.passenger?.id && (
+                      {booking.passengerId && (
                         <button
                           type="button"
-                          onClick={() => navigate(`/chat?userId=${booking.passenger.id}`)}
+                          onClick={() => navigate(`/chat?userId=${booking.passengerId}`)}
                           className="p-2 text-on-surface-variant hover:text-primary transition-colors"
                           title={t('bookings.chat_passenger')}
                         >

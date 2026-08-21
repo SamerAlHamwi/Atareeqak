@@ -1058,6 +1058,7 @@
     "driver_label": "السائق: {{name}}",
     "total_price": "الإجمالي: {{price}}",
     "call_passenger": "الاتصال بالراكب",
+    "chat_passenger": "مراسلة الراكب",
     "cancel_booking": "إلغاء الحجز",
     "cancel_success": "تم إلغاء الحجز {{id}} بنجاح",
     "cancel_failed": "تعذّر إلغاء الحجز",

@@ -15,6 +15,7 @@ export interface LiveTripPassenger {
 export interface LiveTrip {
   id: number;
   tripRef: string;
+  driverId: number | null;
   driverName: string;
   driverPhone: string | null;
   from: string;
@@ -46,6 +47,7 @@ const toPath = (geometry: LiveTripResponse['route']['geometry']): [number, numbe
 const mapLiveTrip = (trip: LiveTripResponse, t: TFunction): LiveTrip => ({
   id: trip.id,
   tripRef: trip.trip_ref,
+  driverId: trip.driver?.id ?? null,
   driverName: trip.driver?.name || t('common.unknown'),
   driverPhone: trip.driver?.communication_number ?? null,
   from: trip.route?.from || '',
